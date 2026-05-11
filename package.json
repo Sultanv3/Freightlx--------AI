@@ -1,0 +1,12 @@
+{
+  "name": "freightlx",
+  "version": "1.0.0",
+  "description": "FREIGHTLX - منصة الشحن والتخليص الجمركي الذكية",
+  "private": true,
+  "scripts": {
+    "start": "npx serve .",
+    "dev": "npx serve ."
+  },
+  "keywords": ["freight", "shipping", "logistics", "customs", "saber", "saudi-arabia"],
+  "license": "UNLICENSED"
+}
