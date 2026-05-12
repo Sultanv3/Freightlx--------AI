@@ -1,221 +1,57 @@
 /**
  * FREIGHTLX AI Chat Integration
  * Connects the existing chatbot to Google Gemini via /api/chat
+ *
+ * Strategy: Override the existing flxSendMsg function. The chat uses
+ * #flx-messages container with .flx-msg-row.user / .flx-msg-row.bot rows.
  */
 (function () {
   'use strict';
 
   const API_ENDPOINT = '/api/chat';
   let conversationHistory = [];
-  let aiEnabled = true; // can be toggled off
+  let aiEnabled = true;
 
   function injectStyles() {
     if (document.getElementById('flx-ai-styles')) return;
     const style = document.createElement('style');
     style.id = 'flx-ai-styles';
     style.textContent = `
-      .flx-ai-badge {
-        display: inline-flex;
-        align-items: center;
-        gap: 6px;
-        padding: 4px 10px;
+      .flx-msg-row.flx-ai-bot-row .flx-ai-source {
+        display: inline-block;
         background: linear-gradient(135deg, #6366f1, #8b5cf6);
         color: #fff;
+        padding: 2px 10px;
         border-radius: 999px;
-        font-size: 11px;
+        font-size: 10px;
         font-weight: 700;
-        margin-right: 8px;
+        margin-bottom: 6px;
         font-family: 'Cairo', sans-serif;
       }
-      .flx-ai-badge svg { width: 12px; height: 12px; }
-
-      .flx-ai-msg-wrap {
-        display: flex; flex-direction: column; gap: 6px;
-        margin: 12px 0; max-width: 75%; align-self: flex-end;
-        font-family: 'Cairo', 'Tajawal', sans-serif;
-      }
-      .flx-ai-msg {
-        background: linear-gradient(135deg, #1e3a6e, #2d5599);
-        color: #fff;
-        padding: 14px 18px;
-        border-radius: 18px 18px 6px 18px;
-        font-size: 14px;
-        line-height: 1.7;
+      .flx-msg-row.flx-ai-bot-row .flx-ai-content {
         white-space: pre-wrap;
-        word-wrap: break-word;
-        box-shadow: 0 6px 20px rgba(30, 58, 110, 0.2);
-        direction: rtl;
-        text-align: right;
-      }
-      .flx-ai-msg-meta {
-        font-size: 10px; color: #94a3b8;
-        display: flex; align-items: center; gap: 6px;
-        padding: 0 8px;
-      }
-      .flx-user-msg-wrap {
-        align-self: flex-start;
-        max-width: 75%;
-        margin: 12px 0;
-      }
-      .flx-user-msg {
-        background: #f1f5f9; color: #1e293b;
-        padding: 12px 16px; border-radius: 18px 18px 18px 6px;
-        font-size: 14px; line-height: 1.6;
+        line-height: 1.7;
         font-family: 'Cairo', 'Tajawal', sans-serif;
-        direction: rtl; text-align: right;
       }
       .flx-ai-typing {
         display: inline-flex;
-        gap: 4px; padding: 14px 18px;
-        background: #f1f5f9;
-        border-radius: 18px 18px 18px 6px;
-        align-self: flex-start;
-        margin: 12px 0;
+        gap: 4px;
+        align-items: center;
       }
       .flx-ai-typing span {
-        width: 8px; height: 8px;
+        width: 7px; height: 7px;
         background: #94a3b8;
         border-radius: 50%;
-        animation: flxBounce 1.4s infinite ease-in-out;
+        animation: flxAITypingBounce 1.4s infinite ease-in-out;
       }
       .flx-ai-typing span:nth-child(1) { animation-delay: -0.32s; }
       .flx-ai-typing span:nth-child(2) { animation-delay: -0.16s; }
-      @keyframes flxBounce {
+      @keyframes flxAITypingBounce {
         0%, 80%, 100% { transform: scale(0.6); opacity: 0.5; }
         40% { transform: scale(1); opacity: 1; }
       }
-
-      .flx-ai-container {
-        display: flex; flex-direction: column;
-        padding: 20px 24px;
-        height: 480px;
-        overflow-y: auto;
-        direction: rtl;
-        scroll-behavior: smooth;
-      }
-      .flx-ai-container::-webkit-scrollbar { width: 6px; }
-      .flx-ai-container::-webkit-scrollbar-thumb { background: rgba(30, 58, 110, 0.2); border-radius: 3px; }
     `;
     document.head.appendChild(style);
-  }
-
-  /**
-   * Find the chat modal's input and send mechanism
-   * Returns { input, sendBtn, msgArea } or null
-   */
-  function findChatElements() {
-    // Look for the chat input by placeholder
-    const inputs = Array.from(document.querySelectorAll('input, textarea'));
-    const chatInput = inputs.find(i =>
-      i.placeholder?.includes('سؤالك') ||
-      i.placeholder?.includes('شحنتك') ||
-      i.placeholder?.includes('اكتب')
-    );
-    if (!chatInput) return null;
-
-    // Find the message container - the scrollable area containing chat messages
-    let msgArea = chatInput.closest('[class*="dialog"], [class*="modal"], [role="dialog"]');
-    if (!msgArea) {
-      // Walk up to find a reasonable container
-      let parent = chatInput.parentElement;
-      while (parent && parent.offsetHeight < 300) parent = parent.parentElement;
-      msgArea = parent;
-    }
-
-    return { input: chatInput, msgArea };
-  }
-
-  function findOrCreateAIContainer() {
-    // Find the chat input
-    const inputEl = document.querySelector('input[placeholder*="سؤالك"], input[placeholder*="شحنتك"], input[placeholder*="اكتب"]');
-    if (!inputEl) return null;
-
-    // Walk up to find the chat modal box (white rounded card with input)
-    // Structure: input > .relative > .p-4 > .bg-white.rounded-2xl  <-- this is the modal box
-    const modalBox = inputEl.closest('div.bg-white.rounded-2xl, div[class*="bg-white"][class*="rounded-2xl"]');
-    if (!modalBox) return null;
-
-    // Remove "flx-page-hidden" from ancestors (the chat view is hidden by default)
-    let ancestor = modalBox;
-    while (ancestor) {
-      if (ancestor.classList && ancestor.classList.contains('flx-page-hidden')) {
-        ancestor.classList.remove('flx-page-hidden');
-        ancestor.style.display = '';
-      }
-      ancestor = ancestor.parentElement;
-    }
-
-    // Hide the welcome/cards sections (siblings of the modal's grandparent)
-    const grandParent = modalBox.parentElement?.parentElement;
-    if (grandParent) {
-      Array.from(grandParent.children).forEach(child => {
-        const cls = child.className?.toString() || '';
-        if (cls.includes('flx-home-hero-copy') ||
-            (cls.includes('grid-cols-12') && cls.includes('mb-10')) ||
-            (cls.includes('max-w-5xl') && cls.includes('mt-14'))) {
-          if (!child.dataset.flxOriginalDisplay) {
-            child.dataset.flxOriginalDisplay = child.style.display || 'block';
-          }
-          child.style.display = 'none';
-        }
-      });
-    }
-
-    // Hide the original welcome/cards area (the first child of modal box)
-    // and inject our chat area above the input area (.p-4)
-    const inputArea = inputEl.closest('div.p-4');
-    if (!inputArea) return null;
-
-    let container = modalBox.querySelector('.flx-ai-container');
-    if (container) return container;
-
-    // Hide the original welcome content (first child of modalBox - everything except input area)
-    Array.from(modalBox.children).forEach(child => {
-      if (child !== inputArea && !child.classList.contains('flx-ai-container')) {
-        child.dataset.flxOriginal = '1';
-        child.style.display = 'none';
-      }
-    });
-
-    container = document.createElement('div');
-    container.className = 'flx-ai-container';
-    modalBox.insertBefore(container, inputArea);
-    return container;
-  }
-
-  function addUserMessage(container, text) {
-    const wrap = document.createElement('div');
-    wrap.className = 'flx-user-msg-wrap';
-    wrap.innerHTML = `<div class="flx-user-msg">${escapeHTML(text)}</div>`;
-    container.appendChild(wrap);
-    container.scrollTop = container.scrollHeight;
-  }
-
-  function addAIMessage(container, text) {
-    const wrap = document.createElement('div');
-    wrap.className = 'flx-ai-msg-wrap';
-    wrap.innerHTML = `
-      <div class="flx-ai-msg">${escapeHTML(text)}</div>
-      <div class="flx-ai-msg-meta">
-        <span class="flx-ai-badge">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="3"/><path d="M12 1v6m0 10v6m11-11h-6M7 12H1m17.07-7.07L15 7m-6 10l-3.07 3.07M17.07 17.07L15 15M7 7L4.93 4.93"/></svg>
-          Gemini AI
-        </span>
-        <span>FREIGHTLX AI</span>
-      </div>
-    `;
-    container.appendChild(wrap);
-    container.scrollTop = container.scrollHeight;
-  }
-
-  function showTyping(container) {
-    const typing = document.createElement('div');
-    typing.className = 'flx-ai-typing';
-    typing.id = 'flx-ai-typing-indicator';
-    typing.innerHTML = '<span></span><span></span><span></span>';
-    container.appendChild(typing);
-    container.scrollTop = container.scrollHeight;
-    return typing;
   }
 
   function escapeHTML(s) {
@@ -224,12 +60,74 @@
     })[c]);
   }
 
-  async function askAI(message, chatModal) {
-    const container = findOrCreateAIContainer();
-    if (!container) return false;
+  function getMessagesContainer() {
+    return document.getElementById('flx-messages');
+  }
 
-    addUserMessage(container, message);
-    const typing = showTyping(container);
+  function hideWelcomeCards() {
+    // Hide the welcome message and the service cards (Full Import Cost, Ocean Freight Quote)
+    const cardsToHide = [];
+    document.querySelectorAll('.flx-msg-row').forEach(row => {
+      const txt = row.textContent || '';
+      if (txt.includes('وش تحتاج اليوم') ||
+          txt.includes('FULL IMPORT COST') ||
+          txt.includes('OCEAN FREIGHT QUOTE') ||
+          txt.includes('احصل على عرض سعر') ||
+          txt.includes('احسب تكاليف الاستيراد كاملة')) {
+        cardsToHide.push(row);
+      }
+    });
+    cardsToHide.forEach(c => { c.style.display = 'none'; });
+  }
+
+  function addUserMessage(text) {
+    const container = getMessagesContainer();
+    if (!container) return false;
+    const row = document.createElement('div');
+    row.className = 'flx-msg-row user flx-ai-user-row';
+    // Use the same bubble structure as existing user messages
+    row.innerHTML = `<div class="flx-msg-bubble user">${escapeHTML(text)}</div>`;
+    container.appendChild(row);
+    container.scrollTop = container.scrollHeight;
+    return true;
+  }
+
+  function addAIMessage(text) {
+    const container = getMessagesContainer();
+    if (!container) return false;
+    const row = document.createElement('div');
+    row.className = 'flx-msg-row bot flx-ai-bot-row';
+    row.innerHTML = `
+      <div class="flx-msg-bubble bot">
+        <span class="flx-ai-source">✦ Gemini AI</span>
+        <div class="flx-ai-content">${escapeHTML(text)}</div>
+      </div>
+    `;
+    container.appendChild(row);
+    container.scrollTop = container.scrollHeight;
+    return true;
+  }
+
+  function showTyping() {
+    const container = getMessagesContainer();
+    if (!container) return null;
+    const row = document.createElement('div');
+    row.className = 'flx-msg-row bot flx-ai-typing-row';
+    row.id = 'flx-ai-typing-indicator';
+    row.innerHTML = `
+      <div class="flx-msg-bubble bot">
+        <div class="flx-ai-typing"><span></span><span></span><span></span></div>
+      </div>
+    `;
+    container.appendChild(row);
+    container.scrollTop = container.scrollHeight;
+    return row;
+  }
+
+  async function askAI(message) {
+    hideWelcomeCards();
+    addUserMessage(message);
+    const typing = showTyping();
 
     try {
       const res = await fetch(API_ENDPOINT, {
@@ -241,39 +139,32 @@
         })
       });
 
-      typing.remove();
+      if (typing) typing.remove();
 
       if (!res.ok) {
         const errorData = await res.json().catch(() => ({}));
-        const errMsg = errorData.error || `خطأ ${res.status}`;
         if (res.status === 500 && errorData.hint) {
-          addAIMessage(container, `⚠️ AI غير مفعّل بعد.\n\nالمالك يحتاج إضافة GEMINI_API_KEY في إعدادات Vercel.\n\nمؤقتاً، استخدم البطاقات والأزرار في الأعلى.`);
+          addAIMessage('⚠️ AI غير مفعّل. يحتاج إضافة GEMINI_API_KEY في Vercel.');
         } else {
-          addAIMessage(container, `حصل خطأ: ${errMsg}. حاول مرة ثانية.`);
+          addAIMessage(`حصل خطأ (${res.status}). حاول مرة ثانية.`);
         }
-        return true;
+        return;
       }
 
       const data = await res.json();
-      addAIMessage(container, data.reply);
-      // Update conversation history
+      addAIMessage(data.reply);
+
       conversationHistory.push({ role: 'user', content: message });
       conversationHistory.push({ role: 'assistant', content: data.reply });
-      // Keep history small (last 10 exchanges)
       if (conversationHistory.length > 20) {
         conversationHistory = conversationHistory.slice(-20);
       }
-      return true;
     } catch (err) {
-      typing.remove();
-      addAIMessage(container, `خطأ في الاتصال: ${err.message}`);
-      return true;
+      if (typing) typing.remove();
+      addAIMessage(`خطأ في الاتصال: ${err.message}`);
     }
   }
 
-  /**
-   * Override the existing flxSendMsg function to route through AI
-   */
   function hookExistingChatFunctions() {
     let originalSend = null;
     let hooked = false;
@@ -285,36 +176,30 @@
       hooked = true;
 
       window.flxSendMsg = function (...args) {
-        // Get the message - either from args or from input
         let message = args[0];
         if (!message || typeof message !== 'string') {
-          const inp = document.querySelector('input[placeholder*="سؤالك"], input[placeholder*="شحنتك"], input[placeholder*="اكتب"]');
-          if (inp) message = inp.value.trim();
+          // Try to get from textarea
+          const ta = document.querySelector('textarea[placeholder*="سؤالك"], textarea[placeholder*="شحنتك"]');
+          if (ta) message = ta.value.trim();
         }
         if (!message) return;
 
-        // Find chat modal
-        const inp = document.querySelector('input[placeholder*="سؤالك"], input[placeholder*="شحنتك"], input[placeholder*="اكتب"]');
-        const chatModal = inp?.closest('[class*="dialog"], [class*="modal"], [role="dialog"]')
-          || inp?.closest('div[class*="fixed"]')
-          || document.body;
-
-        // Clear the input
-        if (inp) {
-          const nativeSetter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value').set;
-          nativeSetter.call(inp, '');
-          inp.dispatchEvent(new Event('input', { bubbles: true }));
+        // Clear the textarea
+        const ta = document.querySelector('textarea[placeholder*="سؤالك"], textarea[placeholder*="شحنتك"]');
+        if (ta) {
+          const setter = Object.getOwnPropertyDescriptor(window.HTMLTextAreaElement.prototype, 'value').set;
+          setter.call(ta, '');
+          ta.dispatchEvent(new Event('input', { bubbles: true }));
         }
 
-        // Call AI
         if (aiEnabled) {
-          askAI(message, chatModal);
+          askAI(message);
         } else if (originalSend) {
           return originalSend.apply(this, args);
         }
       };
 
-      console.log('[FREIGHTLX AI] Hooked flxSendMsg successfully');
+      console.log('[FREIGHTLX AI] Hooked flxSendMsg → Gemini AI active');
     }
 
     setInterval(tryHook, 500);
@@ -324,7 +209,7 @@
   function init() {
     injectStyles();
     hookExistingChatFunctions();
-    console.log('[FREIGHTLX AI] Chat hooks initialized');
+    console.log('[FREIGHTLX AI] Chat integration initialized');
   }
 
   if (document.readyState === 'loading') {
