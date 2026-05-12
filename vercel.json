@@ -24,8 +24,5 @@
         { "key": "Cache-Control", "value": "public, max-age=0, must-revalidate" }
       ]
     }
-  ],
-  "rewrites": [
-    { "source": "/((?!assets|data|.*\\.(js|css|svg|png|jpg|jpeg|gif|webp|ico|woff|woff2|ttf|map|json|txt|xml|pdf)).*)", "destination": "/index.html" }
   ]
 }
