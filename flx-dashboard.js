@@ -24,20 +24,10 @@
 
   function hideQuickActionsCard() {
     document.querySelectorAll('div').forEach(el => {
-      if (el.children && el.children.length < 50) {
-        const txt = el.textContent || '';
-        if (txt.trim().startsWith('إجراءات سريعة') && txt.length < 600) {
-          // Hide this card (the wrapper with gradient)
-          let target = el;
-          while (target && target.parentElement) {
-            const cls = target.className?.toString() || '';
-            if (cls.includes('from-navy-deep') || cls.includes('rounded-2xl')) {
-              target.style.display = 'none';
-              return;
-            }
-            target = target.parentElement;
-          }
-        }
+      const txt = el.textContent || '';
+      if (txt.trim().startsWith('إجراءات سريعة') && txt.length < 700) {
+        // Hide this element directly - it's the panel container
+        el.style.display = 'none';
       }
     });
   }
