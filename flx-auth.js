@@ -313,7 +313,24 @@
             options: { data: { full_name: name || '' } }
           });
           if (error) throw error;
-          showMessage('تم إنشاء الحساب! تحقق من بريدك لتأكيد الحساب.', 'ok');
+          // Email confirmation is disabled, so user is logged in immediately
+          if (data?.session) {
+            showMessage('تم إنشاء الحساب وتسجيل دخولك بنجاح!', 'ok');
+            setTimeout(closeModal, 800);
+          } else {
+            // Try to sign in automatically
+            try {
+              const { error: signInErr } = await client.auth.signInWithPassword({ email, password });
+              if (!signInErr) {
+                showMessage('تم إنشاء الحساب وتسجيل دخولك!', 'ok');
+                setTimeout(closeModal, 800);
+              } else {
+                showMessage('تم إنشاء الحساب! سجل دخولك الآن.', 'ok');
+              }
+            } catch {
+              showMessage('تم إنشاء الحساب! سجل دخولك الآن.', 'ok');
+            }
+          }
         } else {
           const { data, error } = await client.auth.signInWithPassword({ email, password });
           if (error) throw error;
