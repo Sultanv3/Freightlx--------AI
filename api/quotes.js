@@ -1,138 +1,151 @@
 /**
- * FREIGHTLX Real-Time Quotes API - Freightify Integration
- *
- * Required env vars (set in Vercel → Settings → Environment Variables):
- *   FREIGHTIFY_CUSTOMER_ID   : Customer ID (e.g. d306d42d-...)
- *   FREIGHTIFY_CLIENT_SECRET : Client Secret
- *   FREIGHTIFY_API_KEY       : API Key
- *   FREIGHTIFY_BASE_URL      : (optional) e.g. https://api.freightify.com
- *
- * Auth flow:
- *   1) POST {BASE}/v1/auth/token with customer_id + client_secret → access token
- *   2) Cache token (in-memory, edge runtime resets often)
- *   3) Search rates using access token + API key
- *
- * Returns standardized offer list.
+ * FREIGHTLX Quotes - Freightify Real-Time Integration
+ * Tries multiple base URLs, auth strategies, and endpoint patterns.
  */
 
-const FREIGHTIFY_BASE = process.env.FREIGHTIFY_BASE_URL || 'https://api.freightify.com';
+// Possible Freightify base URLs (we try them all)
+const BASE_URLS = [
+  process.env.FREIGHTIFY_BASE_URL,
+  'https://api.freightify.com',
+  'https://app.freightify.com/api',
+  'https://platform.freightify.com/api',
+  'https://api.freightify.io'
+].filter(Boolean);
 
-// Token cache (Edge runtime cold-starts often, but caches help within a single instance)
+const AUTH_PATHS = [
+  '/v1/auth/token',
+  '/auth/token',
+  '/oauth/token',
+  '/api/v1/auth/token',
+  '/api/auth/login',
+  '/login'
+];
+
+const RATE_PATHS = [
+  '/v1/rates/search',
+  '/api/v1/rates/search',
+  '/rates/search',
+  '/api/rates/search',
+  '/v1/spot-rates/search',
+  '/v1/offers',
+  '/v2/rates/search',
+  '/api/v1/spot/search'
+];
+
+// Token cache
 let tokenCache = null;
 let tokenExpiry = 0;
+let workingBase = null;
+let workingRatePath = null;
 
-async function getAccessToken() {
+async function tryAuth(baseUrl) {
   const customerId = process.env.FREIGHTIFY_CUSTOMER_ID;
   const clientSecret = process.env.FREIGHTIFY_CLIENT_SECRET;
-  if (!customerId || !clientSecret) return null;
+  const apiKey = process.env.FREIGHTIFY_API_KEY;
 
-  const now = Date.now();
-  if (tokenCache && now < tokenExpiry - 60_000) return tokenCache;
-
-  // Try common auth endpoints in order
-  const authPaths = [
-    '/v1/auth/token',
-    '/api/auth/token',
-    '/oauth/token',
-    '/auth/login'
+  const variations = [
+    { customer_id: customerId, client_secret: clientSecret, grant_type: 'client_credentials' },
+    { customerId, clientSecret, grantType: 'client_credentials' },
+    { client_id: customerId, client_secret: clientSecret },
+    { customer_id: customerId, secret: clientSecret },
+    { api_key: apiKey, customer_id: customerId },
+    { username: customerId, password: clientSecret }
   ];
 
-  for (const path of authPaths) {
-    try {
-      const res = await fetch(`${FREIGHTIFY_BASE}${path}`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json'
-        },
-        body: JSON.stringify({
-          customer_id: customerId,
-          customerId,
-          client_id: customerId,
-          client_secret: clientSecret,
-          clientSecret,
-          grant_type: 'client_credentials'
-        })
-      });
-
-      if (!res.ok) continue;
-      const data = await res.json();
-      const token = data.access_token || data.accessToken || data.token || data.jwt;
-      if (!token) continue;
-      const expiresIn = data.expires_in || data.expiresIn || 3600;
-      tokenCache = token;
-      tokenExpiry = now + expiresIn * 1000;
-      console.log('[Freightify] Auth success via', path);
-      return token;
-    } catch (err) {
-      console.error('[Freightify] Auth attempt failed', path, err.message);
-      continue;
+  for (const path of AUTH_PATHS) {
+    for (const body of variations) {
+      try {
+        const res = await fetch(`${baseUrl}${path}`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json',
+            'X-API-Key': apiKey,
+            'apikey': apiKey
+          },
+          body: JSON.stringify(body)
+        });
+        if (!res.ok) continue;
+        const data = await res.json().catch(() => null);
+        if (!data) continue;
+        const token = data.access_token || data.accessToken || data.token || data.jwt || data.id_token;
+        if (token) {
+          const expires = data.expires_in || data.expiresIn || 3600;
+          return { token, expiresIn: expires, base: baseUrl, path };
+        }
+      } catch {}
     }
   }
-
   return null;
 }
 
-async function searchRates(body, accessToken) {
+async function searchRatesTry(baseUrl, path, body, token) {
   const apiKey = process.env.FREIGHTIFY_API_KEY;
   const customerId = process.env.FREIGHTIFY_CUSTOMER_ID;
 
-  const searchBody = {
-    originPortCode: body.originPort,
-    destinationPortCode: body.destinationPort,
-    pol: body.originPort,
-    pod: body.destinationPort,
-    origin: body.originPort,
-    destination: body.destinationPort,
-    containerType: body.containerType || '40HC',
-    equipmentType: body.containerType || '40HC',
-    commodityCode: body.commodityCode || '8517',
-    commodity: body.commodityCode || '8517',
-    cargoWeight: body.cargoWeight || 18000,
-    cargoVolume: body.cargoVolume || 60,
-    cargoReadyDate: new Date(Date.now() + 7 * 86400000).toISOString().slice(0, 10),
-    incoterm: body.incoterm || 'FOB',
-    transportMode: 'FCL'
-  };
-
-  // Try common rate-search endpoints
-  const searchPaths = [
-    '/v1/rates/search',
-    '/api/rates/search',
-    '/v1/offers/search',
-    '/rates/spot/search'
+  const payloadVariations = [
+    {
+      originPortCode: body.originPort,
+      destinationPortCode: body.destinationPort,
+      containerType: body.containerType,
+      commodityCode: body.commodityCode || '8517',
+      cargoReadyDate: new Date(Date.now() + 7 * 86400000).toISOString().slice(0, 10)
+    },
+    {
+      pol: body.originPort,
+      pod: body.destinationPort,
+      equipmentType: body.containerType,
+      commodity: body.commodityCode || '8517'
+    },
+    {
+      origin: body.originPort,
+      destination: body.destinationPort,
+      container: body.containerType,
+      hs_code: body.commodityCode || '8517'
+    }
   ];
 
-  const baseHeaders = {
-    'Content-Type': 'application/json',
-    'Accept': 'application/json',
-    'X-API-Key': apiKey,
-    'apikey': apiKey,
-    'X-Customer-Id': customerId
-  };
-  if (accessToken) {
-    baseHeaders['Authorization'] = `Bearer ${accessToken}`;
-  }
-
-  for (const path of searchPaths) {
+  for (const payload of payloadVariations) {
     try {
-      const res = await fetch(`${FREIGHTIFY_BASE}${path}`, {
+      const headers = {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+        'X-API-Key': apiKey,
+        'apikey': apiKey
+      };
+      if (customerId) headers['X-Customer-Id'] = customerId;
+      if (token) headers['Authorization'] = `Bearer ${token}`;
+
+      const res = await fetch(`${baseUrl}${path}`, {
         method: 'POST',
-        headers: baseHeaders,
-        body: JSON.stringify(searchBody)
+        headers,
+        body: JSON.stringify(payload)
       });
-      if (!res.ok) {
-        console.error('[Freightify] Search', path, res.status);
-        continue;
-      }
-      const data = await res.json();
-      const rawOffers = data.rates || data.offers || data.results || data.data || data.spotRates || [];
-      if (!Array.isArray(rawOffers) || rawOffers.length === 0) continue;
-      return normalizeOffers(rawOffers, body);
-    } catch (err) {
-      console.error('[Freightify] Search error', path, err.message);
-      continue;
-    }
+      if (!res.ok) continue;
+      const data = await res.json().catch(() => null);
+      if (!data) continue;
+      const offers = data.rates || data.offers || data.results || data.data || data.spotRates || (Array.isArray(data) ? data : null);
+      if (Array.isArray(offers) && offers.length > 0) return { offers, base: baseUrl, path };
+    } catch {}
+
+    // Also try GET with query params
+    try {
+      const url = new URL(`${baseUrl}${path}`);
+      Object.entries(payload).forEach(([k, v]) => url.searchParams.append(k, v));
+      const headers = {
+        'Accept': 'application/json',
+        'X-API-Key': apiKey,
+        'apikey': apiKey
+      };
+      if (customerId) headers['X-Customer-Id'] = customerId;
+      if (token) headers['Authorization'] = `Bearer ${token}`;
+      const res = await fetch(url.toString(), { headers });
+      if (!res.ok) continue;
+      const data = await res.json().catch(() => null);
+      if (!data) continue;
+      const offers = data.rates || data.offers || data.results || data.data || (Array.isArray(data) ? data : null);
+      if (Array.isArray(offers) && offers.length > 0) return { offers, base: baseUrl, path };
+    } catch {}
   }
   return null;
 }
@@ -146,10 +159,10 @@ function normalizeOffers(rawOffers, body) {
     price: parseFloat(r.totalPrice || r.price || r.amount || r.netRate || r.allInRate || 0),
     currency: r.currency || r.totalCurrency || 'USD',
     containerType: r.equipmentType || r.containerType || body.containerType,
-    validity: (r.validityTo || r.validUntil || r.validity || '').slice(0, 10) || 'N/A',
+    validity: (r.validityTo || r.validUntil || r.validity || '').toString().slice(0, 10) || 'N/A',
     vessel: r.vesselName || r.vessel || `${r.carrierName || 'Vessel'} EXP`,
-    etd: (r.etd || '').slice(0, 10),
-    eta: (r.eta || '').slice(0, 10),
+    etd: (r.etd || '').toString().slice(0, 10),
+    eta: (r.eta || '').toString().slice(0, 10),
     services: r.routingType || (r.transhipment ? 'T/S' : 'Direct'),
     freeDays: r.freeDaysAtDestination || r.freeDays || 10
   })).filter(o => o.price > 0).sort((a, b) => a.price - b.price);
@@ -157,11 +170,11 @@ function normalizeOffers(rawOffers, body) {
 
 function generateMockOffers(body) {
   const baseRates = {
-    '20GP': { min: 1500, max: 2800, days: 22 },
-    '40GP': { min: 2800, max: 4200, days: 22 },
-    '40HC': { min: 2900, max: 4500, days: 22 },
-    '40RF': { min: 4500, max: 7000, days: 22 },
-    'LCL':  { min: 80, max: 180, days: 28 }
+    '20GP': { base: 1500, days: 22 },
+    '40GP': { base: 2800, days: 22 },
+    '40HC': { base: 2900, days: 22 },
+    '40RF': { base: 4500, days: 22 },
+    'LCL':  { base: 80, days: 28 }
   };
   const route = baseRates[body.containerType] || baseRates['40HC'];
   const carriers = [
@@ -175,17 +188,15 @@ function generateMockOffers(body) {
     { name: 'Yang Ming', delta: 520 }
   ];
   const today = new Date();
-  const validUntil = new Date(today.getTime() + 7 * 86400000).toISOString().slice(0, 10);
-
   return carriers.map((c, i) => ({
     carrier: c.name,
     carrierLogo: '🚢',
     route: `${body.originPort || 'POL'} → ${body.destinationPort || 'POD'}`,
     transitTime: route.days + Math.floor(Math.random() * 6) - 3,
-    price: route.min + c.delta + Math.floor(Math.random() * 100),
+    price: route.base + c.delta + Math.floor(Math.random() * 100),
     currency: 'USD',
     containerType: body.containerType || '40HC',
-    validity: validUntil,
+    validity: new Date(today.getTime() + 7 * 86400000).toISOString().slice(0, 10),
     vessel: `${c.name} ${['CHAMPION', 'HARMONY', 'EXPRESS', 'STAR', 'PIONEER'][i % 5]}`,
     etd: new Date(today.getTime() + (3 + i) * 86400000).toISOString().slice(0, 10),
     eta: new Date(today.getTime() + (3 + i + route.days) * 86400000).toISOString().slice(0, 10),
@@ -203,36 +214,78 @@ export default async function handler(req) {
   }
 
   let body = {};
-  try {
-    body = await req.json();
-  } catch {}
+  try { body = await req.json(); } catch {}
 
-  // Try real Freightify API
+  const debug = {
+    hasApiKey: !!process.env.FREIGHTIFY_API_KEY,
+    hasCustomerId: !!process.env.FREIGHTIFY_CUSTOMER_ID,
+    hasClientSecret: !!process.env.FREIGHTIFY_CLIENT_SECRET,
+    apiKeyLength: process.env.FREIGHTIFY_API_KEY?.length || 0,
+    triedBases: [],
+    authResult: null,
+    rateSearchResult: null
+  };
+
   let offers = null;
-  let source = 'mock';
-  let authStatus = 'no-credentials';
 
   if (process.env.FREIGHTIFY_API_KEY) {
-    try {
-      const token = await getAccessToken();
-      authStatus = token ? 'token-obtained' : 'no-token';
-      offers = await searchRates(body, token);
-      if (offers && offers.length) source = 'freightify';
-    } catch (err) {
-      console.error('[Freightify] Top-level error:', err);
+    // Use cached working endpoint if available
+    if (workingBase && workingRatePath && tokenCache && Date.now() < tokenExpiry) {
+      try {
+        const result = await searchRatesTry(workingBase, workingRatePath, body, tokenCache);
+        if (result) offers = normalizeOffers(result.offers, body);
+      } catch {}
+    }
+
+    // Try all combinations if no cache or cache failed
+    if (!offers) {
+      outer: for (const base of BASE_URLS) {
+        debug.triedBases.push(base);
+
+        // First try: API key only (no OAuth)
+        for (const path of RATE_PATHS) {
+          const result = await searchRatesTry(base, path, body, null);
+          if (result) {
+            offers = normalizeOffers(result.offers, body);
+            workingBase = base;
+            workingRatePath = path;
+            debug.rateSearchResult = `${base}${path} (api-key-only)`;
+            break outer;
+          }
+        }
+
+        // Then try with OAuth token
+        const authResult = await tryAuth(base);
+        if (authResult) {
+          debug.authResult = `${authResult.base}${authResult.path}`;
+          tokenCache = authResult.token;
+          tokenExpiry = Date.now() + (authResult.expiresIn * 1000);
+
+          for (const path of RATE_PATHS) {
+            const result = await searchRatesTry(base, path, body, authResult.token);
+            if (result) {
+              offers = normalizeOffers(result.offers, body);
+              workingBase = base;
+              workingRatePath = path;
+              debug.rateSearchResult = `${base}${path} (oauth)`;
+              break outer;
+            }
+          }
+        }
+      }
     }
   }
 
-  if (!offers || !offers.length) {
+  const isReal = offers && offers.length > 0;
+  if (!isReal) {
     offers = generateMockOffers(body);
   }
 
   return new Response(JSON.stringify({
     offers,
-    source,
-    mock: source !== 'freightify',
-    authStatus,
-    requestEcho: body
+    source: isReal ? 'freightify' : 'mock',
+    mock: !isReal,
+    debug
   }), {
     status: 200,
     headers: {
