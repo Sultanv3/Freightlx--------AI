@@ -41,28 +41,29 @@
     const style = document.createElement('style');
     style.id = 'flx-docs-styles';
     style.textContent = `
-      .flx-docs-trigger {
-        position: fixed;
-        bottom: 24px;
-        left: 24px;
-        z-index: 9996;
+      /* Inline button inside dashboard actions row */
+      .flx-docs-inline-btn {
         background: linear-gradient(135deg, #15803d, #16a34a);
-        color: #fff;
+        color: #fff !important;
         border: 0;
-        padding: 13px 22px;
-        border-radius: 999px;
+        padding: 10px 18px;
+        border-radius: 12px;
         font-family: 'Cairo', 'Tajawal', sans-serif;
         font-weight: 700;
         font-size: 14px;
         cursor: pointer;
-        box-shadow: 0 10px 28px rgba(22, 163, 74, 0.35);
+        box-shadow: 0 4px 12px rgba(22, 163, 74, 0.25);
         display: inline-flex;
         align-items: center;
-        gap: 8px;
-        transition: transform 0.2s;
+        gap: 6px;
+        transition: transform 0.15s, box-shadow 0.15s;
+        white-space: nowrap;
       }
-      .flx-docs-trigger:hover { transform: translateY(-2px); }
-      .flx-docs-trigger svg { width: 18px; height: 18px; }
+      .flx-docs-inline-btn:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 6px 16px rgba(22, 163, 74, 0.35);
+      }
+      .flx-docs-inline-btn svg { width: 16px; height: 16px; }
 
       .flx-docs-overlay {
         position: fixed; inset: 0;
@@ -191,19 +192,7 @@
   }
 
   function buildDocsUI() {
-    if (document.getElementById('flx-docs-trigger')) return;
-
-    // Floating button
-    const btn = document.createElement('button');
-    btn.id = 'flx-docs-trigger';
-    btn.className = 'flx-docs-trigger';
-    btn.innerHTML = `
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-        <path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/>
-      </svg>
-      رفع وثائق
-    `;
-    document.body.appendChild(btn);
+    if (document.getElementById('flx-docs-overlay')) return;
 
     // Modal
     const overlay = document.createElement('div');
@@ -316,10 +305,11 @@
       if (e.target.id === 'flx-docs-overlay') overlay.classList.remove('flx-open');
     });
 
-    btn.addEventListener('click', () => {
+    function openModal() {
       clearMsg();
       overlay.classList.add('flx-open');
-    });
+    }
+    window.flxOpenDocsModal = openModal;
 
     submitBtn.addEventListener('click', async () => {
       if (!files.length) {
@@ -383,6 +373,27 @@
     });
   }
 
+  /* ============ INJECT INLINE DOCS BUTTON INTO DASHBOARD ============ */
+  function injectDocsButtonIntoDashboard() {
+    // Find the dashboard actions row (where "عرض سعر وحجز", "حاسبة التكاليف", etc. are)
+    const row = document.querySelector('.flx-dashboard-actions-row');
+    if (!row) return;
+    if (row.querySelector('.flx-docs-inline-btn')) return;
+    const btn = document.createElement('button');
+    btn.className = 'flx-docs-inline-btn';
+    btn.type = 'button';
+    btn.innerHTML = `
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/>
+      </svg>
+      رفع الوثائق
+    `;
+    btn.addEventListener('click', () => {
+      if (window.flxOpenDocsModal) window.flxOpenDocsModal();
+    });
+    row.appendChild(btn);
+  }
+
   /* ============ INIT ============ */
   function init() {
     injectSimplificationStyles();
@@ -390,13 +401,18 @@
     buildDocsUI();
     // Run once immediately
     hideQuickActionsCard();
+    injectDocsButtonIntoDashboard();
     // Watch for DOM changes (React re-renders, route changes)
     const observer = new MutationObserver(() => {
       hideQuickActionsCard();
+      injectDocsButtonIntoDashboard();
     });
     observer.observe(document.body, { childList: true, subtree: true });
     // Also run periodically as backup
-    setInterval(hideQuickActionsCard, 1000);
+    setInterval(() => {
+      hideQuickActionsCard();
+      injectDocsButtonIntoDashboard();
+    }, 1000);
   }
 
   if (document.readyState === 'loading') {
