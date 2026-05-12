@@ -1,0 +1,507 @@
+/**
+ * FREIGHTLX Quotes UI
+ * Beautiful price display modal - shows real-time quotes from /api/quotes
+ */
+(function () {
+  'use strict';
+
+  function injectStyles() {
+    if (document.getElementById('flx-quotes-ui-styles')) return;
+    const style = document.createElement('style');
+    style.id = 'flx-quotes-ui-styles';
+    style.textContent = `
+      .flx-quotes-overlay {
+        position: fixed; inset: 0;
+        background: rgba(8, 17, 36, 0.75);
+        backdrop-filter: blur(10px);
+        z-index: 9999;
+        display: none;
+        align-items: flex-start;
+        justify-content: center;
+        padding: 40px 20px;
+        overflow-y: auto;
+        animation: flxFadeIn 0.3s ease-out;
+      }
+      .flx-quotes-overlay.flx-show { display: flex; }
+      @keyframes flxFadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+      .flx-quotes-modal {
+        background: linear-gradient(135deg, #ffffff, #f8fafc);
+        border-radius: 24px;
+        max-width: 1000px;
+        width: 100%;
+        padding: 32px;
+        font-family: 'Cairo', 'Tajawal', sans-serif;
+        direction: rtl;
+        box-shadow: 0 30px 70px rgba(0, 0, 0, 0.3);
+        position: relative;
+        animation: flxQuoteIn 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+      }
+      @keyframes flxQuoteIn {
+        from { opacity: 0; transform: translateY(30px) scale(0.96); }
+        to   { opacity: 1; transform: translateY(0) scale(1); }
+      }
+
+      .flx-quotes-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 24px;
+        padding-bottom: 20px;
+        border-bottom: 2px solid #e2e8f0;
+      }
+      .flx-quotes-title-wrap h2 {
+        color: #1e3a6e;
+        font-size: 26px;
+        font-weight: 800;
+        margin: 0 0 6px;
+      }
+      .flx-quotes-route {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        color: #475569;
+        font-size: 15px;
+        font-weight: 600;
+      }
+      .flx-quotes-route-arrow {
+        color: #0ea5e9;
+        font-size: 18px;
+      }
+      .flx-quotes-close {
+        background: rgba(15, 23, 42, 0.05);
+        border: 0;
+        width: 40px; height: 40px;
+        border-radius: 50%;
+        cursor: pointer;
+        font-size: 22px;
+        color: #64748b;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: all 0.15s ease;
+      }
+      .flx-quotes-close:hover {
+        background: #fee2e2;
+        color: #b91c1c;
+        transform: rotate(90deg);
+      }
+
+      .flx-quotes-info {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 12px;
+        margin-bottom: 24px;
+      }
+      .flx-quotes-info-item {
+        background: linear-gradient(135deg, #f1f5f9, #e2e8f0);
+        padding: 12px 14px;
+        border-radius: 12px;
+        text-align: center;
+      }
+      .flx-quotes-info-item .flx-label {
+        font-size: 11px;
+        color: #64748b;
+        font-weight: 600;
+        margin-bottom: 4px;
+      }
+      .flx-quotes-info-item .flx-value {
+        font-size: 15px;
+        color: #1e3a6e;
+        font-weight: 700;
+      }
+
+      .flx-quotes-list {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+      }
+
+      .flx-quote-card {
+        background: #fff;
+        border: 1.5px solid #e2e8f0;
+        border-radius: 16px;
+        padding: 20px;
+        display: grid;
+        grid-template-columns: auto 1fr auto;
+        gap: 20px;
+        align-items: center;
+        transition: all 0.2s ease;
+        position: relative;
+        overflow: hidden;
+      }
+      .flx-quote-card::before {
+        content: '';
+        position: absolute;
+        top: 0; bottom: 0;
+        right: 0;
+        width: 4px;
+        background: linear-gradient(180deg, #0ea5e9, #0284c7);
+        opacity: 0.7;
+      }
+      .flx-quote-card:hover {
+        transform: translateY(-3px);
+        border-color: #0ea5e9;
+        box-shadow: 0 12px 30px rgba(14, 165, 233, 0.12);
+      }
+      .flx-quote-card.flx-best::before {
+        background: linear-gradient(180deg, #15803d, #16a34a);
+        width: 6px;
+      }
+      .flx-quote-card.flx-best {
+        border-color: #16a34a;
+        background: linear-gradient(135deg, #f0fdf4, #ffffff);
+      }
+      .flx-quote-badge-best {
+        position: absolute;
+        top: -10px;
+        right: 16px;
+        background: linear-gradient(135deg, #15803d, #16a34a);
+        color: #fff;
+        padding: 4px 12px;
+        border-radius: 999px;
+        font-size: 11px;
+        font-weight: 800;
+        box-shadow: 0 4px 10px rgba(22, 163, 74, 0.3);
+      }
+
+      .flx-quote-carrier {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 6px;
+        min-width: 100px;
+      }
+      .flx-quote-carrier-logo {
+        width: 56px; height: 56px;
+        background: linear-gradient(135deg, #1e3a6e, #2d5599);
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 28px;
+      }
+      .flx-quote-carrier-name {
+        font-size: 14px;
+        font-weight: 700;
+        color: #1e3a6e;
+      }
+
+      .flx-quote-details {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+      }
+      .flx-quote-vessel {
+        font-size: 16px;
+        font-weight: 700;
+        color: #1e3a6e;
+      }
+      .flx-quote-route-flow {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        font-size: 13px;
+        color: #475569;
+      }
+      .flx-quote-flow-step {
+        background: #f1f5f9;
+        padding: 4px 10px;
+        border-radius: 8px;
+        font-weight: 600;
+      }
+      .flx-quote-flow-arrow {
+        color: #94a3b8;
+        font-size: 14px;
+      }
+      .flx-quote-meta {
+        display: flex;
+        gap: 16px;
+        font-size: 12px;
+        color: #64748b;
+        flex-wrap: wrap;
+      }
+      .flx-quote-meta-item {
+        display: flex;
+        align-items: center;
+        gap: 4px;
+      }
+      .flx-quote-meta-item strong {
+        color: #1e3a6e;
+        font-weight: 700;
+      }
+
+      .flx-quote-price-wrap {
+        text-align: center;
+        min-width: 180px;
+        padding-left: 16px;
+        border-right: 2px solid #e2e8f0;
+      }
+      .flx-quote-price {
+        font-size: 32px;
+        font-weight: 800;
+        color: #1e3a6e;
+        line-height: 1;
+        margin-bottom: 4px;
+        font-family: 'Cairo', sans-serif;
+      }
+      .flx-quote-currency {
+        font-size: 13px;
+        color: #64748b;
+        font-weight: 600;
+        margin-bottom: 12px;
+      }
+      .flx-quote-book-btn {
+        background: linear-gradient(135deg, #1e3a6e, #2d5599);
+        color: #fff;
+        border: 0;
+        padding: 10px 24px;
+        border-radius: 999px;
+        font-family: 'Cairo', sans-serif;
+        font-weight: 700;
+        font-size: 13px;
+        cursor: pointer;
+        transition: all 0.15s ease;
+        box-shadow: 0 4px 10px rgba(30, 58, 110, 0.2);
+      }
+      .flx-quote-book-btn:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 8px 18px rgba(30, 58, 110, 0.35);
+      }
+
+      .flx-quotes-footer {
+        margin-top: 24px;
+        padding-top: 16px;
+        border-top: 1px solid #e2e8f0;
+        text-align: center;
+        font-size: 12px;
+        color: #94a3b8;
+      }
+      .flx-quotes-mock-notice {
+        background: linear-gradient(135deg, #fef3c7, #fde68a);
+        color: #92400e;
+        padding: 10px 16px;
+        border-radius: 10px;
+        font-size: 13px;
+        font-weight: 600;
+        margin-bottom: 16px;
+        text-align: center;
+      }
+
+      @media (max-width: 768px) {
+        .flx-quotes-modal { padding: 20px; }
+        .flx-quotes-info { grid-template-columns: repeat(2, 1fr); }
+        .flx-quote-card {
+          grid-template-columns: 1fr;
+          gap: 14px;
+          text-align: center;
+        }
+        .flx-quote-carrier { flex-direction: row; min-width: auto; justify-content: center; }
+        .flx-quote-price-wrap { border-right: 0; border-top: 1px solid #e2e8f0; padding-top: 14px; padding-left: 0; }
+        .flx-quote-meta { justify-content: center; }
+      }
+    `;
+    document.head.appendChild(style);
+  }
+
+  function buildOverlay() {
+    if (document.getElementById('flx-quotes-overlay')) return;
+    const overlay = document.createElement('div');
+    overlay.id = 'flx-quotes-overlay';
+    overlay.className = 'flx-quotes-overlay';
+    overlay.innerHTML = `
+      <div class="flx-quotes-modal">
+        <div class="flx-quotes-header">
+          <div class="flx-quotes-title-wrap">
+            <h2>🚢 عروض الأسعار</h2>
+            <div class="flx-quotes-route" id="flx-quotes-route">
+              <span>الميناء الأصلي</span>
+              <span class="flx-quotes-route-arrow">←</span>
+              <span>الميناء الوجهة</span>
+            </div>
+          </div>
+          <button class="flx-quotes-close" id="flx-quotes-close" aria-label="إغلاق">×</button>
+        </div>
+        <div class="flx-quotes-info" id="flx-quotes-info"></div>
+        <div id="flx-quotes-mock-notice" style="display:none"></div>
+        <div class="flx-quotes-list" id="flx-quotes-list"></div>
+        <div class="flx-quotes-footer">
+          الأسعار شاملة الشحن البحري فقط · لا تشمل الجمارك أو الخدمات المحلية · صالحة 7 أيام
+        </div>
+      </div>
+    `;
+    document.body.appendChild(overlay);
+
+    overlay.querySelector('#flx-quotes-close').addEventListener('click', () => {
+      overlay.classList.remove('flx-show');
+    });
+    overlay.addEventListener('click', (e) => {
+      if (e.target.id === 'flx-quotes-overlay') overlay.classList.remove('flx-show');
+    });
+  }
+
+  function renderOffers(data, requestInfo) {
+    const overlay = document.getElementById('flx-quotes-overlay');
+    if (!overlay) return;
+
+    // Update route header
+    const routeEl = overlay.querySelector('#flx-quotes-route');
+    if (routeEl && requestInfo) {
+      routeEl.innerHTML = `
+        <span>${requestInfo.originPort || 'الأصل'}</span>
+        <span class="flx-quotes-route-arrow">←</span>
+        <span>${requestInfo.destinationPort || 'الوجهة'}</span>
+      `;
+    }
+
+    // Info row
+    const infoEl = overlay.querySelector('#flx-quotes-info');
+    if (infoEl && requestInfo) {
+      infoEl.innerHTML = `
+        <div class="flx-quotes-info-item">
+          <div class="flx-label">نوع الحاوية</div>
+          <div class="flx-value">${requestInfo.containerType || '40HC'}</div>
+        </div>
+        <div class="flx-quotes-info-item">
+          <div class="flx-label">عدد العروض</div>
+          <div class="flx-value">${data.offers?.length || 0}</div>
+        </div>
+        <div class="flx-quotes-info-item">
+          <div class="flx-label">أقل سعر</div>
+          <div class="flx-value">$${Math.min(...(data.offers || []).map(o => o.price)).toLocaleString()}</div>
+        </div>
+        <div class="flx-quotes-info-item">
+          <div class="flx-label">أسرع وصول</div>
+          <div class="flx-value">${Math.min(...(data.offers || []).map(o => o.transitTime))} يوم</div>
+        </div>
+      `;
+    }
+
+    // Mock notice
+    const noticeEl = overlay.querySelector('#flx-quotes-mock-notice');
+    if (noticeEl) {
+      if (data.mock) {
+        noticeEl.style.display = 'block';
+        noticeEl.className = 'flx-quotes-mock-notice';
+        noticeEl.innerHTML = '⚠️ هذه أسعار تقديرية · أضف Freightify API key في إعدادات Vercel للأسعار الحقيقية';
+      } else {
+        noticeEl.style.display = 'none';
+      }
+    }
+
+    // Offers list
+    const listEl = overlay.querySelector('#flx-quotes-list');
+    if (listEl) {
+      const offers = data.offers || [];
+      listEl.innerHTML = offers.map((o, i) => `
+        <div class="flx-quote-card ${i === 0 ? 'flx-best' : ''}">
+          ${i === 0 ? '<div class="flx-quote-badge-best">⭐ الأفضل</div>' : ''}
+          <div class="flx-quote-carrier">
+            <div class="flx-quote-carrier-logo">${o.carrierLogo || '🚢'}</div>
+            <div class="flx-quote-carrier-name">${escapeHTML(o.carrier)}</div>
+          </div>
+          <div class="flx-quote-details">
+            <div class="flx-quote-vessel">${escapeHTML(o.vessel || o.carrier)}</div>
+            <div class="flx-quote-route-flow">
+              <span class="flx-quote-flow-step">${o.etd || 'مغادرة'}</span>
+              <span class="flx-quote-flow-arrow">→</span>
+              <span class="flx-quote-flow-step">${escapeHTML(o.services || 'مباشر')}</span>
+              <span class="flx-quote-flow-arrow">→</span>
+              <span class="flx-quote-flow-step">${o.eta || 'وصول'}</span>
+            </div>
+            <div class="flx-quote-meta">
+              <div class="flx-quote-meta-item">⏱ <strong>${o.transitTime}</strong> يوم</div>
+              <div class="flx-quote-meta-item">📦 <strong>${escapeHTML(o.containerType)}</strong></div>
+              <div class="flx-quote-meta-item">🆓 <strong>${o.freeDays}</strong> أيام مجانية</div>
+              <div class="flx-quote-meta-item">📅 صالح حتى <strong>${o.validity}</strong></div>
+            </div>
+          </div>
+          <div class="flx-quote-price-wrap">
+            <div class="flx-quote-price">$${o.price.toLocaleString()}</div>
+            <div class="flx-quote-currency">${o.currency}</div>
+            <button class="flx-quote-book-btn">احجز الآن</button>
+          </div>
+        </div>
+      `).join('');
+    }
+  }
+
+  function escapeHTML(s) {
+    return String(s || '').replace(/[&<>"']/g, c => ({
+      '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+    })[c]);
+  }
+
+  /**
+   * Public API - fetch and show quotes
+   */
+  window.flxShowQuotes = async function (requestInfo) {
+    injectStyles();
+    buildOverlay();
+    const overlay = document.getElementById('flx-quotes-overlay');
+
+    // Show loading first
+    if (window.flxShowQuoteLoading) {
+      await window.flxShowQuoteLoading(2500);
+    }
+
+    try {
+      const res = await fetch('/api/quotes', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(requestInfo || {})
+      });
+      const data = await res.json();
+      renderOffers(data, requestInfo);
+      overlay.classList.add('flx-show');
+    } catch (err) {
+      console.error('[FREIGHTLX Quotes] Error:', err);
+      alert('حصل خطأ في تحميل الأسعار. حاول مرة ثانية.');
+    }
+  };
+
+  /**
+   * Auto-trigger: detect when user picks container type
+   */
+  function setupAutoTrigger() {
+    document.addEventListener('click', (e) => {
+      const target = e.target.closest('button, [role="button"]');
+      if (!target) return;
+      const text = target.textContent?.trim() || '';
+      // Match container type or "احصل على عرض" buttons
+      const containerMatch = text.match(/حاوية\s+(20|40)\s*قدم|(20|40)ft|(20|40)\s*قدم/i);
+      const quoteMatch = text.includes('احصل على عرض') || text.includes('عرض سعر') || text.includes('احسب السعر');
+
+      if (containerMatch || quoteMatch) {
+        // Extract container type
+        let containerType = '40HC';
+        if (containerMatch) {
+          const size = containerMatch[1] || containerMatch[2] || containerMatch[3];
+          containerType = size === '20' ? '20GP' : '40HC';
+        }
+        // Show quotes after slight delay
+        setTimeout(() => {
+          window.flxShowQuotes({
+            originPort: 'CNSHA',
+            destinationPort: 'SAJED',
+            containerType,
+            commodityCode: '8517'
+          });
+        }, 150);
+      }
+    }, false);
+  }
+
+  function init() {
+    injectStyles();
+    buildOverlay();
+    setupAutoTrigger();
+    console.log('[FREIGHTLX Quotes] UI ready');
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', init);
+  } else {
+    init();
+  }
+})();
