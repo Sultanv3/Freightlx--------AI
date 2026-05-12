@@ -600,6 +600,75 @@
 }
 
 /* ===========================================================
+   LOGO ON ALL MODALS - Branding consistency
+   =========================================================== */
+
+/* Inject brand logo before modal title in all modals */
+.flx-docs-modal::before,
+.flx-port-modal::before,
+.flx-quotes-modal::before {
+  content: '';
+  display: block;
+  width: 130px;
+  height: 36px;
+  background-image: url('/assets/logo/color-logo.svg');
+  background-size: contain;
+  background-repeat: no-repeat;
+  background-position: right center;
+  margin: 0 0 var(--flx-3);
+}
+
+/* For auth modal - already has logo, just ensure style is consistent */
+.flx-auth-logo {
+  width: 140px !important;
+  height: auto !important;
+  margin: 0 auto var(--flx-3) !important;
+  display: block !important;
+}
+
+/* Watermark logo in chat / messages container */
+#flx-messages::before {
+  content: '';
+  position: sticky;
+  top: 0;
+  display: block;
+  width: 100%;
+  height: 40px;
+  background-image: url('/assets/logo/color-logo.svg');
+  background-size: 110px auto;
+  background-repeat: no-repeat;
+  background-position: right 16px center;
+  opacity: 0.85;
+  pointer-events: none;
+}
+
+/* Confirm service button - branded */
+.flx-confirm-service-btn {
+  background: linear-gradient(135deg, var(--flx-success), var(--flx-success-soft)) !important;
+  color: var(--flx-white) !important;
+  border: 0 !important;
+  padding: 14px 24px !important;
+  border-radius: var(--flx-radius-md) !important;
+  font-family: var(--flx-font-arabic) !important;
+  font-weight: 700 !important;
+  font-size: var(--flx-text-base) !important;
+  cursor: pointer !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+  transition: all var(--flx-duration-fast) var(--flx-ease) !important;
+  box-shadow: var(--flx-shadow-md) !important;
+}
+.flx-confirm-service-btn:hover {
+  transform: translateY(-2px) !important;
+  box-shadow: var(--flx-shadow-hover) !important;
+}
+.flx-confirm-service-btn svg {
+  width: 18px;
+  height: 18px;
+}
+
+/* ===========================================================
    SUBTLE ANIMATION ON PAGE LOAD
    =========================================================== */
 .flx-auth-trigger,
