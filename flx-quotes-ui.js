@@ -461,35 +461,121 @@
   };
 
   /**
-   * Auto-trigger: detect when user picks container type
+   * Workflow context tracker - captures user's selections during the flow
+   */
+  const workflowState = {
+    originPort: null,
+    destinationPort: null,
+    containerType: null,
+    commodityCode: null,
+    productName: null
+  };
+
+  function scanCurrentSelections() {
+    // Search the visible DOM for selected ports & containers
+    // Common patterns: selected dropdown values, highlighted chips, value attributes
+
+    // Look for "ميناء" labels and adjacent values
+    const portRegex = /([A-Z]{5})\b/g;
+    const text = document.body.innerText || '';
+    const ports = (text.match(portRegex) || []).filter(p => p !== 'FREIG'); // Filter out FREIG-something
+
+    // Try to read selected dropdowns / inputs
+    document.querySelectorAll('input[type="text"], input[type="search"], select, textarea').forEach(inp => {
+      const val = (inp.value || '').toUpperCase();
+      const placeholder = (inp.placeholder || '').toLowerCase();
+      const label = inp.closest('label')?.textContent || '';
+      if (val.match(/^[A-Z]{5}$/)) {
+        if (placeholder.includes('تحميل') || placeholder.includes('مصدر') || label.includes('تحميل') || label.includes('مصدر')) {
+          workflowState.originPort = val;
+        } else if (placeholder.includes('وصول') || placeholder.includes('وجهة') || label.includes('وصول') || label.includes('وجهة')) {
+          workflowState.destinationPort = val;
+        }
+      }
+    });
+
+    // Look for active container type buttons
+    document.querySelectorAll('button.active, button[aria-pressed="true"], button.selected, .flx-active').forEach(btn => {
+      const t = btn.textContent?.trim() || '';
+      if (t.match(/20\s*قدم|20ft|20GP/i)) workflowState.containerType = '20GP';
+      else if (t.match(/40\s*hc|40\s*high cube|HC/i)) workflowState.containerType = '40HC';
+      else if (t.match(/40\s*قدم|40ft|40GP/i)) workflowState.containerType = '40GP';
+      else if (t.match(/reefer|RF|مبرد/i)) workflowState.containerType = '40RF';
+      else if (t.match(/LCL/i)) workflowState.containerType = 'LCL';
+    });
+
+    // Try to find product/HS code from page
+    const hsMatch = text.match(/HS[\s:]*([0-9]{4,6})/i);
+    if (hsMatch) workflowState.commodityCode = hsMatch[1];
+  }
+
+  /**
+   * Auto-trigger: detect when user picks container type or requests quote
    */
   function setupAutoTrigger() {
+    // Track port/container selections
     document.addEventListener('click', (e) => {
-      const target = e.target.closest('button, [role="button"]');
+      const target = e.target.closest('button, [role="button"], [role="option"]');
       if (!target) return;
       const text = target.textContent?.trim() || '';
-      // Match container type or "احصل على عرض" buttons
-      const containerMatch = text.match(/حاوية\s+(20|40)\s*قدم|(20|40)ft|(20|40)\s*قدم/i);
-      const quoteMatch = text.includes('احصل على عرض') || text.includes('عرض سعر') || text.includes('احسب السعر');
 
-      if (containerMatch || quoteMatch) {
-        // Extract container type
-        let containerType = '40HC';
-        if (containerMatch) {
-          const size = containerMatch[1] || containerMatch[2] || containerMatch[3];
-          containerType = size === '20' ? '20GP' : '40HC';
+      // Detect port code in clicked element
+      const portCode = text.match(/\b([A-Z]{5})\b/);
+      if (portCode) {
+        const code = portCode[1];
+        // Determine if this is origin or destination by context
+        const parent = target.closest('[class*="origin"], [class*="dest"], [data-side]');
+        const isOrigin = parent?.className?.includes('origin') || parent?.dataset?.side === 'origin';
+        const isDest = parent?.className?.includes('dest') || parent?.dataset?.side === 'destination';
+        if (isOrigin || code.startsWith('CN') || code.startsWith('IN') || code.startsWith('TR')) {
+          workflowState.originPort = code;
+        } else if (isDest || code.startsWith('SA')) {
+          workflowState.destinationPort = code;
+        } else if (!workflowState.originPort) {
+          workflowState.originPort = code;
+        } else if (!workflowState.destinationPort) {
+          workflowState.destinationPort = code;
         }
-        // Show quotes after slight delay
-        setTimeout(() => {
-          window.flxShowQuotes({
-            originPort: 'CNSHA',
-            destinationPort: 'SAJED',
-            containerType,
-            commodityCode: '8517'
-          });
-        }, 150);
+      }
+
+      // Container type detection
+      const containerMatch = text.match(/حاوية\s+(20|40)\s*قدم|(20|40)\s*ft|40\s*hc/i);
+      if (containerMatch) {
+        const t = text.toLowerCase();
+        if (t.includes('hc') || t.includes('high cube')) workflowState.containerType = '40HC';
+        else if (t.includes('reefer') || t.includes('مبرد')) workflowState.containerType = '40RF';
+        else if (text.includes('20')) workflowState.containerType = '20GP';
+        else workflowState.containerType = '40HC';
+      } else if (text.toLowerCase().includes('lcl')) {
+        workflowState.containerType = 'LCL';
+      }
+
+      // Trigger quotes display
+      const quoteMatch = text.includes('احصل على عرض') ||
+                         text.includes('عرض سعر') ||
+                         text.includes('احسب السعر') ||
+                         text.includes('ابحث عن عروض') ||
+                         text.includes('بحث الأسعار') ||
+                         text === 'بحث' && workflowState.originPort && workflowState.destinationPort;
+
+      const containerSelected = containerMatch && (workflowState.originPort || workflowState.destinationPort);
+
+      if (quoteMatch || containerSelected) {
+        scanCurrentSelections();
+        // Use sane defaults if missing
+        const request = {
+          originPort: workflowState.originPort || 'CNSHA',
+          destinationPort: workflowState.destinationPort || 'SAJED',
+          containerType: workflowState.containerType || '40HC',
+          commodityCode: workflowState.commodityCode || '8517',
+          productName: workflowState.productName
+        };
+        setTimeout(() => window.flxShowQuotes(request), 150);
       }
     }, false);
+
+    // Continuously scan for selections
+    setInterval(scanCurrentSelections, 1500);
   }
 
   function init() {
