@@ -135,6 +135,32 @@
     const modalBox = inputEl.closest('div.bg-white.rounded-2xl, div[class*="bg-white"][class*="rounded-2xl"]');
     if (!modalBox) return null;
 
+    // Remove "flx-page-hidden" from ancestors (the chat view is hidden by default)
+    let ancestor = modalBox;
+    while (ancestor) {
+      if (ancestor.classList && ancestor.classList.contains('flx-page-hidden')) {
+        ancestor.classList.remove('flx-page-hidden');
+        ancestor.style.display = '';
+      }
+      ancestor = ancestor.parentElement;
+    }
+
+    // Hide the welcome/cards sections (siblings of the modal's grandparent)
+    const grandParent = modalBox.parentElement?.parentElement;
+    if (grandParent) {
+      Array.from(grandParent.children).forEach(child => {
+        const cls = child.className?.toString() || '';
+        if (cls.includes('flx-home-hero-copy') ||
+            (cls.includes('grid-cols-12') && cls.includes('mb-10')) ||
+            (cls.includes('max-w-5xl') && cls.includes('mt-14'))) {
+          if (!child.dataset.flxOriginalDisplay) {
+            child.dataset.flxOriginalDisplay = child.style.display || 'block';
+          }
+          child.style.display = 'none';
+        }
+      });
+    }
+
     // Hide the original welcome/cards area (the first child of modal box)
     // and inject our chat area above the input area (.p-4)
     const inputArea = inputEl.closest('div.p-4');
