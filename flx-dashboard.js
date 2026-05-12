@@ -388,13 +388,15 @@
     injectSimplificationStyles();
     injectDocsStyles();
     buildDocsUI();
-    // Try multiple times in case React re-renders
-    let attempts = 0;
-    const interval = setInterval(() => {
+    // Run once immediately
+    hideQuickActionsCard();
+    // Watch for DOM changes (React re-renders, route changes)
+    const observer = new MutationObserver(() => {
       hideQuickActionsCard();
-      attempts++;
-      if (attempts > 20) clearInterval(interval);
-    }, 500);
+    });
+    observer.observe(document.body, { childList: true, subtree: true });
+    // Also run periodically as backup
+    setInterval(hideQuickActionsCard, 1000);
   }
 
   if (document.readyState === 'loading') {
