@@ -795,12 +795,60 @@
   font-weight: 700 !important;
   color: var(--flx-navy) !important;
 }
+/* CTA pill — soft, light, modern look (was too-dark navy block) */
 .flx-card-cta {
-  font-size: 12px !important;
+  background: rgba(15, 31, 63, 0.06) !important;
+  color: var(--flx-navy) !important;
+  border: 1px solid rgba(15, 31, 63, 0.12) !important;
+  padding: 8px 16px !important;
+  border-radius: 10px !important;
+  font-size: 12.5px !important;
   font-weight: 600 !important;
-  color: var(--flx-sky-dark) !important;
   display: inline-flex !important;
   align-items: center !important;
-  gap: 4px !important;
+  gap: 6px !important;
   white-space: nowrap;
+  transition: all var(--flx-duration-fast) var(--flx-ease) !important;
+  box-shadow: none !important;
 }
+
+.flx-card-cta svg {
+  width: 13px;
+  height: 13px;
+  stroke-width: 2.4;
+}
+
+/* Per-card accent on the CTA so each card has its own personality */
+.flx-card-sky .flx-card-cta {
+  background: rgba(14, 165, 233, 0.08) !important;
+  color: var(--flx-sky-dark) !important;
+  border-color: rgba(14, 165, 233, 0.22) !important;
+}
+.flx-card-amber .flx-card-cta {
+  background: rgba(245, 158, 11, 0.08) !important;
+  color: #b45309 !important;
+  border-color: rgba(245, 158, 11, 0.25) !important;
+}
+.flx-card-emerald .flx-card-cta {
+  background: rgba(16, 185, 129, 0.08) !important;
+  color: #047857 !important;
+  border-color: rgba(16, 185, 129, 0.24) !important;
+}
+.flx-card-purple .flx-card-cta {
+  background: rgba(126, 34, 206, 0.08) !important;
+  color: #7e22ce !important;
+  border-color: rgba(126, 34, 206, 0.24) !important;
+}
+
+/* Hover fills the CTA with its own colour */
+.flx-service-card:hover .flx-card-cta {
+  background: var(--flx-navy) !important;
+  color: var(--flx-white) !important;
+  border-color: var(--flx-navy) !important;
+  transform: translateX(-2px);
+  box-shadow: 0 6px 14px rgba(15, 31, 63, 0.18) !important;
+}
+.flx-card-sky:hover .flx-card-cta     { background: var(--flx-sky-dark) !important; border-color: var(--flx-sky-dark) !important; }
+.flx-card-amber:hover .flx-card-cta   { background: #b45309 !important; border-color: #b45309 !important; }
+.flx-card-emerald:hover .flx-card-cta { background: #047857 !important; border-color: #047857 !important; }
+.flx-card-purple:hover .flx-card-cta  { background: #7e22ce !important; border-color: #7e22ce !important; }
