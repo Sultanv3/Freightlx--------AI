@@ -65,19 +65,24 @@
   }
 
   function hideWelcomeCards() {
-    // Hide the welcome message and the service cards (Full Import Cost, Ocean Freight Quote)
-    const cardsToHide = [];
-    document.querySelectorAll('.flx-msg-row').forEach(row => {
+    // Hide all children of #flx-messages that contain welcome content or service cards
+    const container = document.getElementById('flx-messages');
+    if (!container) return;
+    Array.from(container.children).forEach(row => {
+      // Don't hide our own AI messages
+      if (row.classList.contains('flx-ai-user-row') || row.classList.contains('flx-ai-bot-row') || row.classList.contains('flx-ai-typing-row')) {
+        return;
+      }
       const txt = row.textContent || '';
       if (txt.includes('وش تحتاج اليوم') ||
           txt.includes('FULL IMPORT COST') ||
           txt.includes('OCEAN FREIGHT QUOTE') ||
           txt.includes('احصل على عرض سعر') ||
-          txt.includes('احسب تكاليف الاستيراد كاملة')) {
-        cardsToHide.push(row);
+          txt.includes('احسب تكاليف الاستيراد كاملة') ||
+          txt.includes('الأكثر استخداماً')) {
+        row.style.display = 'none';
       }
     });
-    cardsToHide.forEach(c => { c.style.display = 'none'; });
   }
 
   function addUserMessage(text) {
