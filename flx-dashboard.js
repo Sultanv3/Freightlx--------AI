@@ -30,6 +30,49 @@
         el.style.display = 'none';
       }
     });
+    // Hide "+ شحنة جديدة" button
+    document.querySelectorAll('button').forEach(btn => {
+      const t = btn.textContent?.trim() || '';
+      if ((t === 'شحنة جديدة' || t === '+ شحنة جديدة' || t.startsWith('+ شحنة') || t.startsWith('شحنة جديدة')) && t.length < 30) {
+        btn.style.display = 'none';
+      }
+    });
+  }
+
+  /* ============ INJECT BACK BUTTON ============ */
+  function injectBackButton() {
+    // Don't add on homepage
+    if (document.body.classList.contains('flx-home-active') && !document.body.classList.contains('flx-modal-open')) return;
+    if (document.getElementById('flx-back-btn')) return;
+
+    const back = document.createElement('button');
+    back.id = 'flx-back-btn';
+    back.className = 'flx-back-btn';
+    back.type = 'button';
+    back.innerHTML = `
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+        <polyline points="9 18 15 12 9 6"/>
+      </svg>
+      رجوع
+    `;
+    back.addEventListener('click', () => {
+      // Try multiple navigation strategies
+      if (typeof window.__flxGoHome === 'function') {
+        window.__flxGoHome();
+      } else if (typeof window.flxClose === 'function') {
+        window.flxClose();
+      } else {
+        // Click "الرئيسية" link if present
+        const homeLink = Array.from(document.querySelectorAll('a, button')).find(el =>
+          el.textContent?.trim() === 'الرئيسية' || el.textContent?.trim().includes('الرئيسية'));
+        if (homeLink) {
+          homeLink.click();
+        } else {
+          history.back();
+        }
+      }
+    });
+    document.body.appendChild(back);
   }
 
   /* ============ DOCUMENT UPLOAD ============ */
@@ -41,6 +84,34 @@
     const style = document.createElement('style');
     style.id = 'flx-docs-styles';
     style.textContent = `
+      /* Back button - fixed top right */
+      .flx-back-btn {
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        z-index: 9995;
+        background: #fff;
+        color: #1e3a6e !important;
+        border: 1.5px solid #cbd5e1;
+        padding: 8px 18px;
+        border-radius: 999px;
+        font-family: 'Cairo', 'Tajawal', sans-serif;
+        font-weight: 700;
+        font-size: 13px;
+        cursor: pointer;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        transition: transform 0.15s, box-shadow 0.15s;
+      }
+      .flx-back-btn:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 6px 16px rgba(0, 0, 0, 0.12);
+        border-color: #1e3a6e;
+      }
+      .flx-back-btn svg { width: 14px; height: 14px; }
+
       /* Inline button inside dashboard actions row */
       .flx-docs-inline-btn {
         background: linear-gradient(135deg, #15803d, #16a34a);
@@ -375,10 +446,24 @@
 
   /* ============ INJECT INLINE DOCS BUTTON INTO DASHBOARD ============ */
   function injectDocsButtonIntoDashboard() {
-    // Find the dashboard actions row (where "عرض سعر وحجز", "حاسبة التكاليف", etc. are)
-    const row = document.querySelector('.flx-dashboard-actions-row');
+    // Try first location: dashboard actions row (if exists)
+    let row = document.querySelector('.flx-dashboard-actions-row');
+
+    // Fallback: inject next to "شحنة جديدة" button
+    if (!row) {
+      const allBtns = Array.from(document.querySelectorAll('button'));
+      const newShipBtn = allBtns.find(b => {
+        const t = b.textContent?.trim() || '';
+        return t.includes('شحنة جديدة') && t.length < 50;
+      });
+      if (newShipBtn) {
+        row = newShipBtn.parentElement;
+      }
+    }
+
     if (!row) return;
     if (row.querySelector('.flx-docs-inline-btn')) return;
+
     const btn = document.createElement('button');
     btn.className = 'flx-docs-inline-btn';
     btn.type = 'button';
@@ -391,7 +476,12 @@
     btn.addEventListener('click', () => {
       if (window.flxOpenDocsModal) window.flxOpenDocsModal();
     });
-    row.appendChild(btn);
+    // Insert at the beginning of the row (left side in RTL)
+    if (row.firstChild) {
+      row.insertBefore(btn, row.firstChild);
+    } else {
+      row.appendChild(btn);
+    }
   }
 
   /* ============ INIT ============ */
@@ -402,16 +492,19 @@
     // Run once immediately
     hideQuickActionsCard();
     injectDocsButtonIntoDashboard();
+    injectBackButton();
     // Watch for DOM changes (React re-renders, route changes)
     const observer = new MutationObserver(() => {
       hideQuickActionsCard();
       injectDocsButtonIntoDashboard();
+      injectBackButton();
     });
     observer.observe(document.body, { childList: true, subtree: true });
     // Also run periodically as backup
     setInterval(() => {
       hideQuickActionsCard();
       injectDocsButtonIntoDashboard();
+      injectBackButton();
     }, 1000);
   }
 
