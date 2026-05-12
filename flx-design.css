@@ -1,0 +1,619 @@
+/**
+ * FREIGHTLX Design System
+ * Unified design tokens + component overrides
+ * All custom flx-* components reference these tokens for consistency.
+ */
+
+:root {
+  /* ===== Brand Colors ===== */
+  --flx-navy-deep: #0f1f3f;
+  --flx-navy: #1e3a6e;
+  --flx-navy-soft: #2d5599;
+  --flx-sky: #0ea5e9;
+  --flx-sky-dark: #0284c7;
+  --flx-success: #15803d;
+  --flx-success-soft: #16a34a;
+  --flx-warning: #d97706;
+  --flx-danger: #b91c1c;
+  --flx-purple: #6366f1;
+  --flx-purple-soft: #8b5cf6;
+
+  /* ===== Neutrals ===== */
+  --flx-white: #ffffff;
+  --flx-paper: #f8fafc;
+  --flx-paper-soft: #f1f5f9;
+  --flx-border: #e2e8f0;
+  --flx-border-dark: #cbd5e1;
+  --flx-text: #1e3a6e;
+  --flx-text-soft: #475569;
+  --flx-text-mute: #64748b;
+  --flx-text-light: #94a3b8;
+
+  /* ===== Spacing (4pt scale) ===== */
+  --flx-1: 4px;
+  --flx-2: 8px;
+  --flx-3: 12px;
+  --flx-4: 16px;
+  --flx-5: 20px;
+  --flx-6: 24px;
+  --flx-8: 32px;
+  --flx-10: 40px;
+
+  /* ===== Radius ===== */
+  --flx-radius-sm: 8px;
+  --flx-radius-md: 12px;
+  --flx-radius-lg: 16px;
+  --flx-radius-xl: 20px;
+  --flx-radius-full: 999px;
+
+  /* ===== Shadows ===== */
+  --flx-shadow-sm: 0 1px 3px rgba(15, 31, 63, 0.08);
+  --flx-shadow-md: 0 4px 12px rgba(15, 31, 63, 0.1);
+  --flx-shadow-lg: 0 12px 28px rgba(15, 31, 63, 0.15);
+  --flx-shadow-xl: 0 25px 50px rgba(15, 31, 63, 0.25);
+  --flx-shadow-hover: 0 8px 22px rgba(30, 58, 110, 0.18);
+
+  /* ===== Typography ===== */
+  --flx-font-arabic: 'Cairo', 'Tajawal', ui-sans-serif, system-ui, sans-serif;
+  --flx-text-xs: 11px;
+  --flx-text-sm: 13px;
+  --flx-text-base: 15px;
+  --flx-text-lg: 18px;
+  --flx-text-xl: 22px;
+  --flx-text-2xl: 28px;
+
+  /* ===== Motion ===== */
+  --flx-ease: cubic-bezier(0.4, 0, 0.2, 1);
+  --flx-ease-out: cubic-bezier(0, 0, 0.2, 1);
+  --flx-duration-fast: 150ms;
+  --flx-duration-base: 250ms;
+  --flx-duration-slow: 400ms;
+}
+
+/* ===========================================================
+   UNIFIED BUTTON SYSTEM
+   =========================================================== */
+
+/* All trigger buttons share base style */
+.flx-auth-trigger,
+.flx-docs-inline-btn,
+.flx-port-trigger,
+.flx-back-btn {
+  font-family: var(--flx-font-arabic);
+  font-weight: 700;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--flx-2);
+  white-space: nowrap;
+  border: 0;
+  transition: transform var(--flx-duration-fast) var(--flx-ease),
+              box-shadow var(--flx-duration-fast) var(--flx-ease),
+              filter var(--flx-duration-fast) var(--flx-ease);
+}
+
+.flx-auth-trigger:hover,
+.flx-docs-inline-btn:hover,
+.flx-port-trigger:hover,
+.flx-back-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: var(--flx-shadow-hover);
+}
+
+.flx-auth-trigger:active,
+.flx-docs-inline-btn:active,
+.flx-port-trigger:active,
+.flx-back-btn:active {
+  transform: translateY(0);
+  filter: brightness(0.95);
+}
+
+/* Primary - Login */
+.flx-auth-trigger {
+  position: fixed;
+  top: var(--flx-5);
+  left: var(--flx-5);
+  z-index: 9998;
+  background: linear-gradient(135deg, var(--flx-navy), var(--flx-navy-soft));
+  color: var(--flx-white);
+  padding: 10px 20px;
+  border-radius: var(--flx-radius-full);
+  font-size: var(--flx-text-sm);
+  box-shadow: var(--flx-shadow-md);
+}
+.flx-auth-trigger.flx-logged {
+  background: linear-gradient(135deg, var(--flx-success), var(--flx-success-soft));
+}
+.flx-auth-trigger svg {
+  width: 16px;
+  height: 16px;
+}
+
+/* Success - Docs */
+.flx-docs-inline-btn {
+  background: linear-gradient(135deg, var(--flx-success), var(--flx-success-soft));
+  color: var(--flx-white) !important;
+  padding: 10px 18px;
+  border-radius: var(--flx-radius-md);
+  font-size: var(--flx-text-sm);
+  box-shadow: var(--flx-shadow-sm);
+}
+.flx-docs-inline-btn svg {
+  width: 16px;
+  height: 16px;
+}
+
+/* Info - Port Search */
+.flx-port-trigger {
+  background: linear-gradient(135deg, var(--flx-sky), var(--flx-sky-dark));
+  color: var(--flx-white) !important;
+  padding: 10px 18px;
+  border-radius: var(--flx-radius-md);
+  font-size: var(--flx-text-sm);
+  box-shadow: var(--flx-shadow-sm);
+}
+.flx-port-trigger svg {
+  width: 16px;
+  height: 16px;
+}
+
+/* Ghost - Back */
+.flx-back-btn {
+  position: fixed;
+  top: var(--flx-5);
+  right: var(--flx-5);
+  z-index: 9995;
+  background: var(--flx-white);
+  color: var(--flx-navy) !important;
+  border: 1.5px solid var(--flx-border-dark);
+  padding: 8px 18px;
+  border-radius: var(--flx-radius-full);
+  font-size: var(--flx-text-sm);
+  box-shadow: var(--flx-shadow-sm);
+}
+.flx-back-btn:hover {
+  border-color: var(--flx-navy);
+}
+.flx-back-btn svg {
+  width: 14px;
+  height: 14px;
+}
+
+/* ===========================================================
+   UNIFIED MODAL SYSTEM
+   =========================================================== */
+
+.flx-auth-overlay,
+.flx-docs-overlay,
+.flx-port-overlay {
+  background: rgba(15, 31, 63, 0.6) !important;
+  backdrop-filter: blur(8px);
+  animation: flxOverlayIn var(--flx-duration-base) var(--flx-ease-out);
+}
+
+@keyframes flxOverlayIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.flx-auth-modal,
+.flx-docs-modal,
+.flx-port-modal {
+  border-radius: var(--flx-radius-xl) !important;
+  box-shadow: var(--flx-shadow-xl) !important;
+  font-family: var(--flx-font-arabic) !important;
+  padding: var(--flx-6) !important;
+  animation: flxModalIn var(--flx-duration-slow) var(--flx-ease-out);
+}
+
+@keyframes flxModalIn {
+  from {
+    opacity: 0;
+    transform: translateY(20px) scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* Unified close button */
+.flx-auth-close,
+.flx-docs-close,
+.flx-port-close {
+  position: absolute !important;
+  top: var(--flx-3) !important;
+  left: var(--flx-3) !important;
+  background: var(--flx-paper-soft) !important;
+  border: 0 !important;
+  width: 36px !important;
+  height: 36px !important;
+  border-radius: 50% !important;
+  cursor: pointer !important;
+  font-size: 20px !important;
+  color: var(--flx-text-mute) !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  transition: background var(--flx-duration-fast) var(--flx-ease),
+              transform var(--flx-duration-fast) var(--flx-ease);
+}
+
+.flx-auth-close:hover,
+.flx-docs-close:hover,
+.flx-port-close:hover {
+  background: var(--flx-border) !important;
+  transform: rotate(90deg);
+}
+
+/* Unified modal titles */
+.flx-auth-title,
+.flx-docs-modal h2,
+.flx-port-modal h2 {
+  font-size: var(--flx-text-xl) !important;
+  font-weight: 800 !important;
+  color: var(--flx-navy) !important;
+  margin: 0 0 var(--flx-2) !important;
+}
+
+.flx-auth-subtitle,
+.flx-docs-modal p.flx-sub,
+.flx-port-modal p.flx-sub {
+  font-size: var(--flx-text-sm) !important;
+  color: var(--flx-text-mute) !important;
+  margin: 0 0 var(--flx-5) !important;
+  line-height: 1.6;
+}
+
+/* ===========================================================
+   FORM INPUTS - Unified
+   =========================================================== */
+.flx-auth-field input,
+.flx-docs-section select,
+.flx-docs-section input[type="text"],
+.flx-port-search-input {
+  border-radius: var(--flx-radius-md) !important;
+  border: 1.5px solid var(--flx-border) !important;
+  padding: 12px 16px !important;
+  font-family: var(--flx-font-arabic) !important;
+  font-size: var(--flx-text-sm) !important;
+  background: var(--flx-paper) !important;
+  transition: border-color var(--flx-duration-fast) var(--flx-ease),
+              background var(--flx-duration-fast) var(--flx-ease),
+              box-shadow var(--flx-duration-fast) var(--flx-ease);
+}
+
+.flx-auth-field input:focus,
+.flx-docs-section select:focus,
+.flx-docs-section input[type="text"]:focus,
+.flx-port-search-input:focus {
+  outline: none !important;
+  border-color: var(--flx-navy-soft) !important;
+  background: var(--flx-white) !important;
+  box-shadow: 0 0 0 3px rgba(45, 85, 153, 0.12) !important;
+}
+
+/* ===========================================================
+   SUBMIT BUTTONS - Unified
+   =========================================================== */
+.flx-auth-submit,
+.flx-docs-submit {
+  background: linear-gradient(135deg, var(--flx-navy), var(--flx-navy-soft)) !important;
+  color: var(--flx-white) !important;
+  padding: 14px !important;
+  border-radius: var(--flx-radius-md) !important;
+  font-weight: 700 !important;
+  font-size: var(--flx-text-base) !important;
+  border: 0 !important;
+  cursor: pointer !important;
+  width: 100% !important;
+  margin-top: var(--flx-2) !important;
+  transition: transform var(--flx-duration-fast) var(--flx-ease),
+              filter var(--flx-duration-fast) var(--flx-ease),
+              box-shadow var(--flx-duration-fast) var(--flx-ease);
+}
+
+.flx-auth-submit:hover:not(:disabled),
+.flx-docs-submit:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: var(--flx-shadow-hover);
+}
+
+.flx-auth-submit:disabled,
+.flx-docs-submit:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* ===========================================================
+   AI CHAT BUBBLES - Polish
+   =========================================================== */
+.flx-msg-row.flx-ai-bot-row .flx-ai-source {
+  background: linear-gradient(135deg, var(--flx-purple), var(--flx-purple-soft)) !important;
+  color: var(--flx-white) !important;
+  padding: 3px 12px !important;
+  border-radius: var(--flx-radius-full) !important;
+  font-size: var(--flx-text-xs) !important;
+  font-weight: 700 !important;
+  margin-bottom: var(--flx-2) !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 4px !important;
+  font-family: var(--flx-font-arabic) !important;
+  letter-spacing: 0.2px;
+}
+
+.flx-msg-row.flx-ai-bot-row .flx-ai-content {
+  white-space: pre-wrap;
+  line-height: 1.75 !important;
+  font-family: var(--flx-font-arabic) !important;
+  font-size: var(--flx-text-sm) !important;
+}
+
+/* ===========================================================
+   PORT ITEM CARDS - Polish
+   =========================================================== */
+.flx-port-item {
+  border-radius: var(--flx-radius-md) !important;
+  padding: 14px 16px !important;
+  margin-bottom: 6px !important;
+  transition: background var(--flx-duration-fast) var(--flx-ease),
+              transform var(--flx-duration-fast) var(--flx-ease);
+}
+
+.flx-port-item:hover {
+  background: var(--flx-white) !important;
+  transform: translateX(-4px);
+  box-shadow: var(--flx-shadow-sm);
+}
+
+.flx-port-flag {
+  background: linear-gradient(135deg, var(--flx-paper), var(--flx-paper-soft)) !important;
+  border: 1px solid var(--flx-border) !important;
+  font-weight: 800 !important;
+  color: var(--flx-navy) !important;
+  font-family: monospace !important;
+  letter-spacing: 0.5px;
+}
+
+.flx-port-code {
+  background: var(--flx-navy) !important;
+  color: var(--flx-white) !important;
+  padding: 5px 11px !important;
+  border-radius: var(--flx-radius-sm) !important;
+  font-size: var(--flx-text-xs) !important;
+  font-weight: 700 !important;
+  font-family: monospace !important;
+  letter-spacing: 0.5px;
+}
+
+/* Port chips - more polished */
+.flx-port-chip {
+  font-family: var(--flx-font-arabic) !important;
+  padding: 7px 14px !important;
+  border-radius: var(--flx-radius-full) !important;
+  font-size: var(--flx-text-xs) !important;
+  font-weight: 600 !important;
+  transition: all var(--flx-duration-fast) var(--flx-ease);
+}
+
+.flx-port-chip.flx-active {
+  background: linear-gradient(135deg, var(--flx-sky), var(--flx-sky-dark)) !important;
+  color: var(--flx-white) !important;
+  border-color: transparent !important;
+  box-shadow: var(--flx-shadow-sm);
+}
+
+/* ===========================================================
+   DOCS DROPZONE - Polish
+   =========================================================== */
+.flx-docs-dropzone {
+  border-radius: var(--flx-radius-lg) !important;
+  border: 2px dashed var(--flx-border-dark) !important;
+  padding: var(--flx-8) var(--flx-5) !important;
+  background: var(--flx-paper) !important;
+  transition: border-color var(--flx-duration-base) var(--flx-ease),
+              background var(--flx-duration-base) var(--flx-ease);
+}
+
+.flx-docs-dropzone:hover,
+.flx-docs-dropzone.flx-drag {
+  border-color: var(--flx-navy-soft) !important;
+  background: rgba(45, 85, 153, 0.04) !important;
+}
+
+.flx-docs-dropzone .flx-main {
+  font-size: var(--flx-text-base) !important;
+  font-weight: 700 !important;
+  color: var(--flx-navy) !important;
+}
+
+.flx-docs-dropzone .flx-hint {
+  font-size: var(--flx-text-xs) !important;
+  color: var(--flx-text-mute) !important;
+  margin-top: var(--flx-1) !important;
+}
+
+/* ===========================================================
+   MESSAGES / ALERTS - Unified
+   =========================================================== */
+.flx-auth-message,
+.flx-docs-msg {
+  padding: 12px 16px !important;
+  border-radius: var(--flx-radius-md) !important;
+  font-size: var(--flx-text-sm) !important;
+  font-family: var(--flx-font-arabic) !important;
+  margin-bottom: var(--flx-3) !important;
+  font-weight: 600 !important;
+}
+
+.flx-auth-message.flx-err,
+.flx-docs-msg.flx-err {
+  background: rgba(185, 28, 28, 0.08) !important;
+  color: var(--flx-danger) !important;
+  border-right: 3px solid var(--flx-danger);
+}
+
+.flx-auth-message.flx-ok,
+.flx-docs-msg.flx-ok {
+  background: rgba(21, 128, 61, 0.08) !important;
+  color: var(--flx-success) !important;
+  border-right: 3px solid var(--flx-success);
+}
+
+/* ===========================================================
+   COMPACT SERVICE CARDS - More polished
+   =========================================================== */
+.flx-cards-compact {
+  display: grid !important;
+  grid-template-columns: 1fr 1fr !important;
+  gap: var(--flx-3) !important;
+  padding: 0 var(--flx-3) !important;
+  margin: var(--flx-2) 0 var(--flx-4) !important;
+}
+
+.flx-cards-compact > * {
+  border-radius: var(--flx-radius-md) !important;
+  background: linear-gradient(135deg, var(--flx-white), var(--flx-paper)) !important;
+  border: 1px solid var(--flx-border) !important;
+  box-shadow: var(--flx-shadow-sm) !important;
+  padding: var(--flx-3) !important;
+  max-height: 120px !important;
+  overflow: hidden !important;
+  transition: transform var(--flx-duration-fast) var(--flx-ease),
+              box-shadow var(--flx-duration-fast) var(--flx-ease),
+              border-color var(--flx-duration-fast) var(--flx-ease);
+}
+
+.flx-cards-compact > *:hover {
+  transform: translateY(-2px) !important;
+  box-shadow: var(--flx-shadow-md) !important;
+  border-color: var(--flx-navy-soft) !important;
+}
+
+/* ===========================================================
+   AUTH TABS - Improved
+   =========================================================== */
+.flx-auth-tabs {
+  background: var(--flx-paper-soft) !important;
+  border-radius: var(--flx-radius-md) !important;
+  padding: 5px !important;
+  margin-bottom: var(--flx-5) !important;
+}
+
+.flx-auth-tab {
+  border-radius: var(--flx-radius-sm) !important;
+  padding: 10px !important;
+  font-family: var(--flx-font-arabic) !important;
+  font-weight: 600 !important;
+  font-size: var(--flx-text-sm) !important;
+  color: var(--flx-text-mute) !important;
+  transition: all var(--flx-duration-fast) var(--flx-ease);
+}
+
+.flx-auth-tab.flx-active {
+  background: var(--flx-white) !important;
+  color: var(--flx-navy) !important;
+  box-shadow: var(--flx-shadow-sm) !important;
+}
+
+/* Google button - polished */
+.flx-auth-google {
+  border-radius: var(--flx-radius-md) !important;
+  border: 1.5px solid var(--flx-border) !important;
+  padding: 12px !important;
+  font-family: var(--flx-font-arabic) !important;
+  font-weight: 600 !important;
+  font-size: var(--flx-text-sm) !important;
+  background: var(--flx-white) !important;
+  transition: all var(--flx-duration-fast) var(--flx-ease);
+}
+
+.flx-auth-google:hover {
+  border-color: var(--flx-navy) !important;
+  background: var(--flx-paper) !important;
+  box-shadow: var(--flx-shadow-sm) !important;
+}
+
+/* ===========================================================
+   USER MENU - Polish
+   =========================================================== */
+.flx-user-menu {
+  border-radius: var(--flx-radius-lg) !important;
+  box-shadow: var(--flx-shadow-lg) !important;
+  padding: var(--flx-4) !important;
+  font-family: var(--flx-font-arabic) !important;
+  animation: flxModalIn var(--flx-duration-base) var(--flx-ease-out);
+}
+
+.flx-user-logout {
+  border-radius: var(--flx-radius-md) !important;
+  padding: 10px !important;
+  font-weight: 700 !important;
+  font-size: var(--flx-text-sm) !important;
+  font-family: var(--flx-font-arabic) !important;
+  background: rgba(185, 28, 28, 0.08) !important;
+  color: var(--flx-danger) !important;
+  transition: all var(--flx-duration-fast) var(--flx-ease);
+}
+
+.flx-user-logout:hover {
+  background: rgba(185, 28, 28, 0.15) !important;
+}
+
+/* ===========================================================
+   RESPONSIVE
+   =========================================================== */
+@media (max-width: 600px) {
+  .flx-auth-trigger,
+  .flx-back-btn {
+    top: var(--flx-3);
+    padding: 8px 14px;
+    font-size: var(--flx-text-xs);
+  }
+  .flx-auth-trigger { left: var(--flx-3); }
+  .flx-back-btn { right: var(--flx-3); }
+
+  .flx-cards-compact {
+    grid-template-columns: 1fr !important;
+  }
+
+  .flx-auth-modal,
+  .flx-docs-modal,
+  .flx-port-modal {
+    padding: var(--flx-5) !important;
+    border-radius: var(--flx-radius-lg) !important;
+  }
+}
+
+/* ===========================================================
+   FOCUS-VISIBLE for accessibility
+   =========================================================== */
+.flx-auth-trigger:focus-visible,
+.flx-docs-inline-btn:focus-visible,
+.flx-port-trigger:focus-visible,
+.flx-back-btn:focus-visible,
+.flx-auth-submit:focus-visible,
+.flx-docs-submit:focus-visible {
+  outline: 3px solid var(--flx-sky);
+  outline-offset: 2px;
+}
+
+/* ===========================================================
+   SUBTLE ANIMATION ON PAGE LOAD
+   =========================================================== */
+.flx-auth-trigger,
+.flx-back-btn {
+  animation: flxButtonFadeIn var(--flx-duration-slow) var(--flx-ease-out);
+}
+
+@keyframes flxButtonFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
