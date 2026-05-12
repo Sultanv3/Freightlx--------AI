@@ -87,10 +87,14 @@
 
       .flx-ai-container {
         display: flex; flex-direction: column;
-        padding: 0 20px;
-        max-height: 60vh;
+        padding: 20px 24px;
+        height: 480px;
         overflow-y: auto;
+        direction: rtl;
+        scroll-behavior: smooth;
       }
+      .flx-ai-container::-webkit-scrollbar { width: 6px; }
+      .flx-ai-container::-webkit-scrollbar-thumb { background: rgba(30, 58, 110, 0.2); border-radius: 3px; }
     `;
     document.head.appendChild(style);
   }
@@ -121,19 +125,35 @@
     return { input: chatInput, msgArea };
   }
 
-  function findOrCreateAIContainer(chatModal) {
-    let container = chatModal.querySelector('.flx-ai-container');
-    if (container) return container;
-
-    // Try to find the existing message area inside the modal
-    const inputEl = chatModal.querySelector('input[placeholder*="سؤالك"], input[placeholder*="شحنتك"], input[placeholder*="اكتب"]');
+  function findOrCreateAIContainer() {
+    // Find the chat input
+    const inputEl = document.querySelector('input[placeholder*="سؤالك"], input[placeholder*="شحنتك"], input[placeholder*="اكتب"]');
     if (!inputEl) return null;
 
-    // Insert before the input's parent
-    const inputWrap = inputEl.closest('div[class*="border"], div[class*="rounded"]') || inputEl.parentElement;
+    // Walk up to find the chat modal box (white rounded card with input)
+    // Structure: input > .relative > .p-4 > .bg-white.rounded-2xl  <-- this is the modal box
+    const modalBox = inputEl.closest('div.bg-white.rounded-2xl, div[class*="bg-white"][class*="rounded-2xl"]');
+    if (!modalBox) return null;
+
+    // Hide the original welcome/cards area (the first child of modal box)
+    // and inject our chat area above the input area (.p-4)
+    const inputArea = inputEl.closest('div.p-4');
+    if (!inputArea) return null;
+
+    let container = modalBox.querySelector('.flx-ai-container');
+    if (container) return container;
+
+    // Hide the original welcome content (first child of modalBox - everything except input area)
+    Array.from(modalBox.children).forEach(child => {
+      if (child !== inputArea && !child.classList.contains('flx-ai-container')) {
+        child.dataset.flxOriginal = '1';
+        child.style.display = 'none';
+      }
+    });
+
     container = document.createElement('div');
     container.className = 'flx-ai-container';
-    inputWrap.parentElement.insertBefore(container, inputWrap);
+    modalBox.insertBefore(container, inputArea);
     return container;
   }
 
@@ -179,7 +199,7 @@
   }
 
   async function askAI(message, chatModal) {
-    const container = findOrCreateAIContainer(chatModal);
+    const container = findOrCreateAIContainer();
     if (!container) return false;
 
     addUserMessage(container, message);
