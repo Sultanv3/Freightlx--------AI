@@ -444,6 +444,85 @@
     });
   }
 
+  /* ============ REPLACE GREETING WITH MORE WELCOMING SAUDI PHRASE ============ */
+  function replaceGreeting() {
+    const NEW_GREETING = 'نوّرتنا، طال عمرك 🌹';
+    const NEW_SUBLINE = 'كيف نقدر نخدمك اليوم؟';
+
+    // Find element containing old greeting
+    document.querySelectorAll('h1, h2, h3, .flx-home-title, [class*="title"]').forEach(el => {
+      const txt = el.textContent || '';
+      if (txt.includes('وش حاجتك اليوم') && !el.dataset.flxGreetingReplaced) {
+        el.dataset.flxGreetingReplaced = '1';
+        // Replace the text content - keep any wrapper structure
+        el.innerHTML = el.innerHTML
+          .replace(/وش حاجتك اليوم(\s*يا\s*\S+)?/g, NEW_GREETING)
+          .replace(/\?/g, '')
+          .replace(/؟/g, '');
+        // Add a subtitle if not present
+        if (!el.parentElement.querySelector('.flx-new-subline')) {
+          const sub = document.createElement('div');
+          sub.className = 'flx-new-subline';
+          sub.textContent = NEW_SUBLINE;
+          sub.style.cssText = 'font-size:1.2rem;color:#475569;font-weight:500;margin-top:8px;text-align:center;';
+          el.insertAdjacentElement('afterend', sub);
+        }
+      }
+    });
+
+    // Also catch any text nodes containing the old greeting
+    const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT, null);
+    let node;
+    while ((node = walker.nextNode())) {
+      if (node.nodeValue && node.nodeValue.includes('وش حاجتك اليوم')) {
+        node.nodeValue = node.nodeValue
+          .replace(/وش حاجتك اليوم(\s*يا\s*\S+)?\s*[؟?]?/g, NEW_GREETING);
+      }
+    }
+  }
+
+  /* ============ FIX EMPTY CONFIRM BUTTON ON CLEARANCE PAGE ============ */
+  function fixEmptyConfirmButton() {
+    // Find the "تم تجهيز طلب التخليص" header to identify the page
+    const titles = Array.from(document.querySelectorAll('h1, h2, h3, h4'));
+    const clearanceTitle = titles.find(t => {
+      const txt = t.textContent?.trim() || '';
+      return txt.includes('تم تجهيز طلب التخليص') || txt.includes('طلب التخليص');
+    });
+    if (!clearanceTitle) return;
+
+    // Find the modal/container of that title
+    const container = clearanceTitle.closest('div[class*="rounded"], div[class*="bg-white"], section, [role="dialog"]')
+      || clearanceTitle.parentElement?.parentElement?.parentElement;
+    if (!container) return;
+
+    // Find all buttons inside container
+    const buttons = container.querySelectorAll('button');
+    buttons.forEach(btn => {
+      if (btn.dataset.flxConfirmFixed) return;
+      const text = btn.textContent?.trim() || '';
+      // Empty or only whitespace
+      if (text.length === 0 && btn.offsetWidth > 80 && btn.offsetHeight > 30) {
+        btn.dataset.flxConfirmFixed = '1';
+        btn.classList.add('flx-confirm-service-btn');
+        btn.innerHTML = `
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="20 6 9 17 4 12"/>
+          </svg>
+          تأكيد طلب الخدمة
+        `;
+        btn.addEventListener('click', (e) => {
+          // Show a confirmation message
+          const msg = document.createElement('div');
+          msg.style.cssText = 'position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:linear-gradient(135deg,#15803d,#16a34a);color:#fff;padding:20px 32px;border-radius:14px;font-family:Cairo,sans-serif;font-weight:700;font-size:16px;box-shadow:0 20px 50px rgba(0,0,0,0.3);z-index:10000;animation:flxModalIn 0.3s ease-out;';
+          msg.innerHTML = '✓ تم استلام طلب الخدمة بنجاح. سيتواصل معك فريق التخليص قريباً.';
+          document.body.appendChild(msg);
+          setTimeout(() => msg.remove(), 3500);
+        });
+      }
+    });
+  }
+
   /* ============ INJECT INLINE DOCS BUTTON INTO DASHBOARD ============ */
   function injectDocsButtonIntoDashboard() {
     // Try first location: dashboard actions row (if exists)
@@ -493,11 +572,15 @@
     hideQuickActionsCard();
     injectDocsButtonIntoDashboard();
     injectBackButton();
+    fixEmptyConfirmButton();
+    replaceGreeting();
     // Watch for DOM changes (React re-renders, route changes)
     const observer = new MutationObserver(() => {
       hideQuickActionsCard();
       injectDocsButtonIntoDashboard();
       injectBackButton();
+      fixEmptyConfirmButton();
+      replaceGreeting();
     });
     observer.observe(document.body, { childList: true, subtree: true });
     // Also run periodically as backup
@@ -505,6 +588,8 @@
       hideQuickActionsCard();
       injectDocsButtonIntoDashboard();
       injectBackButton();
+      fixEmptyConfirmButton();
+      replaceGreeting();
     }, 1000);
   }
 
