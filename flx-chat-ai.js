@@ -226,63 +226,58 @@
   }
 
   /**
-   * Detect when chat modal opens and hook into the input
+   * Override the existing flxSendMsg function to route through AI
    */
-  function setupChatHooks() {
-    let lastHookedInput = null;
+  function hookExistingChatFunctions() {
+    let originalSend = null;
+    let hooked = false;
 
     function tryHook() {
-      const inputEl = document.querySelector('input[placeholder*="سؤالك"], input[placeholder*="شحنتك"], input[placeholder*="اكتب"]');
-      if (!inputEl || inputEl === lastHookedInput) return;
-      lastHookedInput = inputEl;
+      if (hooked) return;
+      if (typeof window.flxSendMsg !== 'function') return;
+      originalSend = window.flxSendMsg;
+      hooked = true;
 
-      // Find the chat modal container
-      const chatModal = inputEl.closest('[class*="dialog"], [class*="modal"], [role="dialog"]')
-        || inputEl.closest('div[class*="fixed"]')
-        || document.body;
-
-      // Hook on Enter key
-      inputEl.addEventListener('keydown', async (e) => {
-        if (e.key === 'Enter' && !e.shiftKey && aiEnabled) {
-          const value = inputEl.value.trim();
-          if (!value) return;
-          e.preventDefault();
-          e.stopImmediatePropagation();
-          inputEl.value = '';
-          // Trigger React state update if controlled
-          const nativeInputValueSetter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value').set;
-          nativeInputValueSetter.call(inputEl, '');
-          inputEl.dispatchEvent(new Event('input', { bubbles: true }));
-          await askAI(value, chatModal);
+      window.flxSendMsg = function (...args) {
+        // Get the message - either from args or from input
+        let message = args[0];
+        if (!message || typeof message !== 'string') {
+          const inp = document.querySelector('input[placeholder*="سؤالك"], input[placeholder*="شحنتك"], input[placeholder*="اكتب"]');
+          if (inp) message = inp.value.trim();
         }
-      }, true);
+        if (!message) return;
 
-      // Hook the send button if it exists
-      const sendBtn = chatModal.querySelector('button[type="submit"], button svg[class*="send"]')?.closest('button');
-      if (sendBtn && !sendBtn.dataset.flxHooked) {
-        sendBtn.dataset.flxHooked = '1';
-        sendBtn.addEventListener('click', async (e) => {
-          if (!aiEnabled) return;
-          const value = inputEl.value.trim();
-          if (!value) return;
-          e.preventDefault();
-          e.stopImmediatePropagation();
-          inputEl.value = '';
-          inputEl.dispatchEvent(new Event('input', { bubbles: true }));
-          await askAI(value, chatModal);
-        }, true);
-      }
+        // Find chat modal
+        const inp = document.querySelector('input[placeholder*="سؤالك"], input[placeholder*="شحنتك"], input[placeholder*="اكتب"]');
+        const chatModal = inp?.closest('[class*="dialog"], [class*="modal"], [role="dialog"]')
+          || inp?.closest('div[class*="fixed"]')
+          || document.body;
+
+        // Clear the input
+        if (inp) {
+          const nativeSetter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value').set;
+          nativeSetter.call(inp, '');
+          inp.dispatchEvent(new Event('input', { bubbles: true }));
+        }
+
+        // Call AI
+        if (aiEnabled) {
+          askAI(message, chatModal);
+        } else if (originalSend) {
+          return originalSend.apply(this, args);
+        }
+      };
+
+      console.log('[FREIGHTLX AI] Hooked flxSendMsg successfully');
     }
 
-    // Run periodically to catch when chat opens
-    setInterval(tryHook, 800);
-    // Also run on DOM changes
-    new MutationObserver(tryHook).observe(document.body, { childList: true, subtree: true });
+    setInterval(tryHook, 500);
+    tryHook();
   }
 
   function init() {
     injectStyles();
-    setupChatHooks();
+    hookExistingChatFunctions();
     console.log('[FREIGHTLX AI] Chat hooks initialized');
   }
 
