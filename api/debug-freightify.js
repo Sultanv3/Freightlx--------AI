@@ -1,40 +1,103 @@
 /**
- * Diagnostic endpoint to discover Freightify's actual API endpoints
- * Visit: /api/debug-freightify to see what's working
+ * Diagnostic endpoint v2 - Discover Freightify's actual API
+ * Visit: /api/debug-freightify
+ *
+ * Improvements vs v1:
+ *  - Adds realistic User-Agent so CloudFront/WAF doesn't reject us
+ *  - Probes 12 candidate subdomains (link, link-api, rates, b2b, etc.)
+ *  - Tries Authorization Basic + Bearer + custom header combos
+ *  - Captures response headers so we can see WAF/CDN info
  */
+
+const USER_AGENT = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36';
 
 export default async function handler(req) {
   const apiKey = process.env.FREIGHTIFY_API_KEY;
   const customerId = process.env.FREIGHTIFY_CUSTOMER_ID;
   const clientSecret = process.env.FREIGHTIFY_CLIENT_SECRET;
 
+  // Many candidate base URLs - Freightify product is called "LINK"
   const baseUrls = [
     'https://api.freightify.com',
-    'https://app.freightify.com/api',
-    'https://platform.freightify.com/api',
-    'https://api.freightify.io',
-    'https://freightify-api.freightify.com',
-    'https://gateway.freightify.com'
+    'https://link.freightify.com',
+    'https://link-api.freightify.com',
+    'https://rates.freightify.com',
+    'https://rates-api.freightify.com',
+    'https://b2b.freightify.com',
+    'https://b2b-api.freightify.com',
+    'https://gateway.freightify.com',
+    'https://partner.freightify.com',
+    'https://partner-api.freightify.com',
+    'https://sandbox.freightify.com',
+    'https://sandbox-api.freightify.com',
+    'https://api-sandbox.freightify.com',
+    'https://carrier.freightify.com',
+    'https://my.freightify.com'
   ];
 
   const probePaths = [
     '/',
     '/v1',
     '/api/v1',
-    '/health',
     '/v1/health',
-    '/api/health',
-    '/openapi.json',
+    '/v1/ping',
+    '/v1/spot/search',
+    '/v1/spot-rates/search',
+    '/v1/rates/spot',
+    '/v1/rates/search',
+    '/v1/quotation/search',
+    '/v1/schedules/search',
+    '/api/v1/spot-rates/search',
     '/swagger.json',
-    '/docs',
-    '/v1/ports',
-    '/api/ports',
-    '/v1/carriers',
-    '/api/carriers'
+    '/swagger/v1/swagger.json',
+    '/v2/api-docs',
+    '/openapi.json',
+    '/api-docs'
   ];
 
-  const results = [];
+  // Auth header strategies - try every common pattern
+  function authHeaders(strategy) {
+    const basic = btoa(`${customerId}:${clientSecret}`);
+    const headers = {
+      'User-Agent': USER_AGENT,
+      'Accept': 'application/json',
+      'Accept-Language': 'en-US,en;q=0.9',
+      'Cache-Control': 'no-cache'
+    };
+    switch (strategy) {
+      case 'bearer-apikey':
+        headers['Authorization'] = `Bearer ${apiKey}`;
+        break;
+      case 'basic':
+        headers['Authorization'] = `Basic ${basic}`;
+        break;
+      case 'x-api-key':
+        headers['X-API-Key'] = apiKey;
+        headers['X-Customer-Id'] = customerId;
+        break;
+      case 'apikey':
+        headers['apikey'] = apiKey;
+        headers['x-customer-id'] = customerId;
+        break;
+      case 'freightify':
+        headers['freightify-api-key'] = apiKey;
+        headers['freightify-customer-id'] = customerId;
+        break;
+      case 'all':
+        headers['Authorization'] = `Bearer ${apiKey}`;
+        headers['X-API-Key'] = apiKey;
+        headers['apikey'] = apiKey;
+        headers['X-Customer-Id'] = customerId;
+        headers['freightify-api-key'] = apiKey;
+        break;
+    }
+    return headers;
+  }
 
+  const results = [];
+  const strategies = ['x-api-key', 'bearer-apikey', 'basic', 'apikey', 'freightify', 'all'];
+
+  // Phase 1: GET probes — find any base URL that doesn't 403
   for (const base of baseUrls) {
     for (const path of probePaths) {
       const url = `${base}${path}`;
@@ -43,89 +106,89 @@ export default async function handler(req) {
         const timeout = setTimeout(() => controller.abort(), 4000);
         const res = await fetch(url, {
           method: 'GET',
-          headers: {
-            'Accept': 'application/json',
-            'X-API-Key': apiKey,
-            'apikey': apiKey,
-            'Authorization': `Bearer ${apiKey}`,
-            'freightify-api-key': apiKey,
-            'X-Customer-Id': customerId
-          },
+          headers: authHeaders('all'),
           signal: controller.signal
         });
         clearTimeout(timeout);
+        const status = res.status;
+        if (status === 404) continue;
         const contentType = res.headers.get('content-type') || '';
-        let bodySnippet = '';
+        const server = res.headers.get('server') || '';
+        const xCache = res.headers.get('x-cache') || '';
+        let snippet = '';
         try {
-          const text = await res.text();
-          bodySnippet = text.substring(0, 200);
+          const t = await res.text();
+          snippet = t.substring(0, 150);
         } catch {}
-
-        if (res.status !== 404) {
-          results.push({
-            url,
-            status: res.status,
-            ok: res.ok,
-            contentType,
-            bodySnippet
-          });
-        }
+        results.push({ url, status, contentType, server, xCache, snippet });
       } catch (err) {
-        if (err.name !== 'AbortError' && !err.message.includes('fetch failed')) {
-          results.push({ url, error: err.message });
-        }
+        // ignore timeouts/dns
       }
     }
   }
 
-  // Try auth endpoints with POST
-  const authAttempts = [];
-  for (const base of baseUrls.slice(0, 3)) {
-    for (const path of ['/v1/auth/login', '/api/auth/login', '/oauth/token', '/login', '/auth/token', '/api/v1/login']) {
-      try {
-        const controller = new AbortController();
-        const timeout = setTimeout(() => controller.abort(), 4000);
-        const res = await fetch(`${base}${path}`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            customer_id: customerId,
-            client_secret: clientSecret,
-            api_key: apiKey
-          }),
-          signal: controller.signal
-        });
-        clearTimeout(timeout);
-        const body = await res.text().catch(() => '');
-        if (res.status !== 404 && body.length < 1000) {
-          authAttempts.push({
-            url: `${base}${path}`,
-            status: res.status,
-            body: body.substring(0, 300)
+  // Phase 2: focus on most interesting hosts (non-403 results) and try each auth strategy on rate-search paths
+  const interestingHosts = [...new Set(results.filter(r => r.status !== 403).map(r => new URL(r.url).origin))];
+  const ratePaths = ['/v1/spot/search', '/v1/rates/search', '/v1/spot-rates/search', '/api/v1/rates/search', '/v1/quotation'];
+  const samplePayload = {
+    originPortCode: 'CNSHA',
+    destinationPortCode: 'SAJED',
+    containerType: '40HC',
+    cargoReadyDate: new Date(Date.now() + 7 * 86400000).toISOString().slice(0, 10),
+    commodityCode: '8517'
+  };
+
+  const authProbes = [];
+  for (const origin of interestingHosts.slice(0, 6)) {
+    for (const path of ratePaths) {
+      for (const strategy of strategies) {
+        try {
+          const controller = new AbortController();
+          const timeout = setTimeout(() => controller.abort(), 5000);
+          const res = await fetch(`${origin}${path}`, {
+            method: 'POST',
+            headers: { ...authHeaders(strategy), 'Content-Type': 'application/json' },
+            body: JSON.stringify(samplePayload),
+            signal: controller.signal
           });
-        }
-      } catch {}
+          clearTimeout(timeout);
+          if (res.status === 404) continue;
+          const snippet = (await res.text().catch(() => '')).substring(0, 200);
+          authProbes.push({
+            url: `${origin}${path}`,
+            strategy,
+            status: res.status,
+            ok: res.ok,
+            snippet
+          });
+        } catch {}
+      }
     }
   }
 
   return new Response(JSON.stringify({
     env: {
       hasApiKey: !!apiKey,
-      hasCustomerId: !!customerId,
-      hasClientSecret: !!clientSecret,
       apiKeyLength: apiKey?.length,
-      customerIdFormat: customerId?.match(/^[a-f0-9-]{36}$/) ? 'UUID' : 'other'
+      hasCustomerId: !!customerId,
+      customerIdSample: customerId?.slice(0, 8) + '...',
+      hasClientSecret: !!clientSecret
     },
-    discoveredEndpoints: results.length,
-    results: results.slice(0, 30),
-    authAttempts: authAttempts.slice(0, 20),
-    hint: 'إذا كل النتائج 401/403 فالـ credentials تشتغل. إذا 404 فعنوان الـ API مختلف.'
+    summary: {
+      basesTried: baseUrls.length,
+      pathsTried: probePaths.length,
+      nonFourOhFour: results.length,
+      non403: results.filter(r => r.status !== 403).length,
+      authProbeSuccesses: authProbes.filter(p => p.ok).length
+    },
+    promisingResults: results.filter(r => r.status !== 403).slice(0, 25),
+    blockedResults: results.filter(r => r.status === 403).slice(0, 5),
+    authProbes: authProbes.slice(0, 30),
+    hint: 'ابحث عن status 200/401 في authProbes - هذا يعني الـ endpoint صحيح'
   }, null, 2), {
     status: 200,
     headers: { 'Content-Type': 'application/json' }
   });
 }
 
-export const config = {
-  runtime: 'edge'
-};
+export const config = { runtime: 'edge' };

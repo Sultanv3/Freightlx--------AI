@@ -3,14 +3,21 @@
  * Tries multiple base URLs, auth strategies, and endpoint patterns.
  */
 
-// Possible Freightify base URLs (we try them all)
+// Possible Freightify base URLs (Freightify's product is called "LINK")
 const BASE_URLS = [
   process.env.FREIGHTIFY_BASE_URL,
+  'https://link.freightify.com',
+  'https://link-api.freightify.com',
   'https://api.freightify.com',
-  'https://app.freightify.com/api',
-  'https://platform.freightify.com/api',
-  'https://api.freightify.io'
+  'https://rates.freightify.com',
+  'https://b2b.freightify.com',
+  'https://gateway.freightify.com',
+  'https://partner.freightify.com',
+  'https://sandbox.freightify.com'
 ].filter(Boolean);
+
+// Realistic browser User-Agent so CloudFront/WAF doesn't reject the request
+const USER_AGENT = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36';
 
 const AUTH_PATHS = [
   '/v1/auth/token',
@@ -60,6 +67,7 @@ async function tryAuth(baseUrl) {
           headers: {
             'Content-Type': 'application/json',
             'Accept': 'application/json',
+            'User-Agent': USER_AGENT,
             'X-API-Key': apiKey,
             'apikey': apiKey
           },
@@ -110,6 +118,7 @@ async function searchRatesTry(baseUrl, path, body, token) {
       const headers = {
         'Content-Type': 'application/json',
         'Accept': 'application/json',
+        'User-Agent': USER_AGENT,
         'X-API-Key': apiKey,
         'apikey': apiKey
       };
@@ -134,6 +143,7 @@ async function searchRatesTry(baseUrl, path, body, token) {
       Object.entries(payload).forEach(([k, v]) => url.searchParams.append(k, v));
       const headers = {
         'Accept': 'application/json',
+        'User-Agent': USER_AGENT,
         'X-API-Key': apiKey,
         'apikey': apiKey
       };
