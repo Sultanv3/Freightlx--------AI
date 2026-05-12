@@ -686,3 +686,121 @@
     transform: translateY(0);
   }
 }
+
+/* ===========================================================
+   FIX: Welcome cards — clean layout & badge alignment
+   Ocean Freight card had the "الأكثر استخداماً" badge
+   overlapping with the Arabic title. This block fixes that.
+   =========================================================== */
+
+/* Add extra top padding so the title clears the badge */
+.flx-service-card {
+  padding-top: 26px !important;
+  overflow: hidden;
+}
+
+/* Badge re-styled: cleaner, smaller, brand-aligned */
+.flx-card-badge {
+  top: 14px !important;
+  left: 14px !important;
+  right: auto !important;
+  z-index: 3 !important;
+  padding: 5px 11px !important;
+  border-radius: 999px !important;
+  background: linear-gradient(135deg, var(--flx-navy-deep), var(--flx-navy)) !important;
+  color: var(--flx-white) !important;
+  font-size: 10px !important;
+  font-weight: 700 !important;
+  letter-spacing: 0.04em !important;
+  text-transform: none !important;
+  box-shadow: 0 6px 14px rgba(15, 31, 63, 0.22) !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 5px !important;
+}
+
+.flx-card-badge svg {
+  color: #fbbf24 !important;
+  flex-shrink: 0;
+}
+
+/* The card with badge needs extra top padding so title clears */
+.flx-service-card.flx-card-sky {
+  padding-top: 44px !important;
+}
+
+/* The inner flex row was holding the icon in a weird sub-div.
+   Reset it so icon + texts stack cleanly. */
+.flx-service-card > div[style*="display:flex"][style*="gap:20px"] {
+  display: block !important;
+  gap: 0 !important;
+}
+
+/* Icon block: consistent spacing across all cards */
+.flx-card-icon {
+  margin-bottom: 14px !important;
+  width: 52px !important;
+  height: 52px !important;
+  border-radius: 14px !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+}
+
+/* English caption above the Arabic title */
+.flx-card-title-en {
+  font-size: 11px !important;
+  font-weight: 600 !important;
+  letter-spacing: 0.12em !important;
+  text-transform: uppercase !important;
+  color: var(--flx-text-mute) !important;
+  margin-bottom: 4px !important;
+}
+
+/* Arabic title — main heading */
+.flx-card-title-ar {
+  font-size: 19px !important;
+  font-weight: 700 !important;
+  line-height: 1.3 !important;
+  color: var(--flx-navy-deep) !important;
+  margin-bottom: 8px !important;
+}
+
+/* Description text */
+.flx-card-desc {
+  font-size: 13px !important;
+  line-height: 1.65 !important;
+  color: var(--flx-text-mute) !important;
+  margin-bottom: 14px !important;
+}
+
+/* Footer with metric + CTA — push to bottom */
+.flx-card-footer {
+  margin-top: auto !important;
+  padding-top: 12px !important;
+  border-top: 1px solid rgba(15, 31, 63, 0.06);
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  gap: 12px !important;
+}
+
+.flx-card-metric-label {
+  font-size: 11px !important;
+  color: var(--flx-text-light) !important;
+  margin-bottom: 2px !important;
+}
+.flx-card-metric-value {
+  font-size: 14px !important;
+  font-weight: 700 !important;
+  color: var(--flx-navy) !important;
+}
+.flx-card-cta {
+  font-size: 12px !important;
+  font-weight: 600 !important;
+  color: var(--flx-sky-dark) !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 4px !important;
+  white-space: nowrap;
+}
