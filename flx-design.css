@@ -848,6 +848,279 @@
   transform: translateX(-2px);
   box-shadow: 0 6px 14px rgba(15, 31, 63, 0.18) !important;
 }
+
+/* ════════════════════════════════════════════════════════
+   UI/UX ENHANCEMENTS - 10 FEATURES
+   ════════════════════════════════════════════════════════ */
+
+/* ── 1) TOAST NOTIFICATIONS ── */
+.flx-toast-container {
+  position: fixed;
+  bottom: 24px;
+  left: 24px;
+  z-index: 99999;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  pointer-events: none;
+}
+
+.flx-toast {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 280px;
+  max-width: 420px;
+  padding: 14px 16px;
+  background: var(--flx-white);
+  border: 1px solid var(--flx-border);
+  border-radius: 12px;
+  box-shadow: 0 14px 36px rgba(15, 31, 63, 0.16);
+  font-family: var(--flx-font-arabic);
+  font-size: 14px;
+  color: var(--flx-text);
+  pointer-events: auto;
+  opacity: 0;
+  transform: translateY(20px) scale(0.96);
+  transition: all 0.32s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+.flx-toast-show { opacity: 1; transform: translateY(0) scale(1); }
+.flx-toast-hide { opacity: 0; transform: translateY(-12px) scale(0.96); }
+
+.flx-toast-icon {
+  flex-shrink: 0;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+.flx-toast-success .flx-toast-icon { background: rgba(34, 197, 94, 0.12); color: #16a34a; }
+.flx-toast-error   .flx-toast-icon { background: rgba(239, 68, 68, 0.12);  color: #dc2626; }
+.flx-toast-info    .flx-toast-icon { background: rgba(14, 165, 233, 0.12); color: #0284c7; }
+.flx-toast-warning .flx-toast-icon { background: rgba(245, 158, 11, 0.12); color: #d97706; }
+
+.flx-toast-text {
+  flex: 1;
+  line-height: 1.5;
+  font-weight: 500;
+}
+
+.flx-toast-close {
+  width: 24px;
+  height: 24px;
+  background: transparent;
+  border: 0;
+  cursor: pointer;
+  color: var(--flx-text-mute);
+  font-size: 20px;
+  line-height: 1;
+  border-radius: 50%;
+  transition: all 0.18s;
+}
+.flx-toast-close:hover { background: var(--flx-paper-soft); color: var(--flx-text); }
+
+/* Left-aligned for LTR, right-aligned for RTL pages */
+[dir="rtl"] .flx-toast-container { left: auto; right: 24px; }
+
+/* ── 2) SKELETON LOADERS ── */
+@keyframes flxShimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+.flx-skeleton {
+  background: linear-gradient(
+    90deg,
+    var(--flx-paper-soft) 0%,
+    var(--flx-paper) 50%,
+    var(--flx-paper-soft) 100%
+  );
+  background-size: 200% 100%;
+  animation: flxShimmer 1.6s infinite ease-in-out;
+  border-radius: 6px;
+  display: block;
+}
+.flx-skeleton-line   { height: 14px; margin-bottom: 10px; }
+.flx-skeleton-circle { width: 40px; height: 40px; border-radius: 50%; }
+.flx-skeleton-button { height: 36px; width: 130px; margin-top: 14px; border-radius: 10px; }
+
+.flx-skeleton-card {
+  padding: 20px;
+  border: 1px solid var(--flx-border);
+  border-radius: 14px;
+  background: var(--flx-white);
+  margin-bottom: 14px;
+}
+.flx-skeleton-row { display: flex; align-items: center; gap: 12px; margin-bottom: 14px; }
+.flx-skeleton-port { display: flex; gap: 12px; padding: 12px; border-bottom: 1px solid var(--flx-border); }
+.flx-skeleton-msg { display: flex; gap: 10px; padding: 12px 0; }
+.flx-skeleton-msg-body { flex: 1; }
+
+/* ── 3) SCROLL-TO-TOP BUTTON ── */
+.flx-scroll-top {
+  position: fixed;
+  bottom: 24px;
+  left: 24px;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: var(--flx-navy);
+  color: var(--flx-white);
+  border: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  z-index: 999;
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(20px);
+  transition: all 0.28s var(--flx-ease);
+  box-shadow: 0 8px 24px rgba(15, 31, 63, 0.22);
+}
+.flx-scroll-top.flx-show {
+  opacity: 1;
+  pointer-events: auto;
+  transform: translateY(0);
+}
+.flx-scroll-top:hover {
+  background: var(--flx-navy-deep);
+  transform: translateY(-3px);
+  box-shadow: 0 12px 28px rgba(15, 31, 63, 0.3);
+}
+
+[dir="rtl"] .flx-scroll-top { left: auto; right: 24px; }
+
+/* ── 4) FADE-IN ON SCROLL ── */
+.flx-fade-init {
+  opacity: 0;
+  transform: translateY(24px);
+  transition: opacity 0.6s var(--flx-ease-out), transform 0.6s var(--flx-ease-out);
+}
+.flx-fade-init.flx-visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* ── 5) RIPPLE EFFECT ── */
+.flx-ripple {
+  position: absolute;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.45);
+  pointer-events: none;
+  transform: scale(0);
+  animation: flxRipple 0.6s ease-out;
+}
+@keyframes flxRipple {
+  to {
+    transform: scale(2);
+    opacity: 0;
+  }
+}
+/* Dark buttons → light ripple, light buttons → dark ripple */
+.flx-card-cta .flx-ripple { background: rgba(15, 31, 63, 0.18); }
+.flx-service-card:hover .flx-card-cta .flx-ripple { background: rgba(255, 255, 255, 0.4); }
+
+/* ── 7) PAGE LOAD PROGRESS BAR ── */
+.flx-load-bar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 0%;
+  height: 3px;
+  background: linear-gradient(90deg, var(--flx-sky), var(--flx-navy-soft), var(--flx-sky-dark));
+  background-size: 200% 100%;
+  animation: flxBarShine 2s linear infinite;
+  z-index: 99998;
+  opacity: 0;
+  transition: width 0.3s var(--flx-ease), opacity 0.3s;
+  box-shadow: 0 0 8px rgba(14, 165, 233, 0.6);
+}
+@keyframes flxBarShine {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+/* ── 8) SMOOTH CARD HOVER (3D tilt effect) ── */
+.flx-service-card {
+  transform-style: preserve-3d;
+  transition: transform 0.18s var(--flx-ease), box-shadow var(--flx-duration-fast) var(--flx-ease);
+  perspective: 1000px;
+}
+
+/* ── 9) KEYBOARD NAVIGATION FOCUS STYLES ── */
+.flx-keyboard-nav *:focus {
+  outline: 3px solid var(--flx-sky) !important;
+  outline-offset: 2px !important;
+}
+*:focus { outline: 0; }
+
+/* ── 10) ENHANCED LOADING / EMPTY STATES ── */
+.flx-empty-state {
+  text-align: center;
+  padding: 48px 20px;
+  color: var(--flx-text-mute);
+}
+.flx-empty-state-icon {
+  width: 72px;
+  height: 72px;
+  margin: 0 auto var(--flx-3);
+  border-radius: 50%;
+  background: var(--flx-paper-soft);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--flx-text-light);
+}
+.flx-empty-state-title {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--flx-navy);
+  margin-bottom: 6px;
+}
+.flx-empty-state-text {
+  font-size: 14px;
+  max-width: 380px;
+  margin: 0 auto;
+  line-height: 1.6;
+}
+
+/* ── MOBILE OPTIMIZATIONS ── */
+@media (max-width: 640px) {
+  .flx-toast-container {
+    bottom: 12px;
+    left: 12px;
+    right: 12px;
+  }
+  .flx-toast {
+    min-width: 0;
+    max-width: none;
+  }
+  .flx-scroll-top {
+    bottom: 16px;
+    left: 16px;
+    width: 40px;
+    height: 40px;
+  }
+}
+
+/* ── REDUCED MOTION SUPPORT ── */
+@media (prefers-reduced-motion: reduce) {
+  .flx-skeleton,
+  .flx-load-bar {
+    animation: none;
+  }
+  .flx-fade-init {
+    opacity: 1;
+    transform: none;
+    transition: none;
+  }
+  .flx-toast {
+    transition: opacity 0.15s;
+  }
+}
 .flx-card-sky:hover .flx-card-cta     { background: var(--flx-sky-dark) !important; border-color: var(--flx-sky-dark) !important; }
 .flx-card-amber:hover .flx-card-cta   { background: #b45309 !important; border-color: #b45309 !important; }
 .flx-card-emerald:hover .flx-card-cta { background: #047857 !important; border-color: #047857 !important; }
