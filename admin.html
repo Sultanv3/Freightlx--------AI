@@ -1,0 +1,703 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#0f1f3f">
+<meta name="robots" content="noindex,nofollow">
+<title>لوحة الإدارة — FREIGHTLX Admin</title>
+<link rel="icon" href="/assets/logo/color-logo.svg">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@300;400;500;600;700&family=Fraunces:wght@400;600;700;900&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/flx-design.css">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+
+<style>
+* { box-sizing: border-box; }
+body { margin: 0; font-family: 'IBM Plex Sans Arabic', sans-serif; background: #0a1428; color: #e2e8f0; min-height: 100vh; }
+
+/* ═══ LOGIN GATE ═══ */
+.admin-login {
+  position: fixed; inset: 0;
+  background: linear-gradient(135deg, #0a1428 0%, #1e3a6e 100%);
+  display: flex; align-items: center; justify-content: center;
+  z-index: 999;
+}
+.admin-login.hidden { display: none; }
+.admin-login-card {
+  background: rgba(255,255,255,0.04);
+  backdrop-filter: blur(20px);
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 20px;
+  padding: 48px;
+  width: 100%; max-width: 420px;
+  text-align: center;
+}
+.admin-login-logo {
+  width: 64px; height: 64px;
+  background: linear-gradient(135deg, #0ea5e9, #6366f1);
+  border-radius: 18px;
+  margin: 0 auto 24px;
+  display: inline-flex; align-items: center; justify-content: center;
+  color: white;
+}
+.admin-login-title {
+  font-family: Fraunces, serif;
+  font-size: 26px; font-weight: 700;
+  color: white; margin: 0 0 8px;
+}
+.admin-login-sub { color: #94a3b8; font-size: 13px; margin-bottom: 28px; }
+.admin-login-input {
+  width: 100%; padding: 14px 16px;
+  background: rgba(255,255,255,0.06);
+  border: 1px solid rgba(255,255,255,0.12);
+  border-radius: 12px;
+  color: white; font-family: inherit; font-size: 14px;
+  text-align: center; letter-spacing: 0.2em;
+  margin-bottom: 16px;
+}
+.admin-login-input:focus { outline: none; border-color: #0ea5e9; background: rgba(255,255,255,0.1); }
+.admin-login-btn {
+  width: 100%; padding: 14px;
+  background: linear-gradient(135deg, #0ea5e9, #0284c7);
+  color: white; border: 0; border-radius: 12px;
+  font-family: inherit; font-weight: 700; font-size: 15px;
+  cursor: pointer; transition: all 0.18s;
+}
+.admin-login-btn:hover { transform: translateY(-2px); box-shadow: 0 12px 28px rgba(14,165,233,0.3); }
+.admin-login-hint {
+  margin-top: 16px; font-size: 12px; color: #64748b;
+}
+.admin-login-error {
+  background: rgba(239,68,68,0.1); color: #fca5a5;
+  border-radius: 8px; padding: 10px; margin-bottom: 16px;
+  font-size: 12px; display: none;
+}
+.admin-login-error.show { display: block; }
+
+/* ═══ LAYOUT ═══ */
+.admin-layout { display: grid; grid-template-columns: 240px 1fr; min-height: 100vh; }
+.admin-sidebar {
+  background: rgba(255,255,255,0.03);
+  border-left: 1px solid rgba(255,255,255,0.06);
+  padding: 24px 0;
+  position: sticky; top: 0; height: 100vh; overflow-y: auto;
+  display: flex; flex-direction: column;
+}
+.admin-logo { padding: 0 24px 20px; display: flex; align-items: center; gap: 10px; border-bottom: 1px solid rgba(255,255,255,0.06); }
+.admin-logo-icon {
+  width: 36px; height: 36px; border-radius: 10px;
+  background: linear-gradient(135deg, #0ea5e9, #6366f1);
+  display: inline-flex; align-items: center; justify-content: center; color: white;
+}
+.admin-logo-text { font-family: Fraunces, serif; font-weight: 700; font-size: 17px; color: white; }
+.admin-logo-tag {
+  background: #ef4444; color: white;
+  font-size: 9px; padding: 2px 7px; border-radius: 4px;
+  font-weight: 700; letter-spacing: 0.05em;
+}
+
+.admin-nav { flex: 1; padding: 16px 12px; display: flex; flex-direction: column; gap: 3px; }
+.admin-nav-item {
+  display: flex; align-items: center; gap: 12px;
+  padding: 11px 14px; border-radius: 10px;
+  color: #94a3b8; cursor: pointer; transition: all 0.18s;
+  background: transparent; border: 0; width: 100%; text-align: right;
+  font-family: inherit; font-size: 13px; font-weight: 500;
+}
+.admin-nav-item:hover { background: rgba(255,255,255,0.05); color: white; }
+.admin-nav-item.active {
+  background: linear-gradient(90deg, rgba(14,165,233,0.18), rgba(14,165,233,0.05));
+  color: white;
+  border-right: 3px solid #0ea5e9;
+}
+.admin-nav-item svg { opacity: 0.8; }
+.admin-nav-item.active svg { color: #0ea5e9; opacity: 1; }
+.admin-nav-section {
+  padding: 14px 14px 6px;
+  font-size: 10px; color: #475569;
+  letter-spacing: 0.1em; text-transform: uppercase;
+  font-weight: 700;
+}
+.admin-user {
+  padding: 16px 24px;
+  border-top: 1px solid rgba(255,255,255,0.06);
+  display: flex; align-items: center; gap: 10px;
+}
+.admin-user-avatar {
+  width: 32px; height: 32px; border-radius: 50%;
+  background: linear-gradient(135deg, #ef4444, #f97316);
+  color: white; display: inline-flex; align-items: center; justify-content: center;
+  font-weight: 700; font-size: 13px;
+}
+.admin-user-name { font-size: 12px; font-weight: 600; color: white; }
+.admin-user-role { font-size: 10px; color: #ef4444; font-weight: 700; letter-spacing: 0.05em; }
+.admin-logout-btn {
+  margin-top: 8px; width: 100%; padding: 8px;
+  background: rgba(239,68,68,0.1); color: #fca5a5;
+  border: 0; border-radius: 8px; cursor: pointer;
+  font-family: inherit; font-size: 11px; font-weight: 600;
+}
+.admin-logout-btn:hover { background: rgba(239,68,68,0.18); }
+
+/* ═══ MAIN ═══ */
+.admin-main { background: #0a1428; padding: 24px 32px; }
+.admin-section { display: none; animation: fadeIn 0.3s; }
+.admin-section.active { display: block; }
+@keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
+
+.admin-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 26px; }
+.admin-title {
+  font-family: Fraunces, serif;
+  font-size: 28px; font-weight: 700; color: white; margin: 0;
+}
+.admin-subtitle { color: #64748b; font-size: 13px; margin-top: 4px; }
+
+.admin-grid-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 26px; }
+.admin-card {
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 14px; padding: 20px;
+  transition: all 0.18s;
+}
+.admin-card:hover { background: rgba(255,255,255,0.06); border-color: rgba(14,165,233,0.3); }
+.admin-stat-label {
+  font-size: 11px; color: #64748b;
+  text-transform: uppercase; letter-spacing: 0.08em;
+  margin-bottom: 6px;
+}
+.admin-stat-value {
+  font-family: Fraunces, serif;
+  font-size: 30px; font-weight: 700; color: white;
+  line-height: 1.1;
+}
+.admin-stat-delta {
+  display: inline-flex; align-items: center; gap: 4px;
+  margin-top: 10px; font-size: 11px; font-weight: 600;
+}
+.admin-stat-delta.up { color: #22c55e; }
+.admin-stat-delta.down { color: #ef4444; }
+.admin-stat-icon {
+  float: left; width: 40px; height: 40px;
+  border-radius: 10px; display: inline-flex;
+  align-items: center; justify-content: center;
+  background: rgba(14,165,233,0.12); color: #0ea5e9;
+}
+
+.admin-panel {
+  background: rgba(255,255,255,0.03);
+  border: 1px solid rgba(255,255,255,0.06);
+  border-radius: 14px; padding: 22px;
+  margin-bottom: 16px;
+}
+.admin-panel-header {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 18px; padding-bottom: 14px;
+  border-bottom: 1px solid rgba(255,255,255,0.06);
+}
+.admin-panel-title { font-family: Fraunces, serif; font-weight: 700; font-size: 17px; color: white; margin: 0; }
+
+.admin-grid-2 { display: grid; grid-template-columns: 1.6fr 1fr; gap: 16px; }
+
+/* ═══ TABLES ═══ */
+.admin-table { width: 100%; border-collapse: collapse; }
+.admin-table th {
+  text-align: right; padding: 10px 12px;
+  font-size: 10px; color: #475569;
+  text-transform: uppercase; letter-spacing: 0.08em;
+  border-bottom: 1px solid rgba(255,255,255,0.08);
+  font-weight: 700;
+}
+.admin-table td {
+  padding: 12px; font-size: 12.5px; color: #cbd5e1;
+  border-bottom: 1px solid rgba(255,255,255,0.04);
+}
+.admin-table tr:hover td { background: rgba(255,255,255,0.03); }
+.admin-code {
+  font-family: 'IBM Plex Mono', monospace;
+  font-weight: 600; color: white; font-size: 11px;
+}
+.admin-route {
+  display: inline-flex; gap: 4px; align-items: center;
+  background: rgba(14,165,233,0.08);
+  padding: 3px 8px; border-radius: 6px;
+  font-family: 'IBM Plex Mono', monospace; font-size: 11px;
+  color: #38bdf8;
+}
+
+.admin-badge {
+  display: inline-flex; align-items: center; gap: 4px;
+  padding: 3px 9px; border-radius: 999px;
+  font-size: 10px; font-weight: 700;
+}
+.admin-badge::before { content: ''; width: 6px; height: 6px; border-radius: 50%; }
+.admin-badge-active   { background: rgba(34,197,94,0.15); color: #4ade80; }
+.admin-badge-active::before { background: #22c55e; }
+.admin-badge-transit  { background: rgba(14,165,233,0.15); color: #38bdf8; }
+.admin-badge-transit::before { background: #0ea5e9; }
+.admin-badge-pending  { background: rgba(245,158,11,0.15); color: #fbbf24; }
+.admin-badge-pending::before { background: #f59e0b; }
+.admin-badge-completed{ background: rgba(100,116,139,0.15); color: #94a3b8; }
+.admin-badge-completed::before { background: #64748b; }
+.admin-badge-paid    { background: rgba(34,197,94,0.15); color: #4ade80; }
+.admin-badge-paid::before { background: #22c55e; }
+.admin-badge-cancelled{ background: rgba(239,68,68,0.15); color: #f87171; }
+.admin-badge-cancelled::before { background: #ef4444; }
+
+.admin-btn {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 7px 14px; border-radius: 8px;
+  font-family: inherit; font-size: 11.5px; font-weight: 600;
+  cursor: pointer; border: 0; transition: all 0.18s;
+}
+.admin-btn-primary { background: linear-gradient(135deg, #0ea5e9, #0284c7); color: white; }
+.admin-btn-primary:hover { transform: translateY(-1px); box-shadow: 0 8px 18px rgba(14,165,233,0.3); }
+.admin-btn-success { background: linear-gradient(135deg, #16a34a, #15803d); color: white; }
+.admin-btn-success:hover { transform: translateY(-1px); }
+.admin-btn-danger { background: rgba(239,68,68,0.12); color: #fca5a5; }
+.admin-btn-danger:hover { background: rgba(239,68,68,0.2); }
+.admin-btn-ghost { background: rgba(255,255,255,0.06); color: #cbd5e1; }
+.admin-btn-ghost:hover { background: rgba(255,255,255,0.1); color: white; }
+
+.admin-action-row { display: inline-flex; gap: 6px; }
+
+.admin-toolbar {
+  display: flex; align-items: center; gap: 10px;
+  margin-bottom: 16px; flex-wrap: wrap;
+}
+.admin-search {
+  flex: 1; min-width: 200px; position: relative;
+}
+.admin-search input {
+  width: 100%; padding: 9px 36px 9px 14px;
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 10px;
+  color: white; font-family: inherit; font-size: 12.5px;
+}
+.admin-search input::placeholder { color: #64748b; }
+.admin-search svg {
+  position: absolute; right: 12px; top: 50%;
+  transform: translateY(-50%); color: #64748b;
+  pointer-events: none;
+}
+.admin-filter {
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.08);
+  color: #94a3b8;
+  padding: 8px 14px; border-radius: 999px;
+  font-family: inherit; font-size: 11px; font-weight: 600;
+  cursor: pointer;
+}
+.admin-filter.active { background: rgba(14,165,233,0.15); border-color: #0ea5e9; color: #38bdf8; }
+
+.admin-form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+.admin-form-group label {
+  display: block; font-size: 11px; color: #64748b;
+  font-weight: 600; margin-bottom: 6px;
+  text-transform: uppercase; letter-spacing: 0.05em;
+}
+.admin-form-group input,
+.admin-form-group select {
+  width: 100%; padding: 9px 12px;
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 8px; color: white;
+  font-family: inherit; font-size: 13px;
+}
+.admin-form-group input:focus, .admin-form-group select:focus { outline: none; border-color: #0ea5e9; }
+
+/* Chart container dark theme */
+.admin-chart { position: relative; height: 280px; }
+
+/* Modal */
+.admin-modal {
+  display: none; position: fixed; inset: 0;
+  background: rgba(0,0,0,0.7); z-index: 9999;
+  align-items: center; justify-content: center;
+  padding: 20px;
+}
+.admin-modal.show { display: flex; }
+.admin-modal-content {
+  background: #0f1f3f; border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 16px; padding: 28px; max-width: 520px; width: 100%;
+}
+.admin-modal-title { font-family: Fraunces, serif; font-size: 20px; font-weight: 700; color: white; margin: 0 0 8px; }
+.admin-modal-sub { color: #94a3b8; font-size: 13px; margin-bottom: 22px; }
+.admin-modal-footer { display: flex; gap: 10px; justify-content: flex-end; margin-top: 22px; }
+
+@media (max-width: 1023px) {
+  .admin-layout { grid-template-columns: 1fr; }
+  .admin-sidebar { display: none; }
+  .admin-grid-4 { grid-template-columns: repeat(2, 1fr); }
+  .admin-grid-2 { grid-template-columns: 1fr; }
+}
+</style>
+</head>
+<body>
+
+<!-- ═══════════════ LOGIN GATE ═══════════════ -->
+<div class="admin-login" id="adminLogin">
+  <div class="admin-login-card">
+    <div class="admin-login-logo">
+      <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+    </div>
+    <h1 class="admin-login-title">لوحة الإدارة</h1>
+    <p class="admin-login-sub">FREIGHTLX Admin · يتطلب صلاحيات مدير</p>
+    <div class="admin-login-error" id="adminLoginError">كلمة المرور غير صحيحة</div>
+    <input type="password" class="admin-login-input" id="adminPassword" placeholder="••••••••" autocomplete="off">
+    <button class="admin-login-btn" id="adminLoginBtn">دخول</button>
+    <div class="admin-login-hint">كلمة المرور الافتراضية: <code style="color:#0ea5e9">admin123</code></div>
+  </div>
+</div>
+
+<!-- ═══════════════ LAYOUT ═══════════════ -->
+<div class="admin-layout" id="adminApp" style="display:none">
+  <aside class="admin-sidebar">
+    <div class="admin-logo">
+      <div class="admin-logo-icon">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+      </div>
+      <div>
+        <div class="admin-logo-text">FREIGHTLX</div>
+        <span class="admin-logo-tag">ADMIN</span>
+      </div>
+    </div>
+
+    <nav class="admin-nav">
+      <div class="admin-nav-section">إدارة عامة</div>
+      <button class="admin-nav-item active" data-section="overview">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+        نظرة عامة
+      </button>
+      <button class="admin-nav-item" data-section="users">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+        العملاء
+      </button>
+
+      <div class="admin-nav-section">العمليات</div>
+      <button class="admin-nav-item" data-section="shipments">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 20a4 4 0 0 0 4-2 4 4 0 0 1 4-1 4 4 0 0 1 4 1 4 4 0 0 0 4 2"/><path d="M4 18l-2-7h20l-2 7"/></svg>
+        الشحنات
+      </button>
+      <button class="admin-nav-item" data-section="quotes">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+        العروض
+      </button>
+      <button class="admin-nav-item" data-section="invoices">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg>
+        الفواتير
+      </button>
+
+      <div class="admin-nav-section">النظام</div>
+      <button class="admin-nav-item" data-section="carriers">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="1" y="3" width="15" height="13"/><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>
+        خطوط الشحن
+      </button>
+      <button class="admin-nav-item" data-section="analytics">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="20" x2="12" y2="10"/><line x1="18" y1="20" x2="18" y2="4"/><line x1="6" y1="20" x2="6" y2="16"/></svg>
+        التحليلات
+      </button>
+      <button class="admin-nav-item" data-section="logs">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+        سجل النشاط
+      </button>
+      <button class="admin-nav-item" data-section="settings">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33h.01a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+        إعدادات النظام
+      </button>
+    </nav>
+
+    <div class="admin-user">
+      <div>
+        <div class="admin-user-avatar">A</div>
+        <div>
+          <div class="admin-user-name">Admin User</div>
+          <div class="admin-user-role">SUPER ADMIN</div>
+        </div>
+        <button class="admin-logout-btn" id="adminLogoutBtn">تسجيل خروج</button>
+      </div>
+    </div>
+  </aside>
+
+  <main class="admin-main">
+
+    <!-- OVERVIEW -->
+    <section class="admin-section active" id="adm-section-overview">
+      <div class="admin-header">
+        <div>
+          <h1 class="admin-title">نظرة عامة على النظام</h1>
+          <div class="admin-subtitle" id="admDateNow"></div>
+        </div>
+        <button class="admin-btn admin-btn-primary" id="admRefreshBtn">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
+          تحديث
+        </button>
+      </div>
+
+      <div class="admin-grid-4">
+        <div class="admin-card">
+          <div class="admin-stat-icon">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+          </div>
+          <div class="admin-stat-label">إجمالي الإيرادات</div>
+          <div class="admin-stat-value" id="admRevenue">$0</div>
+          <div class="admin-stat-delta up">+12.4% هذا الشهر</div>
+        </div>
+
+        <div class="admin-card">
+          <div class="admin-stat-icon" style="background:rgba(34,197,94,0.12);color:#22c55e">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
+          </div>
+          <div class="admin-stat-label">إجمالي العملاء</div>
+          <div class="admin-stat-value" id="admUsers">0</div>
+          <div class="admin-stat-delta up">+3 هذا الأسبوع</div>
+        </div>
+
+        <div class="admin-card">
+          <div class="admin-stat-icon" style="background:rgba(245,158,11,0.12);color:#f59e0b">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 20a4 4 0 0 0 4-2 4 4 0 0 1 4-1 4 4 0 0 1 4 1 4 4 0 0 0 4 2"/><path d="M4 18l-2-7h20l-2 7"/></svg>
+          </div>
+          <div class="admin-stat-label">شحنات نشطة</div>
+          <div class="admin-stat-value" id="admActiveShipments">0</div>
+          <div class="admin-stat-delta up">+8 هذا الشهر</div>
+        </div>
+
+        <div class="admin-card">
+          <div class="admin-stat-icon" style="background:rgba(126,34,206,0.12);color:#a855f7">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg>
+          </div>
+          <div class="admin-stat-label">فواتير معلّقة</div>
+          <div class="admin-stat-value" id="admPendingInvoices">0</div>
+          <div class="admin-stat-delta down">يحتاج متابعة</div>
+        </div>
+      </div>
+
+      <div class="admin-grid-2">
+        <div class="admin-panel">
+          <div class="admin-panel-header"><h3 class="admin-panel-title">الإيرادات (آخر 6 أشهر)</h3></div>
+          <div class="admin-chart"><canvas id="admRevenueChart"></canvas></div>
+        </div>
+        <div class="admin-panel">
+          <div class="admin-panel-header"><h3 class="admin-panel-title">توزيع الشحنات</h3></div>
+          <div class="admin-chart"><canvas id="admStatusChart"></canvas></div>
+        </div>
+      </div>
+
+      <div class="admin-panel">
+        <div class="admin-panel-header">
+          <h3 class="admin-panel-title">آخر النشاطات</h3>
+          <button class="admin-btn admin-btn-ghost">عرض الكل</button>
+        </div>
+        <div id="admRecentActivity" style="font-size:13px"></div>
+      </div>
+    </section>
+
+    <!-- USERS -->
+    <section class="admin-section" id="adm-section-users">
+      <div class="admin-header">
+        <div><h1 class="admin-title">إدارة العملاء</h1><div class="admin-subtitle">قائمة بجميع المستخدمين المسجّلين</div></div>
+        <button class="admin-btn admin-btn-primary" id="admAddUserBtn">+ إضافة عميل</button>
+      </div>
+      <div class="admin-panel" style="padding:0">
+        <div style="padding:14px 22px;border-bottom:1px solid rgba(255,255,255,0.06)">
+          <div class="admin-toolbar">
+            <div class="admin-search">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+              <input type="text" placeholder="بحث بالاسم أو الإيميل..." id="admUserSearch">
+            </div>
+          </div>
+        </div>
+        <table class="admin-table">
+          <thead><tr>
+            <th style="padding-right:22px">المعرّف</th><th>الاسم</th><th>الإيميل</th><th>شحنات</th><th>إجمالي الإنفاق</th><th>الحالة</th><th style="padding-left:22px">إجراء</th>
+          </tr></thead>
+          <tbody id="admUsersTable"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- SHIPMENTS -->
+    <section class="admin-section" id="adm-section-shipments">
+      <div class="admin-header">
+        <div><h1 class="admin-title">إدارة الشحنات</h1><div class="admin-subtitle">جميع الشحنات في النظام</div></div>
+        <button class="admin-btn admin-btn-primary" id="admAddShipmentBtn">+ إضافة شحنة</button>
+      </div>
+      <div class="admin-panel" style="padding:0">
+        <div style="padding:14px 22px;border-bottom:1px solid rgba(255,255,255,0.06)">
+          <div class="admin-toolbar">
+            <button class="admin-filter active" data-filter="all">الكل</button>
+            <button class="admin-filter" data-filter="active">نشطة</button>
+            <button class="admin-filter" data-filter="transit">في الطريق</button>
+            <button class="admin-filter" data-filter="pending">معلّقة</button>
+            <button class="admin-filter" data-filter="completed">مكتملة</button>
+            <button class="admin-filter" data-filter="cancelled">ملغية</button>
+          </div>
+        </div>
+        <table class="admin-table">
+          <thead><tr>
+            <th style="padding-right:22px">رقم الشحنة</th><th>المسار</th><th>الناقل</th><th>الحاوية</th><th>التاريخ</th><th>الحالة</th><th>السعر</th><th style="padding-left:22px">إجراء</th>
+          </tr></thead>
+          <tbody id="admShipmentsTable"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- QUOTES -->
+    <section class="admin-section" id="adm-section-quotes">
+      <div class="admin-header">
+        <div><h1 class="admin-title">إدارة العروض</h1><div class="admin-subtitle">عروض الأسعار النشطة والمنتهية</div></div>
+        <button class="admin-btn admin-btn-primary" id="admAddQuoteBtn">+ إضافة عرض</button>
+      </div>
+      <div class="admin-panel" style="padding:0">
+        <table class="admin-table">
+          <thead><tr>
+            <th style="padding-right:22px">رقم</th><th>المسار</th><th>الناقل</th><th>السعر</th><th>صالح حتى</th><th>الحالة</th><th style="padding-left:22px">إجراء</th>
+          </tr></thead>
+          <tbody id="admQuotesTable"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- INVOICES -->
+    <section class="admin-section" id="adm-section-invoices">
+      <div class="admin-header">
+        <div><h1 class="admin-title">إدارة الفواتير</h1><div class="admin-subtitle">جميع الفواتير في النظام</div></div>
+        <button class="admin-btn admin-btn-primary" id="admAddInvoiceBtn">+ فاتورة جديدة</button>
+      </div>
+      <div class="admin-panel" style="padding:0">
+        <table class="admin-table">
+          <thead><tr>
+            <th style="padding-right:22px">رقم</th><th>الوصف</th><th>التاريخ</th><th>المبلغ</th><th>الحالة</th><th style="padding-left:22px">إجراء</th>
+          </tr></thead>
+          <tbody id="admInvoicesTable"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- CARRIERS -->
+    <section class="admin-section" id="adm-section-carriers">
+      <div class="admin-header">
+        <div><h1 class="admin-title">خطوط الشحن</h1><div class="admin-subtitle">إدارة الشركاء والناقلين</div></div>
+        <button class="admin-btn admin-btn-primary" id="admAddCarrierBtn">+ إضافة خط شحن</button>
+      </div>
+      <div class="admin-grid-4" id="admCarriersGrid"></div>
+    </section>
+
+    <!-- ANALYTICS -->
+    <section class="admin-section" id="adm-section-analytics">
+      <div class="admin-header">
+        <div><h1 class="admin-title">التحليلات المتقدمة</h1><div class="admin-subtitle">رؤى تفصيلية عن أداء النظام</div></div>
+      </div>
+      <div class="admin-grid-2">
+        <div class="admin-panel">
+          <div class="admin-panel-header"><h3 class="admin-panel-title">الإيرادات حسب الناقل</h3></div>
+          <div class="admin-chart"><canvas id="admCarrierRevenueChart"></canvas></div>
+        </div>
+        <div class="admin-panel">
+          <div class="admin-panel-header"><h3 class="admin-panel-title">الشحنات حسب المسار</h3></div>
+          <div class="admin-chart"><canvas id="admRouteChart"></canvas></div>
+        </div>
+      </div>
+      <div class="admin-panel">
+        <div class="admin-panel-header"><h3 class="admin-panel-title">معدل تحويل العروض إلى شحنات</h3></div>
+        <div class="admin-chart" style="height:300px"><canvas id="admConversionChart"></canvas></div>
+      </div>
+    </section>
+
+    <!-- LOGS -->
+    <section class="admin-section" id="adm-section-logs">
+      <div class="admin-header">
+        <div><h1 class="admin-title">سجل النشاط</h1><div class="admin-subtitle">جميع العمليات في النظام</div></div>
+        <button class="admin-btn admin-btn-ghost" id="admClearLogsBtn">مسح السجل</button>
+      </div>
+      <div class="admin-panel" id="admLogsContainer"></div>
+    </section>
+
+    <!-- SETTINGS -->
+    <section class="admin-section" id="adm-section-settings">
+      <div class="admin-header">
+        <div><h1 class="admin-title">إعدادات النظام</h1><div class="admin-subtitle">التحكم في النظام كاملاً</div></div>
+      </div>
+
+      <div class="admin-grid-2">
+        <div class="admin-panel">
+          <div class="admin-panel-header"><h3 class="admin-panel-title">الإعدادات العامة</h3></div>
+          <div class="admin-form-grid">
+            <div class="admin-form-group">
+              <label>اسم المنصة</label>
+              <input type="text" id="admSetPlatform" value="FREIGHTLX">
+            </div>
+            <div class="admin-form-group">
+              <label>بريد الدعم</label>
+              <input type="email" id="admSetEmail" value="support@freightlx.com">
+            </div>
+            <div class="admin-form-group">
+              <label>العملة الافتراضية</label>
+              <select id="admSetCurrency">
+                <option>USD</option><option>SAR</option><option>EUR</option>
+              </select>
+            </div>
+            <div class="admin-form-group">
+              <label>عمولة FREIGHTLX (%)</label>
+              <input type="number" id="admSetCommission" value="3.5" min="0" max="20" step="0.1">
+            </div>
+            <div class="admin-form-group">
+              <label>VAT %</label>
+              <input type="number" id="admSetVAT" value="15" min="0" max="30">
+            </div>
+            <div class="admin-form-group">
+              <label>سعر شهادة سابر ($)</label>
+              <input type="number" id="admSetSaberFee" value="580" min="0">
+            </div>
+          </div>
+          <div style="margin-top:18px">
+            <button class="admin-btn admin-btn-success" id="admSaveSettingsBtn">حفظ الإعدادات</button>
+          </div>
+        </div>
+
+        <div class="admin-panel">
+          <div class="admin-panel-header"><h3 class="admin-panel-title">الأمان</h3></div>
+          <div class="admin-form-grid">
+            <div class="admin-form-group" style="grid-column:1/-1">
+              <label>تغيير كلمة مرور Admin</label>
+              <input type="password" id="admNewPass" placeholder="••••••••">
+            </div>
+            <div class="admin-form-group" style="grid-column:1/-1">
+              <label>تأكيد كلمة المرور</label>
+              <input type="password" id="admNewPass2" placeholder="••••••••">
+            </div>
+          </div>
+          <div style="margin-top:18px">
+            <button class="admin-btn admin-btn-primary" id="admChangePassBtn">تحديث كلمة المرور</button>
+          </div>
+
+          <div style="margin-top:28px;padding-top:22px;border-top:1px solid rgba(255,255,255,0.06)">
+            <h4 style="font-size:13px;color:#fca5a5;margin:0 0 12px">منطقة الخطر</h4>
+            <button class="admin-btn admin-btn-danger" id="admResetDataBtn">🗑️ مسح كل البيانات</button>
+            <div style="font-size:11px;color:#64748b;margin-top:8px">يعيد النظام لحالة seed - لا يمكن التراجع</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+  </main>
+</div>
+
+<!-- Generic Modal -->
+<div class="admin-modal" id="admModal">
+  <div class="admin-modal-content">
+    <h3 class="admin-modal-title" id="admModalTitle"></h3>
+    <div class="admin-modal-sub" id="admModalSub"></div>
+    <div id="admModalBody"></div>
+    <div class="admin-modal-footer">
+      <button class="admin-btn admin-btn-ghost" id="admModalCancel">إلغاء</button>
+      <button class="admin-btn admin-btn-primary" id="admModalConfirm">تأكيد</button>
+    </div>
+  </div>
+</div>
+
+<script src="/flx-dashboard-system.js"></script>
+<script src="/flx-admin-page.js"></script>
+<script src="/flx-ui-enhancements.js" defer></script>
+</body>
+</html>
