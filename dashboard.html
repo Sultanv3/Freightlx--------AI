@@ -1155,8 +1155,12 @@ body {
   </main>
 </div>
 
+<!-- Backend integration (set FLX_API_BASE in window or it falls back to localStorage) -->
+<script>window.FLX_API_BASE = window.FLX_API_BASE || '';</script>
+<script src="/flx-api-client.js"></script>
 <script src="/flx-dashboard-system.js"></script>
 <script src="/flx-dashboard-page.js"></script>
+<script src="/flx-backend-adapter.js" defer></script>
 <script src="/flx-ui-enhancements.js" defer></script>
 </body>
 </html>
