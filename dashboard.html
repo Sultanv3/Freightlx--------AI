@@ -1155,8 +1155,8 @@ body {
   </main>
 </div>
 
-<!-- Backend integration (set FLX_API_BASE in window or it falls back to localStorage) -->
-<script>window.FLX_API_BASE = window.FLX_API_BASE || '';</script>
+<!-- Backend integration: same-origin Vercel serverless API -->
+<script>window.FLX_API_BASE = '/api/v1';</script>
 <script src="/flx-api-client.js"></script>
 <script src="/flx-dashboard-system.js"></script>
 <script src="/flx-dashboard-page.js"></script>
