@@ -140,6 +140,8 @@
   // ════════════════════════════════════════════════════════
   function setupFadeInOnScroll() {
     if (!('IntersectionObserver' in window)) return;
+    // Skip on dashboard page - it has its own animations
+    if (document.querySelector('.dash-layout')) return;
 
     const observer = new IntersectionObserver((entries) => {
       entries.forEach((entry) => {
@@ -163,8 +165,16 @@
     }
 
     markObservable();
-    const mo = new MutationObserver(() => markObservable());
-    mo.observe(document.body, { childList: true, subtree: true });
+    // Throttle MutationObserver — only watch direct children, not entire subtree
+    let pending = null;
+    const mo = new MutationObserver(() => {
+      if (pending) return;
+      pending = requestAnimationFrame(() => {
+        pending = null;
+        markObservable();
+      });
+    });
+    mo.observe(document.body, { childList: true, subtree: false });
   }
 
   // ════════════════════════════════════════════════════════
@@ -291,25 +301,34 @@
   // 9. SMOOTH HOVER LIFT FOR CARDS
   // ════════════════════════════════════════════════════════
   function setupCardHover() {
-    document.querySelectorAll('.flx-service-card').forEach((card) => {
+    // Skip entirely on dashboard / mobile / pages without service cards
+    if (document.querySelector('.dash-layout')) return;
+    if (window.matchMedia('(pointer: coarse)').matches) return;
+
+    const cards = document.querySelectorAll('.flx-service-card');
+    if (cards.length === 0) return;
+
+    cards.forEach((card) => {
       if (card.dataset.flxHoverInit) return;
       card.dataset.flxHoverInit = '1';
 
+      let raf = null;
       card.addEventListener('mousemove', (e) => {
-        const rect = card.getBoundingClientRect();
-        const x = ((e.clientX - rect.left) / rect.width - 0.5) * 4;
-        const y = ((e.clientY - rect.top) / rect.height - 0.5) * 4;
-        card.style.transform = `translateY(-4px) rotateX(${-y}deg) rotateY(${x}deg)`;
+        if (raf) return;
+        raf = requestAnimationFrame(() => {
+          raf = null;
+          const rect = card.getBoundingClientRect();
+          const x = ((e.clientX - rect.left) / rect.width - 0.5) * 4;
+          const y = ((e.clientY - rect.top) / rect.height - 0.5) * 4;
+          card.style.transform = `translateY(-4px) rotateX(${-y}deg) rotateY(${x}deg)`;
+        });
       });
 
       card.addEventListener('mouseleave', () => {
         card.style.transform = '';
       });
     });
-
-    // Re-attach for dynamically added cards
-    const mo = new MutationObserver(setupCardHover);
-    mo.observe(document.body, { childList: true, subtree: true });
+    // No MutationObserver — initial cards are enough; new cards are rare
   }
 
   // ════════════════════════════════════════════════════════
@@ -342,12 +361,15 @@
     setupCardHover();
     setupAccessibility();
 
-    // Welcome toast
-    setTimeout(() => {
-      if (window.flxToast) {
-        window.flxToast('💡 جرّب Cmd+K لفتح الـ chatbot بسرعة', 'info', 4000);
-      }
-    }, 2500);
+    // Welcome toast - show ONCE per browser session, never on dashboard
+    if (!document.querySelector('.dash-layout') && !sessionStorage.getItem('flx-welcome-shown')) {
+      sessionStorage.setItem('flx-welcome-shown', '1');
+      setTimeout(() => {
+        if (window.flxToast) {
+          window.flxToast('💡 جرّب Cmd+K لفتح الـ chatbot بسرعة', 'info', 4000);
+        }
+      }, 2500);
+    }
   }
 
   if (document.readyState === 'loading') {
