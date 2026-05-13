@@ -1,0 +1,1161 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
+<meta name="theme-color" content="#0f1f3f">
+<title>لوحة التحكم — FREIGHTLX</title>
+<link rel="icon" href="/assets/logo/color-logo.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@300;400;500;600;700&family=Fraunces:wght@400;600;700;900&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/flx-design.css">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+
+<style>
+/* ═══════════════════════════════════════════════════════════
+   FREIGHTLX DASHBOARD — Layout & Styles
+   ═══════════════════════════════════════════════════════════ */
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  font-family: var(--flx-font-arabic, 'IBM Plex Sans Arabic'), system-ui, sans-serif;
+  background: var(--flx-paper-soft, #f1f5f9);
+  color: var(--flx-text, #1e3a6e);
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+/* ═══ LAYOUT GRID ═══ */
+.dash-layout {
+  display: grid;
+  grid-template-columns: 260px 1fr;
+  min-height: 100vh;
+}
+
+/* ═══ SIDEBAR ═══ */
+.dash-sidebar {
+  background: linear-gradient(180deg, var(--flx-navy-deep, #0f1f3f) 0%, var(--flx-navy, #1e3a6e) 100%);
+  color: white;
+  padding: 24px 0;
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+}
+
+.dash-logo {
+  padding: 0 24px 24px;
+  border-bottom: 1px solid rgba(255,255,255,0.08);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.dash-logo img { height: 32px; }
+.dash-logo-text {
+  font-family: Fraunces, serif;
+  font-weight: 700;
+  font-size: 18px;
+  letter-spacing: 0.05em;
+}
+
+.dash-nav {
+  flex: 1;
+  padding: 16px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.dash-nav-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 11px 14px;
+  border-radius: 10px;
+  color: rgba(255,255,255,0.78);
+  text-decoration: none;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.18s;
+  border: 1px solid transparent;
+  background: transparent;
+  width: 100%;
+  text-align: right;
+  font-family: inherit;
+}
+.dash-nav-item:hover {
+  background: rgba(255,255,255,0.06);
+  color: white;
+}
+.dash-nav-item.active {
+  background: rgba(255,255,255,0.13);
+  color: white;
+  border-color: rgba(14, 165, 233, 0.4);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+}
+.dash-nav-item svg { flex-shrink: 0; opacity: 0.85; }
+.dash-nav-item.active svg { opacity: 1; color: #38bdf8; }
+.dash-nav-badge {
+  margin-right: auto;
+  background: #ef4444;
+  color: white;
+  border-radius: 10px;
+  padding: 1px 7px;
+  font-size: 10px;
+  font-weight: 700;
+}
+
+.dash-sidebar-footer {
+  padding: 20px 24px;
+  border-top: 1px solid rgba(255,255,255,0.08);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.dash-user-avatar {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #0ea5e9, #6366f1);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-weight: 700;
+  font-size: 14px;
+}
+.dash-user-info { flex: 1; min-width: 0; }
+.dash-user-name {
+  font-size: 13px;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.dash-user-role {
+  font-size: 11px;
+  color: rgba(255,255,255,0.55);
+}
+
+/* ═══ MAIN CONTENT ═══ */
+.dash-main {
+  background: #f8fafc;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.dash-topbar {
+  background: white;
+  border-bottom: 1px solid #e2e8f0;
+  padding: 14px 28px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  position: sticky;
+  top: 0;
+  z-index: 50;
+}
+
+.dash-topbar-title {
+  font-family: Fraunces, serif;
+  font-weight: 700;
+  font-size: 22px;
+  color: #0f1f3f;
+}
+
+.dash-topbar-search {
+  margin-right: auto;
+  width: 360px;
+  max-width: 40vw;
+  position: relative;
+}
+.dash-topbar-search input {
+  width: 100%;
+  padding: 9px 36px 9px 14px;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  font-family: inherit;
+  font-size: 13px;
+  background: #f8fafc;
+  transition: all 0.18s;
+}
+.dash-topbar-search input:focus {
+  outline: none;
+  border-color: #0ea5e9;
+  background: white;
+  box-shadow: 0 0 0 3px rgba(14, 165, 233, 0.1);
+}
+.dash-topbar-search svg {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #94a3b8;
+  pointer-events: none;
+}
+
+.dash-icon-btn {
+  width: 38px;
+  height: 38px;
+  border-radius: 10px;
+  background: #f1f5f9;
+  border: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: #475569;
+  cursor: pointer;
+  transition: all 0.18s;
+  position: relative;
+}
+.dash-icon-btn:hover {
+  background: #e2e8f0;
+  color: #0f1f3f;
+}
+.dash-icon-btn .dash-dot {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  width: 8px;
+  height: 8px;
+  background: #ef4444;
+  border-radius: 50%;
+  border: 2px solid white;
+}
+
+/* ═══ SECTIONS ═══ */
+.dash-content {
+  flex: 1;
+  padding: 28px;
+  max-width: 1400px;
+  width: 100%;
+  margin: 0 auto;
+}
+
+.dash-section { display: none; animation: dashFade 0.36s var(--flx-ease-out, ease); }
+.dash-section.active { display: block; }
+@keyframes dashFade {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.dash-section-header {
+  margin-bottom: 24px;
+}
+.dash-section-title {
+  font-family: Fraunces, serif;
+  font-weight: 700;
+  font-size: 28px;
+  color: #0f1f3f;
+  margin: 0 0 6px;
+}
+.dash-section-sub {
+  color: #64748b;
+  font-size: 14px;
+}
+
+/* ═══ STAT CARDS ═══ */
+.dash-stats {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+  margin-bottom: 28px;
+}
+.dash-stat-card {
+  background: white;
+  border: 1px solid #e2e8f0;
+  border-radius: 14px;
+  padding: 20px;
+  position: relative;
+  overflow: hidden;
+  transition: all 0.24s ease;
+}
+.dash-stat-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 12px 32px rgba(15, 31, 63, 0.08);
+}
+.dash-stat-card::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 3px;
+  background: var(--accent, #0ea5e9);
+}
+.dash-stat-icon {
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  background: var(--accent-soft, rgba(14, 165, 233, 0.12));
+  color: var(--accent, #0ea5e9);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 14px;
+}
+.dash-stat-value {
+  font-family: Fraunces, serif;
+  font-size: 28px;
+  font-weight: 700;
+  color: #0f1f3f;
+  line-height: 1;
+  margin-bottom: 4px;
+}
+.dash-stat-label {
+  font-size: 12px;
+  color: #64748b;
+  letter-spacing: 0.04em;
+}
+.dash-stat-delta {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-top: 10px;
+  font-size: 12px;
+  font-weight: 600;
+}
+.dash-stat-delta.up { color: #16a34a; }
+.dash-stat-delta.down { color: #dc2626; }
+
+.dash-stat-sky    { --accent:#0ea5e9; --accent-soft:rgba(14,165,233,0.12); }
+.dash-stat-amber  { --accent:#d97706; --accent-soft:rgba(217,119,6,0.12); }
+.dash-stat-emerald{ --accent:#16a34a; --accent-soft:rgba(22,163,74,0.12); }
+.dash-stat-purple { --accent:#7e22ce; --accent-soft:rgba(126,34,206,0.12); }
+
+/* ═══ GRID 2-COLUMN ═══ */
+.dash-grid-2 {
+  display: grid;
+  grid-template-columns: 1.6fr 1fr;
+  gap: 20px;
+  margin-bottom: 24px;
+}
+
+.dash-card {
+  background: white;
+  border: 1px solid #e2e8f0;
+  border-radius: 14px;
+  padding: 22px;
+}
+.dash-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 18px;
+}
+.dash-card-title {
+  font-family: Fraunces, serif;
+  font-weight: 700;
+  font-size: 17px;
+  color: #0f1f3f;
+}
+.dash-card-link {
+  font-size: 12px;
+  color: #0284c7;
+  text-decoration: none;
+  font-weight: 600;
+}
+
+/* ═══ SHIPMENTS TABLE ═══ */
+.dash-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+.dash-table th {
+  text-align: right;
+  padding: 12px 10px;
+  font-size: 11px;
+  color: #94a3b8;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  border-bottom: 1px solid #e2e8f0;
+  font-weight: 600;
+}
+.dash-table td {
+  padding: 14px 10px;
+  border-bottom: 1px solid #f1f5f9;
+  font-size: 13px;
+}
+.dash-table tr:hover td { background: #f8fafc; }
+
+.dash-shipment-code {
+  font-family: 'IBM Plex Mono', monospace;
+  font-weight: 600;
+  color: #0f1f3f;
+  font-size: 12px;
+}
+.dash-route {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: #475569;
+}
+.dash-route span:not(.arrow) {
+  background: #f1f5f9;
+  padding: 2px 8px;
+  border-radius: 6px;
+  font-family: 'IBM Plex Mono', monospace;
+  font-weight: 600;
+}
+.dash-route .arrow { color: #94a3b8; font-size: 14px; }
+
+.dash-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 9px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 600;
+}
+.dash-badge::before {
+  content: '';
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+}
+.dash-badge-active   { background: rgba(34,197,94,0.12); color: #16a34a; }
+.dash-badge-active::before { background: #16a34a; }
+.dash-badge-transit  { background: rgba(14,165,233,0.12); color: #0284c7; }
+.dash-badge-transit::before { background: #0ea5e9; }
+.dash-badge-pending  { background: rgba(245,158,11,0.12); color: #d97706; }
+.dash-badge-pending::before { background: #d97706; }
+.dash-badge-completed{ background: rgba(100,116,139,0.12); color: #475569; }
+.dash-badge-completed::before { background: #64748b; }
+.dash-badge-cancelled{ background: rgba(239,68,68,0.12); color: #dc2626; }
+.dash-badge-cancelled::before { background: #dc2626; }
+
+/* ═══ ACTIVITY TIMELINE ═══ */
+.dash-timeline { padding-right: 12px; }
+.dash-timeline-item {
+  display: flex;
+  gap: 14px;
+  padding: 12px 0;
+  position: relative;
+}
+.dash-timeline-item:not(:last-child)::before {
+  content: '';
+  position: absolute;
+  right: 14px;
+  top: 36px;
+  bottom: -12px;
+  width: 2px;
+  background: #e2e8f0;
+}
+.dash-timeline-dot {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  background: #f1f5f9;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  color: #475569;
+  position: relative;
+  z-index: 1;
+}
+.dash-timeline-dot.success { background: rgba(22,163,74,0.14); color: #16a34a; }
+.dash-timeline-dot.info { background: rgba(14,165,233,0.14); color: #0284c7; }
+.dash-timeline-dot.warning { background: rgba(217,119,6,0.14); color: #d97706; }
+.dash-timeline-text { flex: 1; font-size: 13px; line-height: 1.5; }
+.dash-timeline-text strong { color: #0f1f3f; }
+.dash-timeline-time {
+  font-size: 11px;
+  color: #94a3b8;
+  margin-top: 3px;
+}
+
+/* ═══ EMPTY STATES & ACTION BUTTONS ═══ */
+.dash-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 9px 16px;
+  border-radius: 10px;
+  font-size: 13px;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  border: 0;
+  transition: all 0.18s;
+}
+.dash-btn-primary {
+  background: linear-gradient(135deg, #1e3a6e, #0f1f3f);
+  color: white;
+  box-shadow: 0 6px 18px rgba(15, 31, 63, 0.2);
+}
+.dash-btn-primary:hover { transform: translateY(-1px); box-shadow: 0 10px 24px rgba(15, 31, 63, 0.3); }
+.dash-btn-ghost {
+  background: #f1f5f9;
+  color: #475569;
+}
+.dash-btn-ghost:hover { background: #e2e8f0; color: #0f1f3f; }
+
+.dash-filters {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+}
+.dash-filter {
+  padding: 6px 14px;
+  border: 1px solid #e2e8f0;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+  background: white;
+  cursor: pointer;
+  transition: all 0.18s;
+  color: #475569;
+}
+.dash-filter:hover { border-color: #0ea5e9; color: #0284c7; }
+.dash-filter.active {
+  background: #0f1f3f;
+  border-color: #0f1f3f;
+  color: white;
+}
+
+/* ═══ DOCUMENTS GRID ═══ */
+.dash-docs-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 14px;
+}
+.dash-doc {
+  background: white;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 16px;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.18s;
+}
+.dash-doc:hover {
+  border-color: #0ea5e9;
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(15, 31, 63, 0.06);
+}
+.dash-doc-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: 10px;
+  background: rgba(14, 165, 233, 0.1);
+  color: #0284c7;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 10px;
+}
+.dash-doc-name {
+  font-size: 13px;
+  font-weight: 600;
+  color: #0f1f3f;
+  margin-bottom: 4px;
+  word-break: break-word;
+}
+.dash-doc-meta {
+  font-size: 11px;
+  color: #94a3b8;
+}
+
+.dash-upload-zone {
+  border: 2px dashed #cbd5e1;
+  border-radius: 14px;
+  padding: 40px;
+  text-align: center;
+  background: white;
+  margin-bottom: 20px;
+  cursor: pointer;
+  transition: all 0.18s;
+}
+.dash-upload-zone:hover, .dash-upload-zone.drag {
+  border-color: #0ea5e9;
+  background: rgba(14, 165, 233, 0.04);
+}
+.dash-upload-icon {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: #f1f5f9;
+  color: #475569;
+  margin: 0 auto 14px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+.dash-upload-title {
+  font-weight: 600;
+  color: #0f1f3f;
+  font-size: 15px;
+}
+.dash-upload-sub {
+  font-size: 12px;
+  color: #94a3b8;
+  margin-top: 6px;
+}
+
+/* ═══ CHART CONTAINER ═══ */
+.dash-chart-wrap {
+  position: relative;
+  height: 280px;
+  margin-top: 10px;
+}
+
+/* ═══ SETTINGS FORM ═══ */
+.dash-form {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+.dash-form-group { grid-column: span 1; }
+.dash-form-group.full { grid-column: 1 / -1; }
+.dash-form-label {
+  display: block;
+  font-size: 12px;
+  font-weight: 600;
+  color: #475569;
+  margin-bottom: 6px;
+}
+.dash-form-input,
+.dash-form-select {
+  width: 100%;
+  padding: 10px 14px;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  font-family: inherit;
+  font-size: 13px;
+  background: #f8fafc;
+  transition: all 0.18s;
+}
+.dash-form-input:focus, .dash-form-select:focus {
+  outline: none;
+  border-color: #0ea5e9;
+  background: white;
+  box-shadow: 0 0 0 3px rgba(14, 165, 233, 0.1);
+}
+
+.dash-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 14px;
+  background: #f8fafc;
+  border-radius: 10px;
+  margin-bottom: 8px;
+}
+.dash-toggle-label {
+  font-size: 13px;
+  font-weight: 500;
+  color: #0f1f3f;
+}
+.dash-toggle-sub {
+  font-size: 11px;
+  color: #94a3b8;
+  margin-top: 2px;
+}
+.dash-toggle-switch {
+  position: relative;
+  width: 40px;
+  height: 22px;
+  background: #cbd5e1;
+  border-radius: 999px;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+.dash-toggle-switch::after {
+  content: '';
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 18px;
+  height: 18px;
+  background: white;
+  border-radius: 50%;
+  transition: transform 0.2s;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+}
+.dash-toggle-switch.on { background: #16a34a; }
+.dash-toggle-switch.on::after { transform: translateX(18px); }
+
+/* ═══ MOBILE ═══ */
+@media (max-width: 1023px) {
+  .dash-layout { grid-template-columns: 1fr; }
+  .dash-sidebar {
+    position: fixed;
+    right: -280px;
+    width: 260px;
+    z-index: 100;
+    transition: right 0.3s;
+  }
+  .dash-sidebar.open { right: 0; }
+  .dash-stats { grid-template-columns: repeat(2, 1fr); }
+  .dash-grid-2 { grid-template-columns: 1fr; }
+  .dash-form { grid-template-columns: 1fr; }
+  .dash-topbar-search { display: none; }
+}
+@media (max-width: 540px) {
+  .dash-stats { grid-template-columns: 1fr; }
+  .dash-content { padding: 16px; }
+  .dash-section-title { font-size: 22px; }
+}
+
+/* Mobile menu button - hidden on desktop */
+.dash-menu-btn { display: none; }
+@media (max-width: 1023px) {
+  .dash-menu-btn { display: inline-flex; }
+}
+
+/* Backdrop for mobile menu */
+.dash-backdrop {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 31, 63, 0.5);
+  z-index: 99;
+}
+.dash-backdrop.show { display: block; }
+</style>
+</head>
+<body>
+
+<div class="dash-layout">
+  <!-- ═══════════════════════════════════════════════════════
+       SIDEBAR
+       ═══════════════════════════════════════════════════════ -->
+  <aside class="dash-sidebar" id="dashSidebar">
+    <div class="dash-logo">
+      <img src="/assets/logo/white-logo.svg" alt="FREIGHTLX" onerror="this.src='/assets/logo/color-logo.svg'">
+    </div>
+
+    <nav class="dash-nav">
+      <button class="dash-nav-item active" data-section="overview">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+        نظرة عامة
+      </button>
+      <button class="dash-nav-item" data-section="shipments">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 20a4 4 0 0 0 4-2 4 4 0 0 1 4-1 4 4 0 0 1 4 1 4 4 0 0 0 4 2"/><path d="M4 18l-2-7h20l-2 7"/><path d="M12 11V4M5 11V8a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v3"/></svg>
+        شحناتي
+        <span class="dash-nav-badge">3</span>
+      </button>
+      <button class="dash-nav-item" data-section="quotes">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+        عروض الأسعار
+      </button>
+      <button class="dash-nav-item" data-section="documents">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+        الوثائق
+      </button>
+      <button class="dash-nav-item" data-section="invoices">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg>
+        الفواتير
+      </button>
+      <button class="dash-nav-item" data-section="analytics">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="20" x2="12" y2="10"/><line x1="18" y1="20" x2="18" y2="4"/><line x1="6" y1="20" x2="6" y2="16"/></svg>
+        الإحصائيات
+      </button>
+      <button class="dash-nav-item" data-section="settings">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33h.01a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+        الإعدادات
+      </button>
+    </nav>
+
+    <div class="dash-sidebar-footer">
+      <div class="dash-user-avatar" id="dashUserAvatar">S</div>
+      <div class="dash-user-info">
+        <div class="dash-user-name" id="dashUserName">سلطان الجاسر</div>
+        <div class="dash-user-role">حساب أعمال</div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- Backdrop for mobile -->
+  <div class="dash-backdrop" id="dashBackdrop"></div>
+
+  <!-- ═══════════════════════════════════════════════════════
+       MAIN CONTENT
+       ═══════════════════════════════════════════════════════ -->
+  <main class="dash-main">
+    <!-- Top bar -->
+    <div class="dash-topbar">
+      <button class="dash-icon-btn dash-menu-btn" id="dashMenuBtn" aria-label="القائمة">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+      </button>
+      <div class="dash-topbar-title" id="dashPageTitle">نظرة عامة</div>
+
+      <div class="dash-topbar-search">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        <input type="text" placeholder="ابحث عن شحنة، فاتورة، أو وثيقة...">
+      </div>
+
+      <button class="dash-icon-btn" aria-label="إشعارات" title="الإشعارات">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+        <span class="dash-dot"></span>
+      </button>
+      <a href="/" class="dash-icon-btn" aria-label="العودة للموقع" title="العودة للموقع">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+      </a>
+    </div>
+
+    <div class="dash-content">
+
+      <!-- ═══ OVERVIEW SECTION ═══ -->
+      <section class="dash-section active" id="section-overview">
+        <div class="dash-section-header">
+          <h1 class="dash-section-title">مرحباً يا سلطان 👋</h1>
+          <p class="dash-section-sub">إليك ملخص نشاطك للأسبوع الحالي</p>
+        </div>
+
+        <!-- Stats -->
+        <div class="dash-stats">
+          <div class="dash-stat-card dash-stat-sky">
+            <div class="dash-stat-icon">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 20a4 4 0 0 0 4-2 4 4 0 0 1 4-1 4 4 0 0 1 4 1 4 4 0 0 0 4 2"/><path d="M4 18l-2-7h20l-2 7"/><path d="M12 11V4M5 11V8a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v3"/></svg>
+            </div>
+            <div class="dash-stat-value">3</div>
+            <div class="dash-stat-label">شحنات نشطة</div>
+            <div class="dash-stat-delta up">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="18 15 12 9 6 15"/></svg>
+              +2 هذا الأسبوع
+            </div>
+          </div>
+
+          <div class="dash-stat-card dash-stat-amber">
+            <div class="dash-stat-icon">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+            </div>
+            <div class="dash-stat-value">$47.2K</div>
+            <div class="dash-stat-label">إجمالي المصاريف</div>
+            <div class="dash-stat-delta down">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+              -8% عن الشهر الماضي
+            </div>
+          </div>
+
+          <div class="dash-stat-card dash-stat-emerald">
+            <div class="dash-stat-icon">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><polyline points="9 12 11 14 15 10"/></svg>
+            </div>
+            <div class="dash-stat-value">12</div>
+            <div class="dash-stat-label">شهادات سابر</div>
+            <div class="dash-stat-delta up">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="18 15 12 9 6 15"/></svg>
+              +4 هذا الشهر
+            </div>
+          </div>
+
+          <div class="dash-stat-card dash-stat-purple">
+            <div class="dash-stat-icon">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+            </div>
+            <div class="dash-stat-value">28</div>
+            <div class="dash-stat-label">وثائق محفوظة</div>
+            <div class="dash-stat-delta up">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="18 15 12 9 6 15"/></svg>
+              +6 هذا الأسبوع
+            </div>
+          </div>
+        </div>
+
+        <!-- Grid 2-column: Recent Shipments + Activity -->
+        <div class="dash-grid-2">
+          <div class="dash-card">
+            <div class="dash-card-header">
+              <h3 class="dash-card-title">آخر الشحنات</h3>
+              <a class="dash-card-link" data-goto="shipments">عرض الكل ←</a>
+            </div>
+            <table class="dash-table">
+              <thead>
+                <tr>
+                  <th>الشحنة</th>
+                  <th>المسار</th>
+                  <th>الحالة</th>
+                  <th>السعر</th>
+                </tr>
+              </thead>
+              <tbody id="dashRecentShipments"></tbody>
+            </table>
+          </div>
+
+          <div class="dash-card">
+            <div class="dash-card-header">
+              <h3 class="dash-card-title">آخر النشاطات</h3>
+              <a class="dash-card-link">تصدير</a>
+            </div>
+            <div class="dash-timeline" id="dashActivity"></div>
+          </div>
+        </div>
+
+        <!-- Chart -->
+        <div class="dash-card">
+          <div class="dash-card-header">
+            <h3 class="dash-card-title">مصروفات الشحن (آخر 6 أشهر)</h3>
+            <div style="display:flex;gap:8px">
+              <button class="dash-filter active">شهور</button>
+              <button class="dash-filter">أسابيع</button>
+            </div>
+          </div>
+          <div class="dash-chart-wrap">
+            <canvas id="dashSpendingChart"></canvas>
+          </div>
+        </div>
+      </section>
+
+      <!-- ═══ SHIPMENTS SECTION ═══ -->
+      <section class="dash-section" id="section-shipments">
+        <div class="dash-section-header">
+          <h1 class="dash-section-title">شحناتي</h1>
+          <p class="dash-section-sub">إدارة وتتبع جميع شحناتك</p>
+        </div>
+
+        <div class="dash-filters">
+          <button class="dash-filter active" data-filter="all">الكل</button>
+          <button class="dash-filter" data-filter="active">نشطة</button>
+          <button class="dash-filter" data-filter="transit">في الطريق</button>
+          <button class="dash-filter" data-filter="pending">قيد المراجعة</button>
+          <button class="dash-filter" data-filter="completed">منتهية</button>
+          <div style="margin-right:auto"></div>
+          <button class="dash-btn dash-btn-primary">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            شحنة جديدة
+          </button>
+        </div>
+
+        <div class="dash-card" style="padding:0">
+          <table class="dash-table" style="font-size:13px">
+            <thead>
+              <tr>
+                <th style="padding-right:20px">رقم الشحنة</th>
+                <th>المسار</th>
+                <th>الناقل</th>
+                <th>الحاوية</th>
+                <th>التاريخ</th>
+                <th>الحالة</th>
+                <th style="text-align:left;padding-left:20px">السعر</th>
+              </tr>
+            </thead>
+            <tbody id="dashAllShipments"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- ═══ QUOTES SECTION ═══ -->
+      <section class="dash-section" id="section-quotes">
+        <div class="dash-section-header">
+          <h1 class="dash-section-title">عروض الأسعار</h1>
+          <p class="dash-section-sub">عروضك المحفوظة وصلاحياتها</p>
+        </div>
+
+        <div class="dash-filters">
+          <button class="dash-filter active">الكل (8)</button>
+          <button class="dash-filter">سارية (5)</button>
+          <button class="dash-filter">منتهية الصلاحية (3)</button>
+          <div style="margin-right:auto"></div>
+          <button class="dash-btn dash-btn-primary">طلب عرض جديد</button>
+        </div>
+
+        <div class="dash-card" style="padding:0">
+          <table class="dash-table">
+            <thead>
+              <tr>
+                <th>رقم العرض</th>
+                <th>المسار</th>
+                <th>الناقل</th>
+                <th>السعر</th>
+                <th>صالح حتى</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody id="dashQuotes"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- ═══ DOCUMENTS SECTION ═══ -->
+      <section class="dash-section" id="section-documents">
+        <div class="dash-section-header">
+          <h1 class="dash-section-title">الوثائق</h1>
+          <p class="dash-section-sub">شهادات سابر، بوليصات الشحن، الفواتير التجارية</p>
+        </div>
+
+        <div class="dash-upload-zone" id="dashUploadZone">
+          <div class="dash-upload-icon">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+          </div>
+          <div class="dash-upload-title">اسحب الملفات هنا أو اضغط للرفع</div>
+          <div class="dash-upload-sub">PDF, JPG, PNG · حتى 10MB لكل ملف</div>
+        </div>
+
+        <div class="dash-filters">
+          <button class="dash-filter active">الكل</button>
+          <button class="dash-filter">سابر</button>
+          <button class="dash-filter">بوليصات</button>
+          <button class="dash-filter">فواتير</button>
+          <button class="dash-filter">شهادات منشأ</button>
+        </div>
+
+        <div class="dash-docs-grid" id="dashDocs"></div>
+      </section>
+
+      <!-- ═══ INVOICES SECTION ═══ -->
+      <section class="dash-section" id="section-invoices">
+        <div class="dash-section-header">
+          <h1 class="dash-section-title">الفواتير</h1>
+          <p class="dash-section-sub">مدفوعاتك ومستحقاتك</p>
+        </div>
+
+        <div class="dash-stats" style="grid-template-columns:repeat(3,1fr)">
+          <div class="dash-stat-card dash-stat-emerald">
+            <div class="dash-stat-label">إجمالي مدفوع</div>
+            <div class="dash-stat-value" style="margin-top:8px">$42,180</div>
+          </div>
+          <div class="dash-stat-card dash-stat-amber">
+            <div class="dash-stat-label">قيد التسديد</div>
+            <div class="dash-stat-value" style="margin-top:8px">$5,020</div>
+          </div>
+          <div class="dash-stat-card dash-stat-sky">
+            <div class="dash-stat-label">متوسط فاتورة</div>
+            <div class="dash-stat-value" style="margin-top:8px">$2,365</div>
+          </div>
+        </div>
+
+        <div class="dash-card" style="padding:0">
+          <table class="dash-table">
+            <thead>
+              <tr>
+                <th>رقم الفاتورة</th>
+                <th>الوصف</th>
+                <th>التاريخ</th>
+                <th>المبلغ</th>
+                <th>الحالة</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody id="dashInvoices"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- ═══ ANALYTICS SECTION ═══ -->
+      <section class="dash-section" id="section-analytics">
+        <div class="dash-section-header">
+          <h1 class="dash-section-title">الإحصائيات والتحليلات</h1>
+          <p class="dash-section-sub">رؤى مفصلة عن نشاط الشحن لديك</p>
+        </div>
+
+        <div class="dash-grid-2">
+          <div class="dash-card">
+            <div class="dash-card-header"><h3 class="dash-card-title">الشحنات حسب الناقل</h3></div>
+            <div class="dash-chart-wrap"><canvas id="dashCarriersChart"></canvas></div>
+          </div>
+          <div class="dash-card">
+            <div class="dash-card-header"><h3 class="dash-card-title">المسارات الأكثر استخداماً</h3></div>
+            <div class="dash-chart-wrap"><canvas id="dashRoutesChart"></canvas></div>
+          </div>
+        </div>
+
+        <div class="dash-card">
+          <div class="dash-card-header"><h3 class="dash-card-title">حجم الشحنات (شهرياً)</h3></div>
+          <div class="dash-chart-wrap" style="height:320px"><canvas id="dashVolumeChart"></canvas></div>
+        </div>
+      </section>
+
+      <!-- ═══ SETTINGS SECTION ═══ -->
+      <section class="dash-section" id="section-settings">
+        <div class="dash-section-header">
+          <h1 class="dash-section-title">الإعدادات</h1>
+          <p class="dash-section-sub">إدارة حسابك وتفضيلاتك</p>
+        </div>
+
+        <div class="dash-grid-2">
+          <div class="dash-card">
+            <div class="dash-card-header"><h3 class="dash-card-title">المعلومات الشخصية</h3></div>
+            <div class="dash-form">
+              <div class="dash-form-group">
+                <label class="dash-form-label">الاسم</label>
+                <input type="text" class="dash-form-input" value="سلطان الجاسر">
+              </div>
+              <div class="dash-form-group">
+                <label class="dash-form-label">البريد الإلكتروني</label>
+                <input type="email" class="dash-form-input" value="sultan@freightlx.com">
+              </div>
+              <div class="dash-form-group">
+                <label class="dash-form-label">الجوال</label>
+                <input type="tel" class="dash-form-input" value="+966 50 000 0000">
+              </div>
+              <div class="dash-form-group">
+                <label class="dash-form-label">الشركة</label>
+                <input type="text" class="dash-form-input" value="FREIGHTLX">
+              </div>
+              <div class="dash-form-group full" style="margin-top:8px">
+                <button class="dash-btn dash-btn-primary">حفظ التغييرات</button>
+              </div>
+            </div>
+          </div>
+
+          <div class="dash-card">
+            <div class="dash-card-header"><h3 class="dash-card-title">التفضيلات</h3></div>
+
+            <div class="dash-toggle">
+              <div>
+                <div class="dash-toggle-label">إشعارات البريد الإلكتروني</div>
+                <div class="dash-toggle-sub">تنبيهات تحديث حالة الشحنات</div>
+              </div>
+              <div class="dash-toggle-switch on" onclick="this.classList.toggle('on')"></div>
+            </div>
+
+            <div class="dash-toggle">
+              <div>
+                <div class="dash-toggle-label">SMS للشحنات الحرجة</div>
+                <div class="dash-toggle-sub">رسائل SMS عند الوصول/التأخير</div>
+              </div>
+              <div class="dash-toggle-switch on" onclick="this.classList.toggle('on')"></div>
+            </div>
+
+            <div class="dash-toggle">
+              <div>
+                <div class="dash-toggle-label">تقرير أسبوعي</div>
+                <div class="dash-toggle-sub">ملخص أداء الشحنات كل أحد</div>
+              </div>
+              <div class="dash-toggle-switch" onclick="this.classList.toggle('on')"></div>
+            </div>
+
+            <div class="dash-toggle">
+              <div>
+                <div class="dash-toggle-label">العملة</div>
+                <div class="dash-toggle-sub">العرض الافتراضي للأسعار</div>
+              </div>
+              <select class="dash-form-select" style="width:auto;padding:6px 12px;font-size:12px">
+                <option>USD ($)</option>
+                <option>SAR (ر.س)</option>
+                <option>EUR (€)</option>
+              </select>
+            </div>
+
+            <div class="dash-toggle" style="margin-top:14px">
+              <div>
+                <div class="dash-toggle-label">اللغة</div>
+                <div class="dash-toggle-sub">لغة واجهة لوحة التحكم</div>
+              </div>
+              <select class="dash-form-select" style="width:auto;padding:6px 12px;font-size:12px">
+                <option>العربية</option>
+                <option>English</option>
+              </select>
+            </div>
+          </div>
+        </div>
+      </section>
+
+    </div>
+  </main>
+</div>
+
+<script src="/flx-dashboard-page.js"></script>
+<script src="/flx-ui-enhancements.js" defer></script>
+</body>
+</html>
