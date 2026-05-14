@@ -243,9 +243,9 @@ function fxNormalizeOffer(raw, fallbackRoute) {
   };
 }
 
-/** Poll /v3/prices/{reqId} for offers — max 6 attempts × 1.5s = 9s total. */
+/** Poll /v3/prices/{reqId} for offers — max 4 attempts × 1.5s = 6s total. */
 async function fxPollOffers(reqId, token) {
-  for (let i = 0; i < 6; i++) {
+  for (let i = 0; i < 4; i++) {
     await new Promise(r => setTimeout(r, 1500));
     try {
       const c = new AbortController();
@@ -285,10 +285,10 @@ async function fetchFreightifyRates(reqBody) {
     const url = `${FX_BASE}/v3/prices?${query}`;
     trace.steps.push('query_built');
 
-    // 8s timeout on FIRST request — Freightify returns reqId quickly, then we poll
-    // for actual offers. Total budget: 8s + 9s polling = 17s (under Vercel's 25s).
+    // 15s timeout on FIRST request — Freightify is genuinely slow on rate fan-out.
+    // If we get reqId + partial offers, polling adds up to 9s. Total: 24s < 25s Vercel limit.
     const c1 = new AbortController();
-    const tid1 = setTimeout(() => c1.abort(), 8000);
+    const tid1 = setTimeout(() => c1.abort(), 15000);
     let r;
     try {
       r = await fetch(url, {
@@ -303,8 +303,8 @@ async function fetchFreightifyRates(reqBody) {
     } catch (e) {
       clearTimeout(tid1);
       if (e.name === 'AbortError') {
-        trace.steps.push('prices_timeout_8s');
-        return { source: 'freightify_timeout', offers: [], error: 'prices first request timed out after 8s (no reqId yet)', trace, url };
+        trace.steps.push('prices_timeout_15s');
+        return { source: 'freightify_timeout', offers: [], error: 'prices first request timed out after 15s (Freightify slow fan-out)', trace, url };
       }
       throw e;
       throw e;
@@ -460,7 +460,7 @@ export default async function handler(req) {
       }
     }
     return json({
-      status: 'ok', version: '2.7.1', time: new Date().toISOString(),
+      status: 'ok', version: '2.7.2', time: new Date().toISOString(),
       services: {
         database: dbStatus, supabase_url: SUPABASE_URL,
         ai: process.env.GEMINI_API_KEY ? 'gemini' : process.env.OPENAI_API_KEY ? 'openai' : 'none',
