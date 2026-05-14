@@ -529,7 +529,7 @@ export default async function handler(req) {
       }
     }
     return json({
-      status: 'ok', version: '2.8.1', time: new Date().toISOString(),
+      status: 'ok', version: '2.8.2', time: new Date().toISOString(),
       services: {
         database: dbStatus, supabase_url: SUPABASE_URL,
         ai: process.env.GEMINI_API_KEY ? 'gemini' : process.env.OPENAI_API_KEY ? 'openai' : 'none',
@@ -741,9 +741,17 @@ export default async function handler(req) {
         }], prefer: 'return=minimal' });
 
         if (normalized.length > 0) {
+          // Only set carrier_code if it exists in our DB (FK constraint).
+          // For Freightify-only carriers, save the name but leave code null.
+          let knownCarrierCodes = new Set();
+          try {
+            const codeRows = await sb('/carriers?select=code');
+            knownCarrierCodes = new Set((codeRows || []).map(c => String(c.code).toUpperCase()));
+          } catch {}
           await sb('/rate_offers', { method: 'POST', body: normalized.map(o => ({
             id: genId('OFR'), request_id: requestId,
-            carrier_code: o.carrier_code || null, carrier_name: o.carrier_name,
+            carrier_code: (o.carrier_code && knownCarrierCodes.has(String(o.carrier_code).toUpperCase())) ? o.carrier_code : null,
+            carrier_name: o.carrier_name,
             vessel: o.vessel, route: o.route, transit_days: o.transit_days,
             price: o.price, currency: o.currency, validity_until: o.validity_until,
             etd: o.etd, eta: o.eta, service_type: o.service_type,
