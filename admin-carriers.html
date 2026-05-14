@@ -1,0 +1,371 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>إدارة الخطوط الملاحية — FREIGHTLX Admin</title>
+<script>window.FLX_API_BASE = '/api/v1';</script>
+<style>
+*,*::before,*::after { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: 'Segoe UI', 'Tahoma', sans-serif;
+  background: #f6f9ff; color: #1e293b; line-height: 1.6;
+}
+.container { max-width: 1400px; margin: 0 auto; padding: 24px; }
+header {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 16px 0; margin-bottom: 24px;
+}
+header h1 { font-size: 22px; font-weight: 800; color: #1e3a5f; }
+header nav { display: flex; gap: 16px; }
+header nav a { color: #4f46e5; text-decoration: none; font-weight: 500; }
+
+.stats {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 16px; margin-bottom: 24px;
+}
+.stat-card {
+  background: white; padding: 16px; border-radius: 12px;
+  box-shadow: 0 2px 12px rgba(15, 23, 42, 0.05);
+}
+.stat-value { font-size: 28px; font-weight: 800; color: #1e3a5f; }
+.stat-label { font-size: 13px; color: #64748b; margin-top: 4px; }
+
+.toolbar {
+  display: flex; justify-content: space-between; align-items: center;
+  margin-bottom: 16px; gap: 16px; flex-wrap: wrap;
+}
+.btn {
+  padding: 10px 20px; border-radius: 10px; border: none; cursor: pointer;
+  font-size: 14px; font-weight: 700; font-family: inherit; transition: all 0.2s;
+}
+.btn-primary { background: #4f46e5; color: white; }
+.btn-primary:hover { background: #4338ca; }
+.btn-danger { background: #ef4444; color: white; padding: 6px 12px; font-size: 12px; }
+.btn-secondary { background: #f1f5f9; color: #475569; padding: 6px 12px; font-size: 12px; }
+
+.search {
+  padding: 10px 16px; border: 1px solid #cbd5e1; border-radius: 10px;
+  width: 280px; font-family: inherit; font-size: 14px;
+}
+
+.table-wrap { background: white; border-radius: 14px; overflow: hidden; box-shadow: 0 2px 12px rgba(15, 23, 42, 0.05); }
+table { width: 100%; border-collapse: collapse; }
+th, td { padding: 12px 16px; text-align: right; font-size: 14px; }
+th { background: #f8fafc; font-weight: 700; color: #475569; font-size: 12px; text-transform: uppercase; }
+tr { border-bottom: 1px solid #f1f5f9; }
+tr:hover { background: #fafbff; }
+
+.logo-cell { display: flex; align-items: center; gap: 12px; }
+.logo-img { width: 60px; height: 28px; border-radius: 6px; object-fit: contain; background: #f8fafc; }
+.code-badge { display: inline-block; padding: 2px 8px; background: #e0e7ff; color: #4338ca; border-radius: 4px; font-size: 11px; font-family: monospace; font-weight: 700; }
+
+.priority-input { width: 60px; padding: 4px 8px; border: 1px solid #cbd5e1; border-radius: 6px; text-align: center; }
+
+.toggle { position: relative; width: 44px; height: 24px; }
+.toggle input { opacity: 0; width: 0; height: 0; }
+.toggle .slider {
+  position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0;
+  background: #cbd5e1; border-radius: 24px; transition: 0.2s;
+}
+.toggle .slider:before {
+  position: absolute; content: ""; height: 18px; width: 18px;
+  left: 3px; bottom: 3px; background: white; border-radius: 50%; transition: 0.2s;
+}
+.toggle input:checked + .slider { background: #22c55e; }
+.toggle input:checked + .slider:before { transform: translateX(20px); }
+
+.services-tags { display: flex; gap: 4px; flex-wrap: wrap; }
+.svc-tag { padding: 2px 8px; background: #eef2ff; color: #4f46e5; border-radius: 999px; font-size: 11px; font-weight: 600; }
+
+.modal-overlay {
+  position: fixed; inset: 0; background: rgba(15, 23, 42, 0.5);
+  display: none; align-items: center; justify-content: center; z-index: 100;
+}
+.modal-overlay.show { display: flex; }
+.modal { background: white; padding: 24px; border-radius: 14px; width: 90%; max-width: 600px; max-height: 90vh; overflow-y: auto; }
+.modal h2 { margin-bottom: 16px; color: #1e3a5f; }
+.modal .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.modal label { display: block; font-size: 12px; font-weight: 600; color: #475569; margin-bottom: 4px; }
+.modal input, .modal select {
+  width: 100%; padding: 8px 10px; border: 1px solid #cbd5e1; border-radius: 8px;
+  font-family: inherit; font-size: 13px;
+}
+.modal-actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 16px; }
+
+#status { padding: 10px 16px; border-radius: 10px; margin-bottom: 16px; font-size: 14px; display: none; }
+#status.success { background: #dcfce7; color: #166534; display: block; }
+#status.error { background: #fee2e2; color: #b91c1c; display: block; }
+
+.empty { text-align: center; padding: 40px; color: #94a3b8; }
+.spinner { width: 18px; height: 18px; border: 2px solid #c7d2fe; border-top-color: #4f46e5; border-radius: 50%; animation: spin 0.8s linear infinite; display: inline-block; }
+@keyframes spin { to { transform: rotate(360deg); } }
+</style>
+</head>
+<body>
+<div class="container">
+  <header>
+    <h1>🚢 إدارة الخطوط الملاحية</h1>
+    <nav>
+      <a href="/admin.html">→ Admin Dashboard</a>
+      <a href="/dashboard.html">→ لوحة التحكم</a>
+    </nav>
+  </header>
+
+  <div class="stats">
+    <div class="stat-card"><div class="stat-value" id="statTotal">—</div><div class="stat-label">إجمالي الخطوط</div></div>
+    <div class="stat-card"><div class="stat-value" id="statActive">—</div><div class="stat-label">نشطة</div></div>
+    <div class="stat-card"><div class="stat-value" id="statCountries">—</div><div class="stat-label">دول</div></div>
+    <div class="stat-card"><div class="stat-value" id="statAvgTransit">—</div><div class="stat-label">متوسط أيام العبور</div></div>
+  </div>
+
+  <div id="status"></div>
+
+  <div class="toolbar">
+    <input type="text" class="search" id="search" placeholder="🔍 بحث بالاسم أو الكود...">
+    <button class="btn btn-primary" onclick="openAddModal()">+ إضافة خط ملاحي</button>
+  </div>
+
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>الأولوية</th>
+          <th>الخط</th>
+          <th>الدولة</th>
+          <th>الخدمات</th>
+          <th>أيام العبور</th>
+          <th>الموقع</th>
+          <th>نشط</th>
+          <th>إجراءات</th>
+        </tr>
+      </thead>
+      <tbody id="tbody">
+        <tr><td colspan="8" class="empty">جاري التحميل <span class="spinner"></span></td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- Edit/Add Modal -->
+<div class="modal-overlay" id="modal">
+  <div class="modal">
+    <h2 id="modalTitle">تعديل خط ملاحي</h2>
+    <form id="carrierForm">
+      <div class="grid">
+        <div><label>الكود (4 حروف) *</label><input name="code" required maxlength="4" pattern="[A-Z]{4}"></div>
+        <div><label>الاسم *</label><input name="name" required></div>
+        <div><label>الدولة</label><input name="country"></div>
+        <div><label>الأولوية (1-99)</label><input name="priority" type="number" min="1" max="99"></div>
+        <div><label>لون البراند (HEX)</label><input name="brand_color" type="color"></div>
+        <div><label>متوسط أيام العبور</label><input name="transit_days_avg" type="number" min="1" max="60"></div>
+        <div><label>الموقع</label><input name="website" type="url" placeholder="https://"></div>
+        <div><label>رابط الشعار</label><input name="logo_url" placeholder="/assets/carriers/...svg"></div>
+        <div style="grid-column: span 2;"><label>الوصف بالعربية</label><input name="description_ar"></div>
+      </div>
+      <div class="modal-actions">
+        <button type="button" class="btn btn-secondary" onclick="closeModal()">إلغاء</button>
+        <button type="submit" class="btn btn-primary">حفظ</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script src="/flx-api-client.js"></script>
+<script>
+let allCarriers = [];
+let editingCode = null;
+
+function getToken() {
+  const direct = localStorage.getItem('flx_access_token');
+  if (direct) return direct;
+  for (const k of Object.keys(localStorage)) {
+    if (k.startsWith('sb-') && k.endsWith('-auth-token')) {
+      try {
+        const d = JSON.parse(localStorage.getItem(k));
+        if (d?.access_token) return d.access_token;
+      } catch {}
+    }
+  }
+  return '';
+}
+
+async function api(path, opts = {}) {
+  const r = await fetch('/api/v1' + path, {
+    ...opts,
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': 'Bearer ' + getToken(),
+      ...(opts.headers || {}),
+    },
+    body: opts.body ? JSON.stringify(opts.body) : undefined,
+  });
+  const text = await r.text();
+  const data = text ? JSON.parse(text) : null;
+  if (!r.ok) throw new Error(data?.error?.message || r.statusText);
+  return data;
+}
+
+function setStatus(msg, kind) {
+  const el = document.getElementById('status');
+  el.textContent = msg;
+  el.className = kind || '';
+  if (kind === 'success') setTimeout(() => { el.className = ''; el.textContent = ''; }, 3000);
+}
+
+async function loadCarriers() {
+  try {
+    const res = await api('/admin/carriers');
+    allCarriers = res.data;
+    updateStats();
+    renderTable();
+  } catch (e) {
+    if (e.message.includes('FORBIDDEN')) {
+      setStatus('⚠️ هذه الصفحة للـ Admin فقط — يجب أن يكون role=admin أو super_admin', 'error');
+    } else {
+      setStatus('فشل التحميل: ' + e.message, 'error');
+    }
+  }
+}
+
+function updateStats() {
+  document.getElementById('statTotal').textContent = allCarriers.length;
+  document.getElementById('statActive').textContent = allCarriers.filter(c => c.active).length;
+  document.getElementById('statCountries').textContent = new Set(allCarriers.map(c => c.country)).size;
+  const avg = allCarriers.reduce((s, c) => s + (c.transit_days_avg || 0), 0) / allCarriers.length;
+  document.getElementById('statAvgTransit').textContent = Math.round(avg) + ' يوم';
+}
+
+function renderTable() {
+  const tbody = document.getElementById('tbody');
+  const q = document.getElementById('search').value.toLowerCase().trim();
+  const filtered = q
+    ? allCarriers.filter(c => c.code.toLowerCase().includes(q) || c.name.toLowerCase().includes(q) || (c.country || '').toLowerCase().includes(q))
+    : allCarriers;
+  if (filtered.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="8" class="empty">لا توجد نتائج</td></tr>';
+    return;
+  }
+  tbody.innerHTML = filtered.map(c => `
+    <tr>
+      <td><strong>#${c.priority || '—'}</strong></td>
+      <td>
+        <div class="logo-cell">
+          ${c.logo_url ? `<img src="${c.logo_url}" class="logo-img" alt="${c.name}" onerror="this.style.display='none'">` : ''}
+          <div>
+            <div style="font-weight:700">${c.name}</div>
+            <div><span class="code-badge">${c.code}</span></div>
+          </div>
+        </div>
+      </td>
+      <td>${c.country || '—'}</td>
+      <td><div class="services-tags">${(c.services || []).map(s => `<span class="svc-tag">${s}</span>`).join('')}</div></td>
+      <td>${c.transit_days_avg || '—'} يوم</td>
+      <td>${c.website ? `<a href="${c.website}" target="_blank" rel="noopener" style="color:#4f46e5">زيارة</a>` : '—'}</td>
+      <td>
+        <label class="toggle">
+          <input type="checkbox" ${c.active ? 'checked' : ''} onchange="toggleActive('${c.code}', this.checked)">
+          <span class="slider"></span>
+        </label>
+      </td>
+      <td>
+        <button class="btn btn-secondary" onclick="editCarrier('${c.code}')">تعديل</button>
+        <button class="btn btn-danger" onclick="deleteCarrier('${c.code}')">🗑️</button>
+      </td>
+    </tr>`).join('');
+}
+
+async function toggleActive(code, active) {
+  try {
+    await api('/admin/carriers/' + code, { method: 'PATCH', body: { active } });
+    const c = allCarriers.find(x => x.code === code);
+    if (c) c.active = active;
+    updateStats();
+    setStatus(`تم ${active ? 'تفعيل' : 'إلغاء'} ${code}`, 'success');
+  } catch (e) {
+    setStatus('فشل التحديث: ' + e.message, 'error');
+    loadCarriers();
+  }
+}
+
+function openAddModal() {
+  editingCode = null;
+  document.getElementById('modalTitle').textContent = 'إضافة خط ملاحي جديد';
+  document.getElementById('carrierForm').reset();
+  document.getElementById('carrierForm').code.readOnly = false;
+  document.getElementById('modal').classList.add('show');
+}
+
+function editCarrier(code) {
+  const c = allCarriers.find(x => x.code === code);
+  if (!c) return;
+  editingCode = code;
+  document.getElementById('modalTitle').textContent = 'تعديل: ' + c.name;
+  const form = document.getElementById('carrierForm');
+  form.code.value = c.code;
+  form.code.readOnly = true;
+  form.name.value = c.name || '';
+  form.country.value = c.country || '';
+  form.priority.value = c.priority || '';
+  form.brand_color.value = c.brand_color || '#1e3a5f';
+  form.transit_days_avg.value = c.transit_days_avg || '';
+  form.website.value = c.website || '';
+  form.logo_url.value = c.logo_url || '';
+  form.description_ar.value = c.description_ar || '';
+  document.getElementById('modal').classList.add('show');
+}
+
+function closeModal() {
+  document.getElementById('modal').classList.remove('show');
+}
+
+document.getElementById('carrierForm').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const fd = new FormData(e.target);
+  const body = Object.fromEntries(fd.entries());
+  if (body.priority) body.priority = parseInt(body.priority);
+  if (body.transit_days_avg) body.transit_days_avg = parseInt(body.transit_days_avg);
+  body.code = body.code.toUpperCase();
+  try {
+    if (editingCode) {
+      await api('/admin/carriers/' + editingCode, { method: 'PATCH', body });
+      setStatus(`تم تحديث ${body.code}`, 'success');
+    } else {
+      body.active = true;
+      body.services = ['FCL'];
+      await api('/admin/carriers', { method: 'POST', body });
+      setStatus(`تمت إضافة ${body.code}`, 'success');
+    }
+    closeModal();
+    loadCarriers();
+  } catch (err) {
+    setStatus('فشل الحفظ: ' + err.message, 'error');
+  }
+});
+
+async function deleteCarrier(code) {
+  if (!confirm(`حذف الخط ${code} نهائياً؟`)) return;
+  try {
+    await api('/admin/carriers/' + code, { method: 'DELETE' });
+    setStatus(`تم حذف ${code}`, 'success');
+    loadCarriers();
+  } catch (e) {
+    setStatus('فشل الحذف: ' + e.message, 'error');
+  }
+}
+
+document.getElementById('search').addEventListener('input', renderTable);
+document.getElementById('modal').addEventListener('click', (e) => {
+  if (e.target === e.currentTarget) closeModal();
+});
+
+window.toggleActive = toggleActive;
+window.editCarrier = editCarrier;
+window.deleteCarrier = deleteCarrier;
+window.openAddModal = openAddModal;
+window.closeModal = closeModal;
+
+loadCarriers();
+</script>
+</body>
+</html>
