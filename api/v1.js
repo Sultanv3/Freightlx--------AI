@@ -543,7 +543,7 @@ async function webHandler(req) {
       }
     }
     return json({
-      status: 'ok', version: '2.14.1', time: new Date().toISOString(),
+      status: 'ok', version: '2.14.2', time: new Date().toISOString(),
       services: {
         database: dbStatus, supabase_url: SUPABASE_URL,
         ai: process.env.GEMINI_API_KEY ? 'gemini' : process.env.OPENAI_API_KEY ? 'openai' : 'none',
@@ -845,7 +845,7 @@ async function webHandler(req) {
         if (!s) return json({ error: { code: 'NOT_FOUND' } }, 404);
         return json(s);
       }
-      if (req.method === 'POST') {
+      if (req.method === 'POST' && !segments[1]) {
         const body = await req.json();
         const id = body.id || genId('FLX-B');
         const [s] = await sb('/shipments', { method: 'POST', body: [{
@@ -926,7 +926,7 @@ async function webHandler(req) {
         }]});
         return json(q, 201);
       }
-      if (req.method === 'POST' && segments[2] === 'book') {
+      if (req.method === 'POST' && segments[1] && segments[2] === 'book') {
         const [q] = await sb(`/quotes?id=eq.${segments[1]}&user_id=eq.${user.id}&select=*&limit=1`);
         if (!q) return json({ error: { code: 'NOT_FOUND' } }, 404);
         const shipmentId = genId('FLX-B');
