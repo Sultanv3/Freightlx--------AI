@@ -9,104 +9,139 @@
 *,*::before,*::after { box-sizing: border-box; margin: 0; padding: 0; }
 body {
   font-family: 'Segoe UI', 'Tahoma', sans-serif;
-  background: linear-gradient(135deg, #f6f9ff 0%, #eef3ff 100%);
-  min-height: 100vh;
-  color: #1e293b;
-  line-height: 1.6;
+  background: #f4f7fb;
+  min-height: 100vh; color: #1e293b; line-height: 1.6;
 }
-.container { max-width: 1280px; margin: 0 auto; padding: 24px; }
-header {
-  display: flex; justify-content: space-between; align-items: center;
-  padding: 16px 0; margin-bottom: 24px;
-}
-header h1 { font-size: 22px; font-weight: 700; color: #1e3a5f; }
-header a { color: #1e3a5f; text-decoration: none; font-weight: 500; }
+.container { max-width: 1100px; margin: 0 auto; padding: 24px; }
+header { display: flex; justify-content: space-between; align-items: center; padding: 16px 0; margin-bottom: 20px; }
+header h1 { font-size: 22px; font-weight: 800; color: #1e3a5f; }
+header a { color: #1e3a5f; text-decoration: none; font-weight: 500; font-size: 14px; }
 header a:hover { text-decoration: underline; }
 
-.card {
-  background: white; border-radius: 16px; padding: 24px;
-  box-shadow: 0 4px 24px rgba(15, 23, 42, 0.06);
-  margin-bottom: 24px;
-}
-.card-title {
-  font-size: 18px; font-weight: 700; margin-bottom: 16px;
-  color: #1e3a5f; display: flex; align-items: center; gap: 8px;
-}
+.card { background: white; border-radius: 16px; padding: 28px; box-shadow: 0 4px 24px rgba(15, 23, 42, 0.06); margin-bottom: 20px; }
 
-form .grid {
-  display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-  gap: 16px; margin-bottom: 16px;
+/* Mode toggle */
+.mode-row { display: flex; gap: 10px; padding-bottom: 18px; border-bottom: 1px solid #f1f5f9; margin-bottom: 18px; flex-wrap: wrap; }
+.mode-btn {
+  padding: 8px 18px; border-radius: 999px; border: 1.5px solid #e2e8f0;
+  background: white; cursor: pointer; font-family: inherit; font-size: 13px; font-weight: 600;
+  color: #64748b; transition: all 0.2s;
 }
-label { display: block; font-size: 13px; font-weight: 600; color: #475569; margin-bottom: 6px; }
-input, select, textarea {
-  width: 100%; padding: 10px 12px; border: 1px solid #cbd5e1;
-  border-radius: 10px; font-size: 14px; font-family: inherit;
-  background: #fafbff; transition: all 0.2s; color: #1e293b;
-}
-input:focus, select:focus, textarea:focus {
-  outline: none; border-color: #4f46e5; background: white;
-  box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
-}
-.btn {
-  padding: 12px 24px; border-radius: 12px; border: none; cursor: pointer;
-  font-size: 15px; font-weight: 700; font-family: inherit;
-  transition: all 0.2s;
-}
-.btn-primary {
-  background: linear-gradient(135deg, #4f46e5, #6366f1); color: white;
-  box-shadow: 0 4px 12px rgba(79, 70, 229, 0.3);
-}
-.btn-primary:hover { transform: translateY(-1px); box-shadow: 0 6px 16px rgba(79, 70, 229, 0.4); }
-.btn-primary:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
-.btn-secondary { background: #f1f5f9; color: #475569; }
+.mode-btn.active { background: #1e3a5f; color: white; border-color: #1e3a5f; }
+.mode-btn:hover:not(.active) { border-color: #1e3a5f; color: #1e3a5f; }
 
-.checkbox-row { display: flex; align-items: center; gap: 8px; padding: 10px; background: #f8fafc; border-radius: 10px; }
-.checkbox-row input[type="checkbox"] { width: auto; }
+/* Port row */
+.port-row { display: grid; grid-template-columns: 1fr 56px 1fr; align-items: end; gap: 12px; margin-bottom: 18px; }
+@media (max-width: 700px) { .port-row { grid-template-columns: 1fr; } .port-row .swap { display: none; } }
+.field-label { display: block; font-size: 13px; font-weight: 700; color: #1e293b; margin-bottom: 6px; }
+.field-label .req { color: #ef4444; }
 
-#status { padding: 12px 16px; border-radius: 10px; margin-bottom: 16px; font-size: 14px; display: none; }
+.port-input {
+  position: relative;
+}
+.port-input input {
+  width: 100%; padding: 12px 14px; border: 1.5px solid #e2e8f0;
+  border-radius: 12px; font-size: 14px; font-family: inherit; background: white;
+  color: #1e293b; transition: all 0.2s;
+}
+.port-input input:focus { outline: none; border-color: #1e3a5f; box-shadow: 0 0 0 3px rgba(30, 58, 95, 0.1); }
+.port-input input::placeholder { color: #94a3b8; }
+.port-suggestions {
+  position: absolute; top: 100%; left: 0; right: 0; z-index: 50;
+  background: white; border: 1px solid #e2e8f0; border-radius: 12px;
+  box-shadow: 0 10px 30px rgba(15, 23, 42, 0.12);
+  max-height: 280px; overflow-y: auto; margin-top: 4px; display: none;
+}
+.port-suggestions.show { display: block; }
+.port-suggestions .item {
+  padding: 10px 14px; cursor: pointer; display: flex; justify-content: space-between; gap: 12px; font-size: 14px;
+}
+.port-suggestions .item:hover { background: #f8fafc; }
+.port-suggestions .item .code { font-family: monospace; font-size: 12px; color: #64748b; background: #f1f5f9; padding: 2px 6px; border-radius: 4px; }
+.port-suggestions .item.empty { color: #94a3b8; text-align: center; padding: 16px; cursor: default; }
+
+.swap {
+  width: 40px; height: 40px; border-radius: 50%; background: white;
+  border: 1.5px solid #e2e8f0; display: flex; align-items: center; justify-content: center;
+  cursor: pointer; align-self: center; transition: all 0.2s; font-size: 16px;
+}
+.swap:hover { background: #f1f5f9; transform: rotate(180deg); }
+
+/* Containers */
+.containers-section { margin-bottom: 18px; }
+.container-row { display: grid; grid-template-columns: 1fr 90px 40px; gap: 10px; margin-bottom: 8px; align-items: center; }
+.container-row select, .container-row input {
+  padding: 12px 14px; border: 1.5px solid #e2e8f0;
+  border-radius: 12px; font-size: 14px; font-family: inherit; background: white; color: #1e293b;
+}
+.container-row select:focus, .container-row input:focus { outline: none; border-color: #1e3a5f; }
+.remove-btn {
+  width: 40px; height: 40px; border-radius: 12px; border: 1.5px solid #fee2e2;
+  background: #fef2f2; color: #ef4444; cursor: pointer; font-size: 18px;
+}
+.remove-btn:hover { background: #fee2e2; }
+.remove-btn:disabled { opacity: 0.3; cursor: not-allowed; }
+.add-btn {
+  padding: 10px 16px; border-radius: 12px; border: 1.5px dashed #cbd5e1;
+  background: transparent; color: #4f46e5; cursor: pointer; font-family: inherit; font-size: 13px; font-weight: 600;
+  display: inline-flex; align-items: center; gap: 6px;
+}
+.add-btn:hover { border-color: #4f46e5; background: #eef2ff; }
+
+/* Commodity */
+.commodity-row { display: flex; align-items: center; gap: 8px; margin-bottom: 18px; flex-wrap: wrap; }
+.commodity-row .label-icon { font-size: 18px; }
+.commodity-row select {
+  flex: 1; min-width: 280px; padding: 12px 14px; border: 1.5px solid #e2e8f0;
+  border-radius: 12px; font-size: 14px; font-family: inherit; background: white; color: #1e293b;
+}
+.commodity-row select:focus { outline: none; border-color: #1e3a5f; }
+
+/* Submit */
+.submit-btn {
+  width: 100%; padding: 16px; margin-top: 8px;
+  background: linear-gradient(90deg, #1e3a5f 0%, #4f46e5 50%, #22a3e6 100%);
+  color: white; border: none; border-radius: 14px;
+  font-family: inherit; font-size: 16px; font-weight: 700; cursor: pointer;
+  box-shadow: 0 6px 20px rgba(79, 70, 229, 0.25); transition: all 0.2s;
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+}
+.submit-btn:hover { transform: translateY(-1px); box-shadow: 0 10px 28px rgba(79, 70, 229, 0.35); }
+.submit-btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+
+#status { padding: 10px 16px; border-radius: 10px; margin-bottom: 14px; font-size: 14px; display: none; }
 #status.loading { background: #dbeafe; color: #1e40af; display: block; }
 #status.success { background: #dcfce7; color: #166534; display: block; }
 #status.error { background: #fee2e2; color: #b91c1c; display: block; }
 
-.toolbar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; gap: 16px; flex-wrap: wrap; }
-.toolbar .summary { font-size: 14px; color: #64748b; }
-.toolbar .sort { display: flex; gap: 8px; }
-.toolbar .sort button { padding: 6px 14px; font-size: 13px; border-radius: 8px; border: 1px solid #cbd5e1; background: white; cursor: pointer; }
-.toolbar .sort button.active { background: #1e3a5f; color: white; border-color: #1e3a5f; }
+.spinner { width: 16px; height: 16px; border: 2px solid #c7d2fe; border-top-color: #4f46e5; border-radius: 50%; animation: spin 0.8s linear infinite; display: inline-block; vertical-align: middle; }
+@keyframes spin { to { transform: rotate(360deg); } }
 
-.offers { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 16px; }
-.offer {
-  background: white; border-radius: 14px; overflow: hidden;
-  box-shadow: 0 2px 12px rgba(15, 23, 42, 0.06);
-  border: 1px solid #e2e8f0; transition: all 0.2s;
-}
-.offer:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(15, 23, 42, 0.12); }
-.offer-brand {
-  height: 56px; display: flex; align-items: center; justify-content: center;
-  padding: 8px;
-}
-.offer-brand img { max-height: 40px; max-width: 70%; }
+/* Results */
+.results-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; gap: 16px; flex-wrap: wrap; }
+.results-header h2 { font-size: 18px; font-weight: 800; color: #1e3a5f; }
+.summary { font-size: 13px; color: #64748b; }
+.sort-buttons { display: flex; gap: 6px; }
+.sort-btn { padding: 6px 14px; font-size: 13px; border-radius: 999px; border: 1px solid #e2e8f0; background: white; cursor: pointer; font-family: inherit; }
+.sort-btn.active { background: #1e3a5f; color: white; border-color: #1e3a5f; }
+
+.offers { display: grid; grid-template-columns: repeat(auto-fill, minmax(310px, 1fr)); gap: 14px; }
+.offer { background: white; border-radius: 14px; overflow: hidden; box-shadow: 0 2px 12px rgba(15, 23, 42, 0.06); border: 1px solid #e2e8f0; transition: all 0.2s; }
+.offer:hover { transform: translateY(-2px); box-shadow: 0 10px 28px rgba(15, 23, 42, 0.12); }
+.offer-brand { height: 56px; display: flex; align-items: center; justify-content: center; padding: 8px; }
+.offer-brand img { max-height: 40px; max-width: 75%; }
 .offer-body { padding: 16px; }
 .offer-price { font-size: 28px; font-weight: 800; color: #1e3a5f; }
-.offer-currency { font-size: 14px; color: #64748b; }
+.offer-currency { font-size: 14px; color: #64748b; margin-inline-start: 4px; }
+.offer-meta { display: flex; gap: 6px; margin-top: 10px; flex-wrap: wrap; }
+.tag { font-size: 11px; padding: 3px 9px; border-radius: 999px; background: #eef2ff; color: #4f46e5; font-weight: 600; }
+.tag.direct { background: #dcfce7; color: #166534; }
+.tag.ts { background: #fef3c7; color: #92400e; }
 .offer-row { display: flex; justify-content: space-between; padding: 6px 0; font-size: 13px; border-top: 1px dashed #e2e8f0; margin-top: 8px; }
 .offer-row span:first-child { color: #64748b; }
 .offer-row span:last-child { color: #1e293b; font-weight: 600; }
-.offer-meta { display: flex; gap: 6px; margin-top: 10px; flex-wrap: wrap; }
-.tag { font-size: 11px; padding: 3px 8px; border-radius: 999px; background: #eef2ff; color: #4f46e5; font-weight: 600; }
-.tag.direct { background: #dcfce7; color: #166534; }
-.tag.ts { background: #fef3c7; color: #92400e; }
-
-.book-btn {
-  width: 100%; margin-top: 12px; padding: 10px;
-  background: #1e3a5f; color: white; border: none; border-radius: 10px;
-  font-weight: 700; cursor: pointer; font-size: 14px;
-}
+.book-btn { width: 100%; margin-top: 12px; padding: 10px; background: #1e3a5f; color: white; border: none; border-radius: 10px; font-weight: 700; cursor: pointer; font-size: 14px; font-family: inherit; }
 .book-btn:hover { background: #2c4d7a; }
-
-.empty { text-align: center; padding: 40px; color: #94a3b8; }
-.spinner { width: 20px; height: 20px; border: 3px solid #c7d2fe; border-top-color: #4f46e5; border-radius: 50%; animation: spin 0.8s linear infinite; display: inline-block; vertical-align: middle; margin-left: 8px; }
-@keyframes spin { to { transform: rotate(360deg); } }
 </style>
 </head>
 <body>
@@ -116,145 +151,97 @@ input:focus, select:focus, textarea:focus {
     <a href="/dashboard.html">→ لوحة التحكم</a>
   </header>
 
-  <!-- Rate Request Form -->
+  <!-- Form Card -->
   <div class="card">
-    <div class="card-title">📋 معلومات الشحنة</div>
+    <div class="mode-row">
+      <button type="button" class="mode-btn active" data-mode="FCL">📦 حاوية كاملة (FCL)</button>
+      <button type="button" class="mode-btn" data-mode="LCL" disabled title="قريباً">📦 شحن جزئي (LCL)</button>
+      <button type="button" class="mode-btn" data-mode="AIR" disabled title="قريباً">✈️ جوي</button>
+    </div>
+
     <form id="rateForm">
-      <div class="grid">
+      <!-- Port row -->
+      <div class="port-row">
         <div>
-          <label>ميناء التحميل (POL) *</label>
-          <select name="originPort" required>
-            <option value="">— اختر —</option>
-            <optgroup label="🇨🇳 الصين">
-              <option value="CNSHA">Shanghai · شنغهاي</option>
-              <option value="CNNGB">Ningbo · نينغبو</option>
-              <option value="CNSHK">Shenzhen · شنزن</option>
-              <option value="CNYTN">Yantian · يانتيان</option>
-              <option value="CNTAO">Qingdao · تشينغداو</option>
-              <option value="CNTSN">Tianjin · تيانجين</option>
-              <option value="CNXMN">Xiamen · شيامن</option>
-            </optgroup>
-            <optgroup label="🇸🇬 آسيا">
-              <option value="SGSIN">Singapore · سنغافورة</option>
-              <option value="HKHKG">Hong Kong · هونغ كونغ</option>
-              <option value="MYPKG">Port Klang · بورت كلانغ</option>
-              <option value="INNSA">Nhava Sheva · ناڤا شيفا</option>
-              <option value="INMUN">Mundra · موندرا</option>
-            </optgroup>
-            <optgroup label="🇹🇷 الشرق الأوسط/المتوسط">
-              <option value="TRMER">Mersin · مرسين</option>
-              <option value="TRIST">Istanbul · إسطنبول</option>
-              <option value="AEJEA">Jebel Ali · جبل علي</option>
-            </optgroup>
-            <optgroup label="🇪🇺 أوروبا">
-              <option value="DEHAM">Hamburg · هامبورغ</option>
-              <option value="NLRTM">Rotterdam · روتردام</option>
-              <option value="BEANR">Antwerp · أنتويرب</option>
-            </optgroup>
-          </select>
+          <label class="field-label">ميناء التحميل (Origin) <span class="req">*</span></label>
+          <div class="port-input">
+            <input type="text" id="originPort" autocomplete="off" placeholder="ابحث: شنغهاي، جبل علي، مرسين…" required>
+            <input type="hidden" name="originPort">
+            <div class="port-suggestions" id="originSuggestions"></div>
+          </div>
         </div>
+        <button type="button" class="swap" id="swapBtn" title="عكس الاتجاه">⇄</button>
         <div>
-          <label>ميناء التفريغ (POD) *</label>
-          <select name="destinationPort" required>
-            <option value="">— اختر —</option>
-            <optgroup label="🇸🇦 المملكة العربية السعودية">
-              <option value="SAJED" selected>Jeddah · جدة</option>
-              <option value="SADMM">Dammam · الدمام</option>
-              <option value="SAJUB">Jubail · الجبيل</option>
-              <option value="SAYNB">Yanbu · ينبع</option>
-              <option value="SARAB">King Abdullah · رابغ</option>
-              <option value="SAJIZ">Jazan · جازان</option>
-              <option value="SADUB">Duba · ضباء</option>
-            </optgroup>
-          </select>
-        </div>
-        <div>
-          <label>نوع الحاوية *</label>
-          <select name="containerType" required>
-            <option value="20GP">20'GP — حاوية قياسية</option>
-            <option value="40GP">40'GP — حاوية ٤٠ قدم</option>
-            <option value="40HC" selected>40'HC — عالية</option>
-            <option value="40RF">40'RF — مبردة</option>
-            <option value="45HC">45'HC — جامبو</option>
-            <option value="LCL">LCL — شحن جزئي</option>
-          </select>
-        </div>
-        <div>
-          <label>نوع الشحن *</label>
-          <select name="cargoType" required>
-            <option value="FCL" selected>FCL — حاوية كاملة</option>
-            <option value="LCL">LCL — جزئية</option>
-            <option value="Reefer">Reefer — مبردة</option>
-            <option value="OOG">OOG — خارج المقاييس</option>
-            <option value="Bulk">Bulk — صب</option>
-            <option value="Air">Air — جوي</option>
-          </select>
-        </div>
-        <div>
-          <label>كود HS للسلعة</label>
-          <input type="text" name="commodityCode" placeholder="مثل: 8517" pattern="[0-9]{4,10}" maxlength="10">
-        </div>
-        <div>
-          <label>اسم السلعة</label>
-          <input type="text" name="commodityName" placeholder="إلكترونيات، ملابس، إلخ">
-        </div>
-        <div>
-          <label>الوزن الإجمالي (كجم)</label>
-          <input type="number" name="cargoWeightKg" min="1" step="0.01" placeholder="20000">
-        </div>
-        <div>
-          <label>الحجم (م³) — للـ LCL</label>
-          <input type="number" name="cargoVolumeM3" min="0.1" step="0.01" placeholder="15">
-        </div>
-        <div>
-          <label>تاريخ جاهزية البضاعة</label>
-          <input type="date" name="cargoReadyDate">
-        </div>
-        <div>
-          <label>شروط الانكوترمز</label>
-          <select name="incoterms">
-            <option value="">— اختياري —</option>
-            <option value="EXW">EXW — تسليم المصنع</option>
-            <option value="FCA">FCA — تسليم الناقل</option>
-            <option value="FOB" selected>FOB — على ظهر السفينة</option>
-            <option value="CFR">CFR — تكلفة وأجرة</option>
-            <option value="CIF">CIF — تكلفة وتأمين وأجرة</option>
-            <option value="DAP">DAP — التسليم في المكان</option>
-            <option value="DDP">DDP — التسليم مع الرسوم</option>
-          </select>
-        </div>
-        <div>
-          <label>عدد الحاويات</label>
-          <input type="number" name="numContainers" min="1" max="999" value="1">
-        </div>
-        <div>
-          <label>ملاحظات إضافية</label>
-          <input type="text" name="notes" placeholder="مواد خطرة، تعبئة خاصة، إلخ">
+          <label class="field-label">ميناء التفريغ (Destination) <span class="req">*</span></label>
+          <div class="port-input">
+            <input type="text" id="destinationPort" autocomplete="off" placeholder="ابحث: جدة، الدمام، ينبع…" required>
+            <input type="hidden" name="destinationPort">
+            <div class="port-suggestions" id="destinationSuggestions"></div>
+          </div>
         </div>
       </div>
-      <div class="checkbox-row">
-        <input type="checkbox" name="hazardous" id="hazardous">
-        <label for="hazardous" style="margin: 0;">⚠️ تحتوي الشحنة على مواد خطرة (IMO/DG)</label>
-      </div>
-      <div id="status"></div>
-      <div style="display: flex; gap: 10px; margin-top: 16px; flex-wrap: wrap;">
-        <button type="submit" class="btn btn-primary" id="submitBtn">
-          🔍 ابحث عن العروض
+
+      <!-- Containers -->
+      <div class="containers-section">
+        <label class="field-label">نوع الحاوية والكمية <span class="req">*</span></label>
+        <div id="containersList">
+          <div class="container-row">
+            <select name="containerType[]" class="ct-select">
+              <option value="ALL">جميع الأنواع (20FT, 40FT, 40HC)</option>
+              <option value="20GP">20'GP — حاوية قياسية</option>
+              <option value="40GP">40'GP — حاوية ٤٠ قدم</option>
+              <option value="40HC" selected>40'HC — حاوية عالية</option>
+              <option value="40RF">40'RF — مبردة</option>
+              <option value="45HC">45'HC — جامبو</option>
+            </select>
+            <input type="number" name="containerQty[]" min="1" max="999" value="1" class="ct-qty">
+            <button type="button" class="remove-btn" disabled>✕</button>
+          </div>
+        </div>
+        <button type="button" class="add-btn" id="addContainerBtn">
+          <span>＋</span> إضافة نوع آخر
         </button>
-        <button type="reset" class="btn btn-secondary">🗑️ مسح</button>
       </div>
+
+      <!-- Commodity -->
+      <div class="commodity-row">
+        <span class="label-icon">📦</span>
+        <label class="field-label" style="margin: 0; min-width: 90px;">نوع البضاعة</label>
+        <select name="commodity" id="commodity">
+          <option value="dry">بضاعة جافة / عامة (Dry or General Cargo)</option>
+          <option value="electronics">إلكترونيات</option>
+          <option value="textiles">منسوجات وملابس</option>
+          <option value="machinery">آلات ومعدات</option>
+          <option value="furniture">أثاث</option>
+          <option value="food">مواد غذائية (غير مبردة)</option>
+          <option value="reefer">مبردة / مجمدة</option>
+          <option value="chemicals">كيماويات (غير خطرة)</option>
+          <option value="auto-parts">قطع غيار سيارات</option>
+          <option value="building">مواد بناء</option>
+          <option value="paper">ورق وطباعة</option>
+          <option value="plastic">منتجات بلاستيكية</option>
+          <option value="other">أخرى</option>
+        </select>
+      </div>
+
+      <div id="status"></div>
+      <button type="submit" class="submit-btn" id="submitBtn">
+        <span>🔍</span> احصل على العروض فوراً
+      </button>
     </form>
   </div>
 
   <!-- Results -->
   <div class="card" id="resultsCard" style="display:none;">
-    <div class="card-title">💰 العروض المتاحة (<span id="offerCount">0</span>)</div>
-    <div class="toolbar">
-      <div class="summary" id="summary"></div>
-      <div class="sort">
-        <button data-sort="price" class="active">الأرخص</button>
-        <button data-sort="transit_days">الأسرع</button>
-        <button data-sort="carrier_name">الناقل</button>
+    <div class="results-header">
+      <div>
+        <h2>💰 العروض المتاحة (<span id="offerCount">0</span>)</h2>
+        <div class="summary" id="summary"></div>
+      </div>
+      <div class="sort-buttons">
+        <button class="sort-btn active" data-sort="price">الأرخص</button>
+        <button class="sort-btn" data-sort="transit_days">الأسرع</button>
+        <button class="sort-btn" data-sort="carrier_name">الناقل</button>
       </div>
     </div>
     <div class="offers" id="offers"></div>
@@ -263,64 +250,302 @@ input:focus, select:focus, textarea:focus {
 
 <script src="/flx-api-client.js"></script>
 <script>
+// ── Port catalog (top common ports, you can extend) ──
+const PORTS = [
+  // Saudi Arabia
+  { code: 'SAJED', name: 'Jeddah', nameAr: 'جدة', country: 'السعودية' },
+  { code: 'SADMM', name: 'Dammam', nameAr: 'الدمام', country: 'السعودية' },
+  { code: 'SAJUB', name: 'Jubail', nameAr: 'الجبيل', country: 'السعودية' },
+  { code: 'SAYNB', name: 'Yanbu', nameAr: 'ينبع', country: 'السعودية' },
+  { code: 'SARAB', name: 'King Abdullah', nameAr: 'الملك عبدالله — رابغ', country: 'السعودية' },
+  { code: 'SAJIZ', name: 'Jazan', nameAr: 'جازان', country: 'السعودية' },
+  { code: 'SADUB', name: 'Duba', nameAr: 'ضباء', country: 'السعودية' },
+  // GCC
+  { code: 'AEJEA', name: 'Jebel Ali', nameAr: 'جبل علي', country: 'الإمارات' },
+  { code: 'AEAUH', name: 'Abu Dhabi', nameAr: 'أبوظبي', country: 'الإمارات' },
+  { code: 'AEKLF', name: 'Khalifa', nameAr: 'خليفة', country: 'الإمارات' },
+  { code: 'BHMIN', name: 'Mina Salman', nameAr: 'ميناء سلمان', country: 'البحرين' },
+  { code: 'KWKWI', name: 'Shuwaikh', nameAr: 'الشويخ', country: 'الكويت' },
+  { code: 'QADOH', name: 'Hamad', nameAr: 'حمد', country: 'قطر' },
+  { code: 'OMSLL', name: 'Salalah', nameAr: 'صلالة', country: 'عمان' },
+  { code: 'OMSOH', name: 'Sohar', nameAr: 'صحار', country: 'عمان' },
+  // China
+  { code: 'CNSHA', name: 'Shanghai', nameAr: 'شنغهاي', country: 'الصين' },
+  { code: 'CNNGB', name: 'Ningbo-Zhoushan', nameAr: 'نينغبو', country: 'الصين' },
+  { code: 'CNSHK', name: 'Shenzhen', nameAr: 'شنزن', country: 'الصين' },
+  { code: 'CNYTN', name: 'Yantian', nameAr: 'يانتيان', country: 'الصين' },
+  { code: 'CNGZG', name: 'Guangzhou', nameAr: 'قوانغتشو', country: 'الصين' },
+  { code: 'CNTAO', name: 'Qingdao', nameAr: 'تشينغداو', country: 'الصين' },
+  { code: 'CNTSN', name: 'Tianjin', nameAr: 'تيانجين', country: 'الصين' },
+  { code: 'CNXMN', name: 'Xiamen', nameAr: 'شيامن', country: 'الصين' },
+  { code: 'CNDLC', name: 'Dalian', nameAr: 'داليان', country: 'الصين' },
+  // Asia
+  { code: 'SGSIN', name: 'Singapore', nameAr: 'سنغافورة', country: 'سنغافورة' },
+  { code: 'HKHKG', name: 'Hong Kong', nameAr: 'هونغ كونغ', country: 'هونغ كونغ' },
+  { code: 'MYPKG', name: 'Port Klang', nameAr: 'بورت كلانغ', country: 'ماليزيا' },
+  { code: 'MYTPP', name: 'Tanjung Pelepas', nameAr: 'تانجونغ بيليباس', country: 'ماليزيا' },
+  { code: 'THLCH', name: 'Laem Chabang', nameAr: 'لايم تشابانغ', country: 'تايلاند' },
+  { code: 'VNSGN', name: 'Ho Chi Minh', nameAr: 'هو تشي منه', country: 'فيتنام' },
+  { code: 'KRPUS', name: 'Busan', nameAr: 'بوسان', country: 'كوريا الجنوبية' },
+  { code: 'JPYOK', name: 'Yokohama', nameAr: 'يوكوهاما', country: 'اليابان' },
+  { code: 'JPTYO', name: 'Tokyo', nameAr: 'طوكيو', country: 'اليابان' },
+  // India
+  { code: 'INNSA', name: 'Nhava Sheva', nameAr: 'ناڤا شيفا', country: 'الهند' },
+  { code: 'INMUN', name: 'Mundra', nameAr: 'موندرا', country: 'الهند' },
+  { code: 'INMAA', name: 'Chennai', nameAr: 'تشيناي', country: 'الهند' },
+  { code: 'INCOK', name: 'Cochin', nameAr: 'كوتشي', country: 'الهند' },
+  // Turkey / Mediterranean
+  { code: 'TRMER', name: 'Mersin', nameAr: 'مرسين', country: 'تركيا' },
+  { code: 'TRIST', name: 'Istanbul', nameAr: 'إسطنبول', country: 'تركيا' },
+  { code: 'TRAYV', name: 'Ambarli', nameAr: 'أمبارلي', country: 'تركيا' },
+  { code: 'EGPSD', name: 'Port Said', nameAr: 'بورسعيد', country: 'مصر' },
+  { code: 'EGALY', name: 'Alexandria', nameAr: 'الإسكندرية', country: 'مصر' },
+  // Europe
+  { code: 'DEHAM', name: 'Hamburg', nameAr: 'هامبورغ', country: 'ألمانيا' },
+  { code: 'NLRTM', name: 'Rotterdam', nameAr: 'روتردام', country: 'هولندا' },
+  { code: 'BEANR', name: 'Antwerp', nameAr: 'أنتويرب', country: 'بلجيكا' },
+  { code: 'ITGOA', name: 'Genoa', nameAr: 'جنوة', country: 'إيطاليا' },
+  { code: 'ESVLC', name: 'Valencia', nameAr: 'فالنسيا', country: 'إسبانيا' },
+  { code: 'GBFXT', name: 'Felixstowe', nameAr: 'فيليكستو', country: 'بريطانيا' },
+  // Americas
+  { code: 'USLAX', name: 'Los Angeles', nameAr: 'لوس أنجلوس', country: 'أمريكا' },
+  { code: 'USLGB', name: 'Long Beach', nameAr: 'لونغ بيتش', country: 'أمريكا' },
+  { code: 'USNYC', name: 'New York', nameAr: 'نيويورك', country: 'أمريكا' },
+  { code: 'BRSSZ', name: 'Santos', nameAr: 'سانتوس', country: 'البرازيل' },
+];
+
+// ── Token helper ──
+function getToken() {
+  const direct = localStorage.getItem('flx_access_token');
+  if (direct) return direct;
+  for (const k of Object.keys(localStorage)) {
+    if (k.startsWith('sb-') && k.endsWith('-auth-token')) {
+      try { const d = JSON.parse(localStorage.getItem(k)); if (d?.access_token) return d.access_token; } catch {}
+    }
+  }
+  return '';
+}
+
+// ── Port autocomplete ──
+function setupPortInput(inputId, suggestionsId, hiddenName) {
+  const input = document.getElementById(inputId);
+  const suggestions = document.getElementById(suggestionsId);
+  const hidden = input.parentNode.querySelector('input[type=hidden]');
+  let selectedCode = '';
+
+  function render(matches) {
+    if (matches.length === 0) {
+      suggestions.innerHTML = '<div class="item empty">لا توجد ميناء مطابقة</div>';
+    } else {
+      suggestions.innerHTML = matches.slice(0, 20).map(p => `
+        <div class="item" data-code="${p.code}" data-display="${p.nameAr} · ${p.country}">
+          <div>
+            <div style="font-weight:600">${p.nameAr}</div>
+            <div style="font-size:12px;color:#64748b">${p.country} · ${p.name}</div>
+          </div>
+          <span class="code">${p.code}</span>
+        </div>
+      `).join('');
+      suggestions.querySelectorAll('.item').forEach(el => {
+        el.addEventListener('click', () => {
+          selectedCode = el.dataset.code;
+          input.value = el.dataset.display;
+          hidden.value = el.dataset.code;
+          suggestions.classList.remove('show');
+        });
+      });
+    }
+    suggestions.classList.add('show');
+  }
+
+  input.addEventListener('input', () => {
+    const q = input.value.trim().toLowerCase();
+    hidden.value = ''; // reset until selection
+    if (q.length < 1) { suggestions.classList.remove('show'); return; }
+    const matches = PORTS.filter(p =>
+      p.code.toLowerCase().includes(q) ||
+      p.name.toLowerCase().includes(q) ||
+      p.nameAr.includes(q) ||
+      p.country.includes(q)
+    );
+    render(matches);
+  });
+
+  input.addEventListener('focus', () => {
+    if (input.value.trim().length === 0) {
+      render(PORTS.slice(0, 12));
+    } else {
+      input.dispatchEvent(new Event('input'));
+    }
+  });
+
+  document.addEventListener('click', (e) => {
+    if (!input.parentNode.contains(e.target)) suggestions.classList.remove('show');
+  });
+}
+
+setupPortInput('originPort', 'originSuggestions');
+setupPortInput('destinationPort', 'destinationSuggestions');
+
+// ── Swap ports ──
+document.getElementById('swapBtn').addEventListener('click', () => {
+  const o = document.getElementById('originPort');
+  const d = document.getElementById('destinationPort');
+  const oH = o.parentNode.querySelector('input[type=hidden]');
+  const dH = d.parentNode.querySelector('input[type=hidden]');
+  [o.value, d.value] = [d.value, o.value];
+  [oH.value, dH.value] = [dH.value, oH.value];
+});
+
+// ── Add/Remove container ──
+const containersList = document.getElementById('containersList');
+document.getElementById('addContainerBtn').addEventListener('click', () => {
+  const row = document.createElement('div');
+  row.className = 'container-row';
+  row.innerHTML = `
+    <select name="containerType[]" class="ct-select">
+      <option value="ALL">جميع الأنواع (20FT, 40FT, 40HC)</option>
+      <option value="20GP">20'GP — حاوية قياسية</option>
+      <option value="40GP">40'GP — حاوية ٤٠ قدم</option>
+      <option value="40HC" selected>40'HC — حاوية عالية</option>
+      <option value="40RF">40'RF — مبردة</option>
+      <option value="45HC">45'HC — جامبو</option>
+    </select>
+    <input type="number" name="containerQty[]" min="1" max="999" value="1" class="ct-qty">
+    <button type="button" class="remove-btn">✕</button>
+  `;
+  containersList.appendChild(row);
+  row.querySelector('.remove-btn').addEventListener('click', () => {
+    row.remove();
+    updateRemoveButtons();
+  });
+  updateRemoveButtons();
+});
+
+function updateRemoveButtons() {
+  const rows = containersList.querySelectorAll('.container-row');
+  rows.forEach((r, i) => {
+    const btn = r.querySelector('.remove-btn');
+    if (rows.length === 1) btn.disabled = true;
+    else btn.disabled = false;
+  });
+}
+
+// ── Mode buttons ──
+let currentMode = 'FCL';
+document.querySelectorAll('.mode-btn').forEach(b => {
+  b.addEventListener('click', () => {
+    if (b.disabled) return;
+    document.querySelectorAll('.mode-btn').forEach(x => x.classList.remove('active'));
+    b.classList.add('active');
+    currentMode = b.dataset.mode;
+  });
+});
+
+// ── Status helper ──
+function setStatus(msg, kind, withSpinner) {
+  const el = document.getElementById('status');
+  el.innerHTML = msg + (withSpinner ? ' <span class="spinner"></span>' : '');
+  el.className = kind || '';
+  if (!msg) el.style.display = 'none';
+}
+
+// ── Submit ──
 const form = document.getElementById('rateForm');
 const submitBtn = document.getElementById('submitBtn');
-const statusEl = document.getElementById('status');
-const resultsCard = document.getElementById('resultsCard');
-const offersEl = document.getElementById('offers');
-const offerCountEl = document.getElementById('offerCount');
-const summaryEl = document.getElementById('summary');
-
 let allOffers = [];
 let currentSort = 'price';
 
-// Default cargo ready date = 7 days from now
-form.cargoReadyDate.value = new Date(Date.now() + 7 * 86400000).toISOString().slice(0, 10);
+form.addEventListener('submit', async (e) => {
+  e.preventDefault();
 
-function setStatus(msg, kind) {
-  statusEl.textContent = msg;
-  statusEl.className = kind || '';
-  if (!msg) statusEl.style.display = 'none';
-}
+  const originCode = form.originPort.value.trim();
+  const destCode = form.destinationPort.value.trim();
 
-function carrierLogoHTML(o) {
-  const code = (o.carrier_code || '').toLowerCase();
+  if (!originCode || !destCode) {
+    setStatus('⚠️ اختر ميناء التحميل وميناء التفريغ من القائمة', 'error');
+    return;
+  }
+  if (originCode === destCode) {
+    setStatus('⚠️ ميناء التحميل لا يمكن أن يكون نفس ميناء التفريغ', 'error');
+    return;
+  }
+
+  // Gather container types + qty
+  const ctSelects = form.querySelectorAll('.ct-select');
+  const ctQtys = form.querySelectorAll('.ct-qty');
+  const containers = [];
+  for (let i = 0; i < ctSelects.length; i++) {
+    containers.push({ type: ctSelects[i].value, qty: parseInt(ctQtys[i].value) || 1 });
+  }
+  // For backend: primary container is the first one (or use 40HC if "ALL" selected)
+  const primaryType = containers[0].type === 'ALL' ? '40HC' : containers[0].type;
+  const totalQty = containers.reduce((s, c) => s + c.qty, 0);
+
+  // Backend-side fixed defaults (hidden from user)
+  const payload = {
+    mode: currentMode,
+    originPort: originCode,
+    destinationPort: destCode,
+    containerType: primaryType,
+    containers,                                  // full list for richer requests
+    numContainers: totalQty,
+    cargoType: currentMode === 'FCL' ? 'FCL' : 'LCL',
+    commodityCode: form.commodity.value,
+    commodityName: form.commodity.options[form.commodity.selectedIndex].text,
+    cargoWeightKg: 15000,                        // fixed < 20,000 kg
+    cargoReadyDate: new Date(Date.now() + 7 * 86400000).toISOString().slice(0, 10),
+    incoterms: 'FOB',
+    serviceModeOrigin: 'CY',                     // Port-to-Port
+    serviceModeDestination: 'CY',
+    hazardous: false,
+  };
+
+  submitBtn.disabled = true;
+  setStatus('جاري البحث عن أفضل العروض من 30 خط ملاحي…', 'loading', true);
+
+  try {
+    const t0 = Date.now();
+    const r = await fetch('/api/v1/rates/search', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + getToken() },
+      body: JSON.stringify(payload),
+    });
+    if (!r.ok) {
+      if (r.status === 401) {
+        setStatus('⚠️ يجب تسجيل الدخول أولاً', 'error');
+        setTimeout(() => (location.href = '/login.html'), 1200);
+        return;
+      }
+      throw new Error('HTTP ' + r.status);
+    }
+    const data = await r.json();
+    allOffers = data.offers || [];
+    const ms = Date.now() - t0;
+    setStatus(`✅ ${allOffers.length} عرض (${data.source}) — ${ms}ms`, 'success');
+    document.getElementById('summary').textContent =
+      `${originCode} → ${destCode} · ${currentMode} · ${containers.map(c => c.qty + '×' + (c.type === 'ALL' ? 'Any' : c.type)).join(' + ')}`;
+    document.getElementById('resultsCard').style.display = 'block';
+    renderOffers();
+    document.getElementById('resultsCard').scrollIntoView({ behavior: 'smooth' });
+  } catch (err) {
+    setStatus('❌ فشل البحث: ' + err.message, 'error');
+  } finally {
+    submitBtn.disabled = false;
+  }
+});
+
+// ── Render offers ──
+function carrierBadge(o) {
   const name = (o.carrier_name || 'Carrier').toUpperCase();
   const bg = o.brand_color || '#1e3a5f';
   if (o.carrier_logo && o.carrier_logo.startsWith('/')) {
     return `<div class="offer-brand" style="background:${bg};">
-      <img src="${o.carrier_logo}" alt="${name}" onerror="this.style.display='none';this.parentNode.innerHTML='<span style=color:white;font-weight:800;font-size:18px;letter-spacing:1px>${name}</span>'">
+      <img src="${o.carrier_logo}" alt="${name}" onerror="this.outerHTML='<span style=color:white;font-weight:800;font-size:18px;letter-spacing:1.5px>${name}</span>'">
     </div>`;
   }
   return `<div class="offer-brand" style="background:${bg};">
-    <span style="color:white;font-weight:800;font-size:18px;letter-spacing:1px">${name}</span>
-  </div>`;
-}
-
-function renderOffer(o) {
-  const directTag = o.is_direct
-    ? '<span class="tag direct">مباشر</span>'
-    : '<span class="tag ts">T/S</span>';
-  return `<div class="offer">
-    ${carrierLogoHTML(o)}
-    <div class="offer-body">
-      <div>
-        <span class="offer-price">$${Number(o.price).toLocaleString()}</span>
-        <span class="offer-currency">${o.currency || 'USD'}</span>
-      </div>
-      <div class="offer-meta">
-        ${directTag}
-        <span class="tag">${o.transit_days} يوم</span>
-        ${o.country ? `<span class="tag">${o.country}</span>` : ''}
-      </div>
-      <div class="offer-row"><span>المسار</span><span>${o.route}</span></div>
-      <div class="offer-row"><span>الإقلاع (ETD)</span><span>${o.etd || '—'}</span></div>
-      <div class="offer-row"><span>الوصول (ETA)</span><span>${o.eta || '—'}</span></div>
-      <div class="offer-row"><span>السفينة</span><span>${o.vessel || '—'}</span></div>
-      <div class="offer-row"><span>أيام مجانية</span><span>${o.free_days || 10}</span></div>
-      <div class="offer-row"><span>صالح حتى</span><span>${o.validity_until || '—'}</span></div>
-      <button class="book-btn" onclick="bookOffer(${JSON.stringify(o).replace(/"/g, '&quot;')})">احجز هذا العرض</button>
-    </div>
+    <span style="color:white;font-weight:800;font-size:18px;letter-spacing:1.5px">${name}</span>
   </div>`;
 }
 
@@ -330,91 +555,67 @@ function renderOffers() {
     if (currentSort === 'transit_days') return a.transit_days - b.transit_days;
     return (a.carrier_name || '').localeCompare(b.carrier_name || '');
   });
-  offersEl.innerHTML = sorted.map(renderOffer).join('');
-  offerCountEl.textContent = sorted.length;
+  document.getElementById('offerCount').textContent = sorted.length;
+  document.getElementById('offers').innerHTML = sorted.map(o => {
+    const directTag = o.is_direct
+      ? '<span class="tag direct">مباشر</span>'
+      : '<span class="tag ts">T/S</span>';
+    return `<div class="offer">
+      ${carrierBadge(o)}
+      <div class="offer-body">
+        <div>
+          <span class="offer-price">$${Number(o.price).toLocaleString()}</span>
+          <span class="offer-currency">${o.currency || 'USD'}</span>
+        </div>
+        <div class="offer-meta">
+          ${directTag}
+          <span class="tag">${o.transit_days} يوم</span>
+          ${o.country ? `<span class="tag">${o.country}</span>` : ''}
+        </div>
+        <div class="offer-row"><span>الإقلاع</span><span>${o.etd || '—'}</span></div>
+        <div class="offer-row"><span>الوصول</span><span>${o.eta || '—'}</span></div>
+        <div class="offer-row"><span>السفينة</span><span>${o.vessel || '—'}</span></div>
+        <div class="offer-row"><span>أيام مجانية</span><span>${o.free_days || 10}</span></div>
+        <div class="offer-row"><span>صالح حتى</span><span>${o.validity_until || '—'}</span></div>
+        <button class="book-btn" data-offer='${JSON.stringify(o).replace(/'/g, '&apos;')}'>احجز هذا العرض</button>
+      </div>
+    </div>`;
+  }).join('');
+
+  document.querySelectorAll('.book-btn').forEach(b => {
+    b.addEventListener('click', () => bookOffer(JSON.parse(b.dataset.offer.replace(/&apos;/g, "'"))));
+  });
 }
 
-document.querySelectorAll('.sort button').forEach(btn => {
-  btn.addEventListener('click', () => {
-    document.querySelectorAll('.sort button').forEach(b => b.classList.remove('active'));
-    btn.classList.add('active');
-    currentSort = btn.dataset.sort;
+document.querySelectorAll('.sort-btn').forEach(b => {
+  b.addEventListener('click', () => {
+    document.querySelectorAll('.sort-btn').forEach(x => x.classList.remove('active'));
+    b.classList.add('active');
+    currentSort = b.dataset.sort;
     renderOffers();
   });
 });
 
-async function bookOffer(offer) {
-  if (!confirm(`تأكيد الحجز مع ${offer.carrier_name} بسعر $${offer.price}؟`)) return;
+async function bookOffer(o) {
+  if (!confirm(`تأكيد الحجز مع ${o.carrier_name} بسعر $${o.price}؟`)) return;
   try {
-    // Create a quote then immediately book it
     const quote = await flxApi.quotes.create({
-      origin: form.originPort.value,
-      destination: form.destinationPort.value,
-      carrier: offer.carrier_name,
-      container: form.containerType.value,
-      price: offer.price,
-      valid_until: offer.validity_until || new Date(Date.now() + 7 * 86400000).toISOString().slice(0, 10),
+      origin: form.originPort.value, destination: form.destinationPort.value,
+      carrier: o.carrier_name, container: '40HC',
+      price: o.price, valid_until: o.validity_until || new Date(Date.now() + 7 * 86400000).toISOString().slice(0, 10),
     });
     const booked = await flxApi.quotes.book(quote.id);
-    alert(`✅ تم الحجز!\nرقم الشحنة: ${booked.shipment.id}\nرقم الفاتورة: ${booked.invoice.id}`);
+    alert(`✅ تم الحجز!\nالشحنة: ${booked.shipment.id}\nالفاتورة: ${booked.invoice.id}`);
     window.location.href = '/dashboard.html';
   } catch (e) {
     alert('فشل الحجز: ' + e.message);
   }
 }
-window.bookOffer = bookOffer;
 
-form.addEventListener('submit', async (e) => {
-  e.preventDefault();
-  submitBtn.disabled = true;
-  setStatus('🔍 جاري البحث عن أفضل العروض من 30 خط ملاحي... ', 'loading');
-  statusEl.innerHTML += '<span class="spinner"></span>';
-
-  const fd = new FormData(form);
-  const body = Object.fromEntries(fd.entries());
-  body.hazardous = fd.has('hazardous');
-  body.numContainers = parseInt(body.numContainers) || 1;
-  if (body.cargoWeightKg) body.cargoWeightKg = parseFloat(body.cargoWeightKg);
-  if (body.cargoVolumeM3) body.cargoVolumeM3 = parseFloat(body.cargoVolumeM3);
-
-  try {
-    const t0 = Date.now();
-    const result = await fetch('/api/v1/rates/search', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${flxApi.isAuthenticated() ? (localStorage.getItem('flx_access_token') || Object.keys(localStorage).filter(k => k.startsWith('sb-') && k.endsWith('-auth-token')).map(k => { try { return JSON.parse(localStorage.getItem(k))?.access_token; } catch { return null; } }).find(Boolean)) : ''}`,
-      },
-      body: JSON.stringify(body),
-    });
-    if (!result.ok) {
-      if (result.status === 401) {
-        setStatus('⚠️ يجب تسجيل الدخول أولاً', 'error');
-        setTimeout(() => location.href = '/login.html', 1500);
-        return;
-      }
-      throw new Error(`HTTP ${result.status}`);
-    }
-    const data = await result.json();
-    allOffers = data.offers || [];
-
-    const ms = Date.now() - t0;
-    setStatus(`✅ تم العثور على ${allOffers.length} عرض (${data.source}) في ${ms}ms`, 'success');
-    summaryEl.textContent = `${form.originPort.options[form.originPort.selectedIndex].text} → ${form.destinationPort.options[form.destinationPort.selectedIndex].text} · ${form.containerType.value}`;
-    resultsCard.style.display = 'block';
-    renderOffers();
-    resultsCard.scrollIntoView({ behavior: 'smooth' });
-  } catch (err) {
-    setStatus('❌ فشل البحث: ' + err.message, 'error');
-  } finally {
-    submitBtn.disabled = false;
-  }
-});
-
-// Auto-redirect to login if not authenticated
+// ── Auth check ──
 window.addEventListener('load', () => {
   if (!flxApi.isAuthenticated()) {
-    setStatus('⚠️ سجّل دخولك لطلب الأسعار', 'error');
+    setStatus('⚠️ يجب تسجيل الدخول لطلب الأسعار', 'error');
   }
 });
 </script>
