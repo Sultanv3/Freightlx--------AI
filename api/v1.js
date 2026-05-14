@@ -285,10 +285,10 @@ async function fetchFreightifyRates(reqBody) {
     const url = `${FX_BASE}/v3/prices?${query}`;
     trace.steps.push('query_built');
 
-    // 22s timeout on first request — max safe for Edge runtime (25s hard limit).
-    // For longer responses, the async polling pattern via /rates/poll handles waits.
+    // 50s timeout — Vercel Pro + Fluid Compute allows 60s total budget.
+    // Gives Freightify ample time for slow rate fan-out (typical 30-50s).
     const c1 = new AbortController();
-    const tid1 = setTimeout(() => c1.abort(), 22000);
+    const tid1 = setTimeout(() => c1.abort(), 50000);
     let r;
     try {
       r = await fetch(url, {
@@ -303,8 +303,8 @@ async function fetchFreightifyRates(reqBody) {
     } catch (e) {
       clearTimeout(tid1);
       if (e.name === 'AbortError') {
-        trace.steps.push('prices_timeout_22s');
-        return { source: 'freightify_timeout', offers: [], error: 'Freightify did not respond within 22s — use /rates/poll for longer waits', trace, url };
+        trace.steps.push('prices_timeout_50s');
+        return { source: 'freightify_timeout', offers: [], error: 'Freightify did not respond within 50s', trace, url };
       }
       throw e;
       throw e;
@@ -543,7 +543,7 @@ export default async function handler(req) {
       }
     }
     return json({
-      status: 'ok', version: '2.11.0', time: new Date().toISOString(),
+      status: 'ok', version: '2.12.0', time: new Date().toISOString(),
       services: {
         database: dbStatus, supabase_url: SUPABASE_URL,
         ai: process.env.GEMINI_API_KEY ? 'gemini' : process.env.OPENAI_API_KEY ? 'openai' : 'none',
@@ -1032,4 +1032,6 @@ export default async function handler(req) {
   }
 }
 
-export const config = { runtime: 'edge' };
+// Vercel Pro + Fluid Compute enabled — maxDuration up to 60s on Edge.
+// This allows Freightify /v3/prices to take its full ~30-50s before responding.
+export const config = { runtime: 'edge', maxDuration: 60 };
