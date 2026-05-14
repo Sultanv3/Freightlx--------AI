@@ -793,7 +793,20 @@ form.addEventListener('submit', async (e) => {
     const data = await r.json();
     allOffers = data.offers || [];
     const ms = Date.now() - t0;
-    setStatus(`✅ ${allOffers.length} عرض في ${ms}ms من ${data.source === 'freightify' ? 'Freightify' : 'قاعدة بيانات الخطوط'}`, 'success');
+    if (allOffers.length === 0) {
+      // Freightify-only mode: show clear message when no offers
+      const reason = data.freightify_fallback_reason || {};
+      let msg = '⚠️ لم نتلقى أسعار من Freightify لهذا المسار';
+      if (reason.error && reason.error.includes('timeout')) {
+        msg = '⏱️ Freightify لم يرد خلال 22 ثانية — حاول مرة أخرى أو جرّب مساراً آخر';
+      } else if (reason.error && reason.error.includes('no offers')) {
+        msg = '📭 لا توجد أسعار متاحة على Freightify لهذا المسار حالياً';
+      }
+      setStatus(msg, 'error');
+      document.getElementById('skeleton').style.display = 'none';
+      return;
+    }
+    setStatus(`✅ ${allOffers.length} عرض حقيقي من Freightify في ${ms}ms`, 'success');
 
     document.getElementById('summary').innerHTML =
       `<strong>${lastSummary.from}</strong> → <strong>${lastSummary.to}</strong> · ${currentMode} · ${lastSummary.containers}`;
