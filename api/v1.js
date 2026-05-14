@@ -243,9 +243,9 @@ function fxNormalizeOffer(raw, fallbackRoute) {
   };
 }
 
-/** Poll /v3/prices/{reqId} for offers — max 4 attempts × 1.5s = 6s total. */
+/** Poll /v3/prices/{reqId} for offers — max 1 attempt × 1.5s (budget already exhausted). */
 async function fxPollOffers(reqId, token) {
-  for (let i = 0; i < 4; i++) {
+  for (let i = 0; i < 1; i++) {
     await new Promise(r => setTimeout(r, 1500));
     try {
       const c = new AbortController();
@@ -285,10 +285,10 @@ async function fetchFreightifyRates(reqBody) {
     const url = `${FX_BASE}/v3/prices?${query}`;
     trace.steps.push('query_built');
 
-    // 15s timeout on FIRST request — Freightify is genuinely slow on rate fan-out.
-    // If we get reqId + partial offers, polling adds up to 9s. Total: 24s < 25s Vercel limit.
+    // 22s timeout — maximum we can give Freightify to fan-out to carriers.
+    // No fallback; Freightify-only mode per user request.
     const c1 = new AbortController();
-    const tid1 = setTimeout(() => c1.abort(), 15000);
+    const tid1 = setTimeout(() => c1.abort(), 22000);
     let r;
     try {
       r = await fetch(url, {
@@ -303,8 +303,8 @@ async function fetchFreightifyRates(reqBody) {
     } catch (e) {
       clearTimeout(tid1);
       if (e.name === 'AbortError') {
-        trace.steps.push('prices_timeout_15s');
-        return { source: 'freightify_timeout', offers: [], error: 'prices first request timed out after 15s (Freightify slow fan-out)', trace, url };
+        trace.steps.push('prices_timeout_22s');
+        return { source: 'freightify_timeout', offers: [], error: 'Freightify did not respond within 22s', trace, url };
       }
       throw e;
       throw e;
@@ -529,7 +529,7 @@ export default async function handler(req) {
       }
     }
     return json({
-      status: 'ok', version: '2.8.2', time: new Date().toISOString(),
+      status: 'ok', version: '2.9.0', time: new Date().toISOString(),
       services: {
         database: dbStatus, supabase_url: SUPABASE_URL,
         ai: process.env.GEMINI_API_KEY ? 'gemini' : process.env.OPENAI_API_KEY ? 'openai' : 'none',
@@ -716,9 +716,9 @@ export default async function handler(req) {
             .filter(o => o.price > 0)
             .sort((a, b) => a.price - b.price);
         } else {
-          // 2) Fallback to carriers-DB-based offers
-          normalized = await buildOffersFromCarriers(body);
-          usedSource = 'carriers_db';
+          // Freightify-only mode: no fallback. Return empty offers with diagnostic info.
+          normalized = [];
+          usedSource = fxResult.source || 'freightify_no_offers';
           freightifyDebug = { reason: fxResult.source, error: fxResult.error, trace: fxResult.trace };
         }
 
