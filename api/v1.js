@@ -547,7 +547,7 @@ async function webHandler(req) {
       }
     }
     return json({
-      status: 'ok', version: '2.15.0', time: new Date().toISOString(),
+      status: 'ok', version: '2.15.1', time: new Date().toISOString(),
       services: {
         database: dbStatus, supabase_url: SUPABASE_URL,
         ai: process.env.GEMINI_API_KEY ? 'gemini' : process.env.OPENAI_API_KEY ? 'openai' : 'none',
@@ -1088,7 +1088,8 @@ async function webHandler(req) {
           // For private buckets we'd create a signed URL; for now expose via public path.
           const fileUrl = `${SUPABASE_URL}/storage/v1/object/public/documents/${storagePath}`;
 
-          const [doc] = await sb('/documents', { method: 'POST', body: [{
+          // Insert metadata — only safe columns (description column doesn't exist in current schema)
+          const docRow = {
             id: genId('DOC'),
             user_id: user.id,
             shipment_id: shipmentId,
@@ -1097,8 +1098,10 @@ async function webHandler(req) {
             file_type: category,
             file_size_kb: sizeKb,
             mime_type: contentType,
-            description,
-          }]});
+          };
+          const [doc] = await sb('/documents', { method: 'POST', body: [docRow] });
+          // store description in notification body if provided
+          if (description) doc._description = description;
 
           await sb('/notifications', { method: 'POST', body: [{
             user_id: user.id, type: 'success',
@@ -1148,6 +1151,7 @@ async function webHandler(req) {
       // POST /documents — metadata only (file URL comes from Supabase Storage)
       if (req.method === 'POST' && !segments[1]) {
         const body = await req.json();
+        // Schema doesn't have description column — skip it
         const [doc] = await sb('/documents', { method: 'POST', body: [{
           id: body.id || genId('DOC'),
           user_id: user.id,
@@ -1157,7 +1161,6 @@ async function webHandler(req) {
           file_type: body.file_type || 'other',
           file_size_kb: body.file_size_kb || null,
           mime_type: body.mime_type || null,
-          description: body.description || null,
         }]});
         await sb('/notifications', { method: 'POST', body: [{
           user_id: user.id, type: 'success',
