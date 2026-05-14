@@ -543,7 +543,7 @@ async function webHandler(req) {
       }
     }
     return json({
-      status: 'ok', version: '2.13.0', time: new Date().toISOString(),
+      status: 'ok', version: '2.14.0', time: new Date().toISOString(),
       services: {
         database: dbStatus, supabase_url: SUPABASE_URL,
         ai: process.env.GEMINI_API_KEY ? 'gemini' : process.env.OPENAI_API_KEY ? 'openai' : 'none',
@@ -867,6 +867,46 @@ async function webHandler(req) {
         await sb(`/shipments?id=eq.${segments[1]}&user_id=eq.${user.id}`, { method: 'DELETE' });
         return json({ ok: true });
       }
+      // ── Shipment tracking: history of status events ──
+      if (req.method === 'GET' && segments[1] && segments[2] === 'tracking') {
+        const [s] = await sb(`/shipments?id=eq.${segments[1]}&user_id=eq.${user.id}&select=*&limit=1`);
+        if (!s) return json({ error: { code: 'NOT_FOUND' } }, 404);
+        let events = [];
+        try {
+          events = await sb(`/shipment_events?shipment_id=eq.${segments[1]}&order=event_at.desc&select=*`);
+        } catch {}
+        // Synthesize default events from shipment lifecycle if no events table
+        if (!Array.isArray(events) || events.length === 0) {
+          events = [
+            { event_at: s.created_at || new Date().toISOString(), status: 'created', label: 'تم إنشاء الشحنة' },
+            ...(s.status === 'transit' || s.status === 'delivered' ? [{ event_at: s.created_at, status: 'picked_up', label: 'تم استلام البضاعة' }] : []),
+            ...(s.status === 'transit' ? [{ event_at: new Date().toISOString(), status: 'in_transit', label: 'في عرض البحر' }] : []),
+            ...(s.status === 'delivered' ? [{ event_at: s.delivered_at || new Date().toISOString(), status: 'delivered', label: 'تم التسليم' }] : []),
+          ];
+        }
+        return json({ shipment: s, events, total: events.length });
+      }
+      // ── POST /shipments/{id}/status — update status with notification ──
+      if (req.method === 'POST' && segments[1] && segments[2] === 'status') {
+        const body = await req.json();
+        const newStatus = body.status;
+        const statusTexts = {
+          pending: 'قيد الموافقة', active: 'في التخليص', transit: 'في عرض البحر',
+          delivered: 'تم التسليم', cancelled: 'تم الإلغاء',
+        };
+        const patch = {
+          status: newStatus,
+          status_text: body.status_text || statusTexts[newStatus] || newStatus,
+        };
+        if (newStatus === 'delivered') patch.delivered_at = new Date().toISOString();
+        const [s] = await sb(`/shipments?id=eq.${segments[1]}&user_id=eq.${user.id}`, { method: 'PATCH', body: patch });
+        if (!s) return json({ error: { code: 'NOT_FOUND' } }, 404);
+        await sb('/notifications', { method: 'POST', body: [{
+          user_id: user.id, type: 'info',
+          text: `الشحنة <strong>${s.id}</strong> الآن: ${patch.status_text}`,
+        }], prefer: 'return=minimal' });
+        return json(s);
+      }
     }
 
     // ─── QUOTES ───
@@ -953,23 +993,159 @@ async function webHandler(req) {
     }
 
     // ─── DOCUMENTS ───
-    if (segments[0] === 'documents' && req.method === 'GET' && !segments[1]) {
-      const data = await sb(`/documents?user_id=eq.${user.id}&select=*&order=created_at.desc`);
-      return json({ data, total: data.length, page: 1, limit: data.length });
+    if (segments[0] === 'documents') {
+      if (req.method === 'GET' && !segments[1]) {
+        const shipmentId = url.searchParams.get('shipment_id');
+        let q = `/documents?user_id=eq.${user.id}&select=*&order=created_at.desc`;
+        if (shipmentId) q += `&shipment_id=eq.${shipmentId}`;
+        const data = await sb(q);
+        return json({ data, total: data.length, page: 1, limit: data.length });
+      }
+      if (req.method === 'GET' && segments[1]) {
+        const [doc] = await sb(`/documents?id=eq.${segments[1]}&user_id=eq.${user.id}&select=*&limit=1`);
+        if (!doc) return json({ error: { code: 'NOT_FOUND' } }, 404);
+        return json(doc);
+      }
+      // POST /documents — metadata only (file URL comes from Supabase Storage)
+      if (req.method === 'POST' && !segments[1]) {
+        const body = await req.json();
+        const [doc] = await sb('/documents', { method: 'POST', body: [{
+          id: body.id || genId('DOC'),
+          user_id: user.id,
+          shipment_id: body.shipment_id || null,
+          name: body.name || 'مستند',
+          file_url: body.file_url,
+          file_type: body.file_type || 'other',
+          file_size_kb: body.file_size_kb || null,
+          mime_type: body.mime_type || null,
+          description: body.description || null,
+        }]});
+        await sb('/notifications', { method: 'POST', body: [{
+          user_id: user.id, type: 'success',
+          text: `تم رفع مستند <strong>${doc.name}</strong>`,
+        }], prefer: 'return=minimal' });
+        return json(doc, 201);
+      }
+      if (req.method === 'PATCH' && segments[1]) {
+        const body = await req.json();
+        const [doc] = await sb(`/documents?id=eq.${segments[1]}&user_id=eq.${user.id}`, { method: 'PATCH', body });
+        if (!doc) return json({ error: { code: 'NOT_FOUND' } }, 404);
+        return json(doc);
+      }
+      if (req.method === 'DELETE' && segments[1]) {
+        await sb(`/documents?id=eq.${segments[1]}&user_id=eq.${user.id}`, { method: 'DELETE' });
+        return json({ ok: true });
+      }
     }
 
     // ─── NOTIFICATIONS ───
     if (segments[0] === 'notifications') {
       if (req.method === 'GET' && !segments[1]) {
-        const data = await sb(`/notifications?user_id=eq.${user.id}&select=*&order=created_at.desc&limit=50`);
+        const limit = parseInt(url.searchParams.get('limit') || '50');
+        const data = await sb(`/notifications?user_id=eq.${user.id}&select=*&order=created_at.desc&limit=${limit}`);
         const unread = data.filter(n => !n.read).length;
-        return json({ data, unread });
+        return json({ data, unread, total: data.length });
       }
       if (req.method === 'POST' && segments[1] === 'mark-read') {
         await sb(`/notifications?user_id=eq.${user.id}&read=eq.false`, {
           method: 'PATCH', body: { read: true }, prefer: 'return=minimal',
         });
         return json({ ok: true });
+      }
+      if (req.method === 'PATCH' && segments[1] && segments[2] === 'read') {
+        await sb(`/notifications?id=eq.${segments[1]}&user_id=eq.${user.id}`, {
+          method: 'PATCH', body: { read: true }, prefer: 'return=minimal',
+        });
+        return json({ ok: true });
+      }
+      if (req.method === 'DELETE' && segments[1]) {
+        await sb(`/notifications?id=eq.${segments[1]}&user_id=eq.${user.id}`, { method: 'DELETE' });
+        return json({ ok: true });
+      }
+      if (req.method === 'DELETE' && !segments[1]) {
+        // Clear all read notifications
+        await sb(`/notifications?user_id=eq.${user.id}&read=eq.true`, { method: 'DELETE' });
+        return json({ ok: true });
+      }
+    }
+
+    // ─── SEARCH ─── (across user resources)
+    if (segments[0] === 'search' && req.method === 'GET') {
+      const q = (url.searchParams.get('q') || '').trim();
+      if (!q || q.length < 2) return json({ results: [], total: 0 });
+      const qLike = `%${q}%`;
+      const [shipments, quotes, invoices] = await Promise.all([
+        sb(`/shipments?user_id=eq.${user.id}&or=(id.ilike.${qLike},origin.ilike.${qLike},destination.ilike.${qLike},carrier.ilike.${qLike})&select=*&limit=10`).catch(() => []),
+        sb(`/quotes?user_id=eq.${user.id}&or=(id.ilike.${qLike},origin.ilike.${qLike},destination.ilike.${qLike},carrier.ilike.${qLike})&select=*&limit=10`).catch(() => []),
+        sb(`/invoices?user_id=eq.${user.id}&or=(id.ilike.${qLike},description.ilike.${qLike})&select=*&limit=10`).catch(() => []),
+      ]);
+      const results = [
+        ...shipments.map(s => ({ ...s, type: 'shipment', link: `/shipments/${s.id}` })),
+        ...quotes.map(s => ({ ...s, type: 'quote', link: `/quotes/${s.id}` })),
+        ...invoices.map(s => ({ ...s, type: 'invoice', link: `/invoices/${s.id}` })),
+      ];
+      return json({ results, total: results.length, query: q });
+    }
+
+    // ─── REPORTS ─── (per-user reports)
+    if (segments[0] === 'reports' && req.method === 'GET') {
+      // GET /reports/monthly?year=2026&month=5
+      if (segments[1] === 'monthly') {
+        const year = parseInt(url.searchParams.get('year') || new Date().getFullYear());
+        const month = parseInt(url.searchParams.get('month') || (new Date().getMonth() + 1));
+        const start = new Date(year, month - 1, 1).toISOString();
+        const end = new Date(year, month, 0, 23, 59, 59).toISOString();
+        const [shipments, invoices, quotes] = await Promise.all([
+          sb(`/shipments?user_id=eq.${user.id}&created_at=gte.${start}&created_at=lte.${end}&select=*`),
+          sb(`/invoices?user_id=eq.${user.id}&created_at=gte.${start}&created_at=lte.${end}&select=*`),
+          sb(`/quotes?user_id=eq.${user.id}&created_at=gte.${start}&created_at=lte.${end}&select=*`),
+        ]);
+        const totalRevenue = invoices.filter(i => i.status === 'paid').reduce((s, i) => s + Number(i.amount), 0);
+        const pendingAmount = invoices.filter(i => i.status === 'pending').reduce((s, i) => s + Number(i.amount), 0);
+        const carrierBreakdown = {};
+        shipments.forEach(s => { carrierBreakdown[s.carrier] = (carrierBreakdown[s.carrier] || 0) + 1; });
+        const lanesBreakdown = {};
+        shipments.forEach(s => {
+          const lane = `${s.origin} → ${s.destination}`;
+          lanesBreakdown[lane] = (lanesBreakdown[lane] || 0) + 1;
+        });
+        return json({
+          period: { year, month, start, end },
+          totals: {
+            shipments: shipments.length, quotes: quotes.length,
+            invoices: invoices.length, revenue: totalRevenue, pending: pendingAmount,
+          },
+          breakdown: {
+            by_carrier: Object.entries(carrierBreakdown).map(([k, v]) => ({ carrier: k, count: v })).sort((a, b) => b.count - a.count),
+            by_lane: Object.entries(lanesBreakdown).map(([k, v]) => ({ lane: k, count: v })).sort((a, b) => b.count - a.count).slice(0, 10),
+            by_status: ['pending','active','transit','delivered','cancelled'].map(st => ({
+              status: st, count: shipments.filter(s => s.status === st).length,
+            })),
+          },
+          recent_shipments: shipments.slice(0, 5),
+        });
+      }
+      // GET /reports/dashboard — last 30 days summary
+      if (segments[1] === 'dashboard') {
+        const since = new Date(Date.now() - 30 * 86400000).toISOString();
+        const [shipments, invoices, quotes, notifications] = await Promise.all([
+          sb(`/shipments?user_id=eq.${user.id}&created_at=gte.${since}&select=status,price,created_at&order=created_at.desc`),
+          sb(`/invoices?user_id=eq.${user.id}&created_at=gte.${since}&select=status,amount,created_at`),
+          sb(`/quotes?user_id=eq.${user.id}&created_at=gte.${since}&select=status`),
+          sb(`/notifications?user_id=eq.${user.id}&read=eq.false&select=id`),
+        ]);
+        return json({
+          period: 'last_30_days',
+          totals: {
+            shipments_30d: shipments.length,
+            active_shipments: shipments.filter(s => ['active','transit','pending'].includes(s.status)).length,
+            delivered_shipments: shipments.filter(s => s.status === 'delivered').length,
+            revenue_30d: invoices.filter(i => i.status === 'paid').reduce((s, i) => s + Number(i.amount), 0),
+            pending_invoices: invoices.filter(i => i.status === 'pending').length,
+            quotes_30d: quotes.length,
+            unread_notifications: notifications.length,
+          },
+        });
       }
     }
 
@@ -1000,6 +1176,102 @@ async function webHandler(req) {
       if (segments[1] === 'users' && req.method === 'GET') {
         const users = await sb('/profiles?select=*&order=created_at.desc');
         return json({ data: users, total: users.length });
+      }
+      // PATCH /admin/users/{id} — update role/status
+      if (segments[1] === 'users' && segments[2] && req.method === 'PATCH') {
+        const body = await req.json();
+        const patch = {};
+        if (body.role) patch.role = body.role;
+        if (body.status) patch.status = body.status;
+        if (body.full_name) patch.full_name = body.full_name;
+        const [u] = await sb(`/profiles?id=eq.${segments[2]}`, { method: 'PATCH', body: patch });
+        if (!u) return json({ error: { code: 'NOT_FOUND' } }, 404);
+        return json(u);
+      }
+      // GET /admin/analytics — comprehensive analytics for admin dashboard
+      if (segments[1] === 'analytics' && req.method === 'GET') {
+        const days = parseInt(url.searchParams.get('days') || '30');
+        const since = new Date(Date.now() - days * 86400000).toISOString();
+        const [allShipments, allInvoices, allProfiles, allRateReqs] = await Promise.all([
+          sb('/shipments?select=*&order=created_at.desc&limit=500'),
+          sb('/invoices?select=*'),
+          sb('/profiles?select=id,status,created_at'),
+          sb(`/rate_requests?created_at=gte.${since}&select=*&order=created_at.desc&limit=200`),
+        ]);
+        // Revenue by month (last 12 months)
+        const revenueByMonth = {};
+        allInvoices.filter(i => i.status === 'paid').forEach(i => {
+          const month = (i.paid_at || i.created_at || '').slice(0, 7);
+          if (!month) return;
+          revenueByMonth[month] = (revenueByMonth[month] || 0) + Number(i.amount);
+        });
+        // Top carriers by shipment count
+        const carrierCounts = {};
+        allShipments.forEach(s => { carrierCounts[s.carrier] = (carrierCounts[s.carrier] || 0) + 1; });
+        const topCarriers = Object.entries(carrierCounts).map(([k, v]) => ({ carrier: k, count: v })).sort((a, b) => b.count - a.count).slice(0, 10);
+        // Top lanes
+        const laneCounts = {};
+        allShipments.forEach(s => {
+          const lane = `${s.origin} → ${s.destination}`;
+          laneCounts[lane] = (laneCounts[lane] || 0) + 1;
+        });
+        const topLanes = Object.entries(laneCounts).map(([k, v]) => ({ lane: k, count: v })).sort((a, b) => b.count - a.count).slice(0, 10);
+        // User growth (signups per month)
+        const userGrowth = {};
+        allProfiles.forEach(p => {
+          const month = (p.created_at || '').slice(0, 7);
+          if (!month) return;
+          userGrowth[month] = (userGrowth[month] || 0) + 1;
+        });
+        return json({
+          period_days: days,
+          revenue_total: allInvoices.filter(i => i.status === 'paid').reduce((s, i) => s + Number(i.amount), 0),
+          revenue_pending: allInvoices.filter(i => i.status === 'pending').reduce((s, i) => s + Number(i.amount), 0),
+          revenue_by_month: Object.entries(revenueByMonth).map(([month, amount]) => ({ month, amount })).sort((a, b) => a.month.localeCompare(b.month)),
+          top_carriers: topCarriers,
+          top_lanes: topLanes,
+          user_growth: Object.entries(userGrowth).map(([month, count]) => ({ month, count })).sort((a, b) => a.month.localeCompare(b.month)),
+          rate_requests_recent: allRateReqs.length,
+          rate_request_freightify_success: allRateReqs.filter(r => r.source === 'freightify').length,
+          rate_request_fallback: allRateReqs.filter(r => r.source !== 'freightify').length,
+          shipments_by_status: {
+            pending: allShipments.filter(s => s.status === 'pending').length,
+            active: allShipments.filter(s => s.status === 'active').length,
+            transit: allShipments.filter(s => s.status === 'transit').length,
+            delivered: allShipments.filter(s => s.status === 'delivered').length,
+            cancelled: allShipments.filter(s => s.status === 'cancelled').length,
+          },
+        });
+      }
+      // GET /admin/recent-activity
+      if (segments[1] === 'recent-activity' && req.method === 'GET') {
+        const limit = parseInt(url.searchParams.get('limit') || '20');
+        const [shipments, invoices, rateReqs, profiles] = await Promise.all([
+          sb(`/shipments?select=id,user_id,carrier,origin,destination,status,created_at&order=created_at.desc&limit=${limit}`),
+          sb(`/invoices?select=id,user_id,amount,status,created_at&order=created_at.desc&limit=${limit}`),
+          sb(`/rate_requests?select=id,user_id,origin_port,destination_port,source,created_at&order=created_at.desc&limit=${limit}`),
+          sb(`/profiles?select=id,email,created_at&order=created_at.desc&limit=${limit}`),
+        ]);
+        const events = [
+          ...shipments.map(s => ({ type: 'shipment', timestamp: s.created_at, data: s, label: `شحنة ${s.id}` })),
+          ...invoices.map(i => ({ type: 'invoice', timestamp: i.created_at, data: i, label: `فاتورة $${i.amount}` })),
+          ...rateReqs.map(r => ({ type: 'rate_request', timestamp: r.created_at, data: r, label: `بحث أسعار ${r.origin_port}→${r.destination_port}` })),
+          ...profiles.map(p => ({ type: 'user_signup', timestamp: p.created_at, data: p, label: `تسجيل ${p.email}` })),
+        ].sort((a, b) => (b.timestamp || '').localeCompare(a.timestamp || ''));
+        return json({ events: events.slice(0, limit), total: events.length });
+      }
+      // GET /admin/freightify-status
+      if (segments[1] === 'freightify-status' && req.method === 'GET') {
+        const recent = await sb('/rate_requests?select=source,duration_ms,created_at&order=created_at.desc&limit=50');
+        const successCount = recent.filter(r => r.source === 'freightify').length;
+        const avgDuration = recent.length > 0 ? Math.round(recent.reduce((s, r) => s + (r.duration_ms || 0), 0) / recent.length) : 0;
+        return json({
+          recent_requests: recent.length,
+          freightify_success_rate: recent.length > 0 ? ((successCount / recent.length) * 100).toFixed(1) + '%' : 'N/A',
+          avg_duration_ms: avgDuration,
+          last_request_at: recent[0]?.created_at || null,
+          sources_breakdown: recent.reduce((acc, r) => { acc[r.source] = (acc[r.source] || 0) + 1; return acc; }, {}),
+        });
       }
       // Admin carrier management
       if (segments[1] === 'carriers') {
