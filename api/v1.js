@@ -547,7 +547,7 @@ async function webHandler(req) {
       }
     }
     return json({
-      status: 'ok', version: '2.15.3', time: new Date().toISOString(),
+      status: 'ok', version: '2.15.4', time: new Date().toISOString(),
       services: {
         database: dbStatus, supabase_url: SUPABASE_URL,
         ai: process.env.GEMINI_API_KEY ? 'gemini' : process.env.OPENAI_API_KEY ? 'openai' : 'none',
@@ -1088,36 +1088,58 @@ async function webHandler(req) {
           // For private buckets we'd create a signed URL; for now expose via public path.
           const fileUrl = `${SUPABASE_URL}/storage/v1/object/public/documents/${storagePath}`;
 
-          // Insert metadata — try with rich columns, drop any column the schema doesn't know
+          // Insert metadata — adaptive to whatever schema the documents table has.
+          // Supports both naming conventions: file_url|url, file_type|type, mime_type|content_type, file_size_kb|size_kb
           let attemptRow = {
             id: genId('DOC'),
             user_id: user.id,
             shipment_id: shipmentId,
             name: filename,
             file_url: fileUrl,
+            url: fileUrl,
             file_type: category,
+            type: category,
             mime_type: contentType,
+            content_type: contentType,
             file_size_kb: sizeKb,
+            size_kb: sizeKb,
+            size_bytes: fileBuf.byteLength,
           };
           let doc = null;
           let droppedCols = [];
-          // Up to 8 retries — drop one missing column at a time based on PGRST204 error
-          for (let attempt = 0; attempt < 8; attempt++) {
+          let defaultsAdded = [];
+          // Up to 16 retries: handle PGRST204 (col missing → drop) and 23502 (NOT NULL → add default)
+          for (let attempt = 0; attempt < 16; attempt++) {
             try {
               const res = await sb('/documents', { method: 'POST', body: [attemptRow] });
               doc = Array.isArray(res) ? res[0] : res;
               break;
             } catch (e) {
-              const m = e.message.match(/Could not find the '([^']+)' column/);
-              if (m && attemptRow[m[1]] !== undefined) {
-                droppedCols.push(m[1]);
-                delete attemptRow[m[1]];
+              // PGRST204: column doesn't exist → drop it
+              const colMissing = e.message.match(/Could not find the '([^']+)' column/);
+              if (colMissing && attemptRow[colMissing[1]] !== undefined) {
+                droppedCols.push(colMissing[1]);
+                delete attemptRow[colMissing[1]];
+                continue;
+              }
+              // 23502: NOT NULL violation → set a sensible default
+              const notNull = e.message.match(/null value in column "([^"]+)"/);
+              if (notNull) {
+                const col = notNull[1];
+                let val = 'document';
+                if (/url|path/i.test(col)) val = fileUrl;
+                else if (/name|title/i.test(col)) val = filename;
+                else if (/type|kind|category/i.test(col)) val = category || 'other';
+                else if (/mime|content_type/i.test(col)) val = contentType;
+                else if (/size/i.test(col)) val = sizeKb;
+                attemptRow[col] = val;
+                defaultsAdded.push(col);
                 continue;
               }
               throw e; // unknown error → bubble up
             }
           }
-          if (!doc) throw new Error('Failed to insert document metadata after column drops: ' + droppedCols.join(','));
+          if (!doc) throw new Error('Failed to insert document metadata. Dropped: ' + droppedCols.join(',') + ' | Defaulted: ' + defaultsAdded.join(','));
           // Expose extras in response even if columns are not persisted
           doc._file_size_kb = sizeKb;
           if (description) doc._description = description;
