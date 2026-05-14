@@ -1,7 +1,12 @@
 /**
- * FREIGHTLX Backend — Vercel Serverless catch-all (v2.1.0)
- * Persists in Supabase Postgres + Storage via REST API (no SDK in Edge).
- * Adds: full carriers data, rate search engine with Freightify integration.
+ * FREIGHTLX Backend — Vercel Serverless catch-all (v2.15.0)
+ * Persists in Supabase Postgres + Storage via REST API.
+ *
+ * v2.15.0 (May 15, 2026):
+ *   - NEW: POST /auth/refresh — refresh Supabase access_token via refresh_token
+ *   - NEW: POST /documents/upload — multipart upload to Supabase Storage (bucket: documents)
+ *   - NEW: GET /documents/{id}/download — signed URL for download (falls back to public)
+ *   - FIX: removed duplicate `throw e;` in fetchFreightifyRates
  */
 
 const SUPABASE_URL = process.env.SUPABASE_URL || 'https://pczfivhvnbewovvbquig.supabase.co';
@@ -307,7 +312,6 @@ async function fetchFreightifyRates(reqBody) {
         return { source: 'freightify_timeout', offers: [], error: 'Freightify did not respond within 50s', trace, url };
       }
       throw e;
-      throw e;
     }
     clearTimeout(tid1);
     const text = await r.text();
@@ -543,7 +547,7 @@ async function webHandler(req) {
       }
     }
     return json({
-      status: 'ok', version: '2.14.2', time: new Date().toISOString(),
+      status: 'ok', version: '2.15.0', time: new Date().toISOString(),
       services: {
         database: dbStatus, supabase_url: SUPABASE_URL,
         ai: process.env.GEMINI_API_KEY ? 'gemini' : process.env.OPENAI_API_KEY ? 'openai' : 'none',
@@ -687,6 +691,45 @@ async function webHandler(req) {
       const [profile] = await sb(`/profiles?id=eq.${user.id}&select=*&limit=1`);
       return json({ user: profile || { id: user.id, email: user.email, role: user.role } });
     } catch { return json({ user }); }
+  }
+
+  // ── POST /auth/refresh — refresh access token via Supabase (public) ──
+  if (segments[0] === 'auth' && segments[1] === 'refresh' && req.method === 'POST') {
+    try {
+      const body = await req.json();
+      const refresh = body.refresh_token || body.refreshToken;
+      if (!refresh) {
+        return json({ error: { code: 'BAD_REQUEST', message: 'refresh_token required' } }, 400);
+      }
+      const r = await fetch(`${SUPABASE_URL}/auth/v1/token?grant_type=refresh_token`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          apikey: SUPABASE_SERVICE_KEY,
+          Authorization: `Bearer ${SUPABASE_SERVICE_KEY}`,
+        },
+        body: JSON.stringify({ refresh_token: refresh }),
+      });
+      const data = await r.json().catch(() => ({}));
+      if (!r.ok) {
+        return json({
+          error: {
+            code: 'REFRESH_FAILED',
+            message: data.error_description || data.msg || data.message || 'invalid_grant',
+          },
+        }, 401);
+      }
+      return json({
+        access_token: data.access_token,
+        refresh_token: data.refresh_token,
+        token_type: data.token_type || 'bearer',
+        expires_in: data.expires_in,
+        expires_at: data.expires_at,
+        user: data.user || null,
+      });
+    } catch (e) {
+      return json({ error: { code: 'REFRESH_ERROR', message: e.message } }, 500);
+    }
   }
 
   // ── Protected routes ──
@@ -1001,7 +1044,103 @@ async function webHandler(req) {
         const data = await sb(q);
         return json({ data, total: data.length, page: 1, limit: data.length });
       }
-      if (req.method === 'GET' && segments[1]) {
+      // ── POST /documents/upload — multipart file upload to Supabase Storage ──
+      if (req.method === 'POST' && segments[1] === 'upload') {
+        try {
+          const form = await req.formData();
+          const file = form.get('file');
+          if (!file || typeof file === 'string') {
+            return json({ error: { code: 'BAD_REQUEST', message: 'file field is required (multipart/form-data)' } }, 400);
+          }
+          const shipmentId = form.get('shipmentId') || form.get('shipment_id') || null;
+          const category = (form.get('category') || 'other').toString();
+          const description = form.get('description') ? form.get('description').toString() : null;
+
+          const filename = (file.name || 'unnamed').toString();
+          const safeName = filename.replace(/[^\w.\-؀-ۿ]/g, '_').slice(0, 120);
+          const storagePath = `${user.id}/${Date.now()}_${safeName}`;
+          const fileBuf = await file.arrayBuffer();
+          const sizeKb = Math.round(fileBuf.byteLength / 1024);
+          const contentType = file.type || 'application/octet-stream';
+
+          // Upload to Supabase Storage (bucket: documents)
+          const upRes = await fetch(`${SUPABASE_URL}/storage/v1/object/documents/${encodeURIComponent(storagePath)}`, {
+            method: 'POST',
+            headers: {
+              Authorization: `Bearer ${SUPABASE_SERVICE_KEY}`,
+              apikey: SUPABASE_SERVICE_KEY,
+              'Content-Type': contentType,
+              'x-upsert': 'true',
+            },
+            body: fileBuf,
+          });
+          if (!upRes.ok) {
+            const errText = await upRes.text();
+            return json({
+              error: {
+                code: 'STORAGE_ERROR',
+                message: 'Upload to Supabase Storage failed. Ensure bucket "documents" exists.',
+                detail: errText.slice(0, 300),
+              },
+            }, 500);
+          }
+
+          // For private buckets we'd create a signed URL; for now expose via public path.
+          const fileUrl = `${SUPABASE_URL}/storage/v1/object/public/documents/${storagePath}`;
+
+          const [doc] = await sb('/documents', { method: 'POST', body: [{
+            id: genId('DOC'),
+            user_id: user.id,
+            shipment_id: shipmentId,
+            name: filename,
+            file_url: fileUrl,
+            file_type: category,
+            file_size_kb: sizeKb,
+            mime_type: contentType,
+            description,
+          }]});
+
+          await sb('/notifications', { method: 'POST', body: [{
+            user_id: user.id, type: 'success',
+            text: `تم رفع مستند <strong>${filename}</strong>`,
+          }], prefer: 'return=minimal' });
+
+          return json(doc, 201);
+        } catch (e) {
+          return json({ error: { code: 'UPLOAD_ERROR', message: e.message } }, 500);
+        }
+      }
+      // ── GET /documents/{id}/download — returns signed URL for download ──
+      if (req.method === 'GET' && segments[1] && segments[2] === 'download') {
+        const [doc] = await sb(`/documents?id=eq.${segments[1]}&user_id=eq.${user.id}&select=*&limit=1`);
+        if (!doc) return json({ error: { code: 'NOT_FOUND' } }, 404);
+        // Try to create a 1-hour signed URL (works for private buckets); fall back to public file_url
+        try {
+          const m = doc.file_url && doc.file_url.match(/storage\/v1\/object\/public\/documents\/(.+)$/);
+          if (m) {
+            const path = decodeURIComponent(m[1]);
+            const r = await fetch(`${SUPABASE_URL}/storage/v1/object/sign/documents/${encodeURIComponent(path)}`, {
+              method: 'POST',
+              headers: {
+                Authorization: `Bearer ${SUPABASE_SERVICE_KEY}`,
+                apikey: SUPABASE_SERVICE_KEY,
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({ expiresIn: 3600 }),
+            });
+            if (r.ok) {
+              const sd = await r.json();
+              if (sd.signedURL || sd.signedUrl) {
+                const signedPath = sd.signedURL || sd.signedUrl;
+                const fullUrl = signedPath.startsWith('http') ? signedPath : `${SUPABASE_URL}/storage/v1${signedPath}`;
+                return json({ url: fullUrl, name: doc.name, mime_type: doc.mime_type, expires_in: 3600 });
+              }
+            }
+          }
+        } catch {}
+        return json({ url: doc.file_url, name: doc.name, mime_type: doc.mime_type, public: true });
+      }
+      if (req.method === 'GET' && segments[1] && !segments[2]) {
         const [doc] = await sb(`/documents?id=eq.${segments[1]}&user_id=eq.${user.id}&select=*&limit=1`);
         if (!doc) return json({ error: { code: 'NOT_FOUND' } }, 404);
         return json(doc);
