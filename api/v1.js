@@ -522,7 +522,7 @@ async function buildOffersFromCarriers(reqBody) {
 }
 
 // ── MAIN HANDLER ──
-export default async function handler(req) {
+async function webHandler(req) {
   if (req.method === 'OPTIONS') return new Response(null, { headers: CORS_HEADERS });
 
   const url = new URL(req.url);
@@ -543,7 +543,7 @@ export default async function handler(req) {
       }
     }
     return json({
-      status: 'ok', version: '2.12.0', time: new Date().toISOString(),
+      status: 'ok', version: '2.13.0', time: new Date().toISOString(),
       services: {
         database: dbStatus, supabase_url: SUPABASE_URL,
         ai: process.env.GEMINI_API_KEY ? 'gemini' : process.env.OPENAI_API_KEY ? 'openai' : 'none',
@@ -1032,6 +1032,46 @@ export default async function handler(req) {
   }
 }
 
-// Vercel Pro + Fluid Compute enabled — maxDuration up to 60s on Edge.
-// This allows Freightify /v3/prices to take its full ~30-50s before responding.
-export const config = { runtime: 'edge', maxDuration: 60 };
+// Vercel Pro + Fluid Compute on Node.js runtime — 60s max duration.
+// Wraps the Web Standard handler (Request -> Response) for Node.js (req, res) style.
+export const config = { runtime: 'nodejs', maxDuration: 60 };
+
+export default async function nodeHandler(req, res) {
+  try {
+    // Build full URL from Node.js req
+    const proto = req.headers['x-forwarded-proto'] || 'https';
+    const host = req.headers['x-forwarded-host'] || req.headers.host || 'freightlx-ai.vercel.app';
+    const url = `${proto}://${host}${req.url}`;
+
+    // Convert headers to Web Headers
+    const headers = new Headers();
+    for (const [k, v] of Object.entries(req.headers)) {
+      if (Array.isArray(v)) v.forEach(vv => headers.append(k, vv));
+      else if (v !== undefined) headers.set(k, String(v));
+    }
+
+    // Build Web Request
+    const init = { method: req.method, headers };
+    if (req.method !== 'GET' && req.method !== 'HEAD') {
+      const chunks = [];
+      for await (const chunk of req) chunks.push(chunk);
+      if (chunks.length > 0) init.body = Buffer.concat(chunks);
+    }
+    const webReq = new Request(url, init);
+
+    // Call existing web handler
+    const webRes = await webHandler(webReq);
+
+    // Mirror to Node res
+    res.statusCode = webRes.status;
+    webRes.headers.forEach((value, key) => {
+      try { res.setHeader(key, value); } catch {}
+    });
+    const body = await webRes.arrayBuffer();
+    res.end(Buffer.from(body));
+  } catch (err) {
+    res.statusCode = 500;
+    res.setHeader('Content-Type', 'application/json');
+    res.end(JSON.stringify({ error: { code: 'WRAPPER_ERROR', message: err.message, stack: err.stack?.slice(0, 500) } }));
+  }
+}
