@@ -324,22 +324,36 @@ async function fetchFreightifyRates(reqBody) {
                  (Array.isArray(data.data) ? data.data : null) ||
                  (Array.isArray(data) ? data : null);
 
-    // Async pattern: server returned reqId with empty/partial offers → poll for fuller list
+    // Capture reqId for async polling pattern (UI can poll later)
     const reqIdField = data.reqId || data.requestId || (data.data && (data.data.reqId || data.data.requestId));
-    if ((!offers || offers.length === 0) && reqIdField) {
-      trace.steps.push('polling_' + reqIdField);
-      const polled = await fxPollOffers(reqIdField, token);
-      if (Array.isArray(polled) && polled.length > 0) {
-        offers = polled;
-        trace.steps.push('polled_ok');
-      }
+    const apiStatus = data.status || (data.data && data.data.status) || null;
+    const fallbackRoute = `${reqBody.originPort || reqBody.origin_port} → ${reqBody.destinationPort || reqBody.destination_port}`;
+
+    // If we got partial offers + reqId still INPROGRESS → return them + reqId so UI keeps polling
+    if (Array.isArray(offers) && offers.length > 0) {
+      return {
+        source: 'freightify',
+        offers: offers.map(o => fxNormalizeOffer(o, fallbackRoute)),
+        reqId: reqIdField || null,
+        api_status: apiStatus,
+        in_progress: apiStatus === 'INPROGRESS',
+        trace,
+      };
     }
 
-    if (!Array.isArray(offers) || offers.length === 0) {
-      return { source: 'freightify_empty', offers: [], error: 'no offers in response', trace, sample: text.slice(0, 500) };
+    // No offers yet but we have reqId → return empty + reqId, UI will poll
+    if (reqIdField) {
+      return {
+        source: 'freightify_in_progress',
+        offers: [],
+        reqId: reqIdField,
+        api_status: apiStatus || 'INPROGRESS',
+        in_progress: true,
+        trace,
+      };
     }
-    const fallbackRoute = `${reqBody.originPort || reqBody.origin_port} → ${reqBody.destinationPort || reqBody.destination_port}`;
-    return { source: 'freightify', offers: offers.map(o => fxNormalizeOffer(o, fallbackRoute)), trace };
+
+    return { source: 'freightify_empty', offers: [], error: 'no offers and no reqId in response', trace, sample: text.slice(0, 500) };
 
   } catch (err) {
     return { source: 'freightify_exception', offers: [], error: err.message, trace };
@@ -529,7 +543,7 @@ export default async function handler(req) {
       }
     }
     return json({
-      status: 'ok', version: '2.10.1', time: new Date().toISOString(),
+      status: 'ok', version: '2.11.0', time: new Date().toISOString(),
       services: {
         database: dbStatus, supabase_url: SUPABASE_URL,
         ai: process.env.GEMINI_API_KEY ? 'gemini' : process.env.OPENAI_API_KEY ? 'openai' : 'none',
@@ -763,6 +777,10 @@ export default async function handler(req) {
           request_id: requestId, source: usedSource,
           offers: normalized, total: normalized.length,
           duration_ms: Date.now() - t0,
+          // Async polling info: UI uses these to keep polling for more offers
+          freightify_req_id: fxResult.reqId || null,
+          in_progress: !!fxResult.in_progress,
+          api_status: fxResult.api_status || null,
           ...(freightifyDebug ? { freightify_fallback_reason: freightifyDebug } : {}),
         });
       }
