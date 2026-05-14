@@ -243,9 +243,9 @@ function fxNormalizeOffer(raw, fallbackRoute) {
   };
 }
 
-/** Poll /v3/prices/{reqId} for offers — max 1 attempt × 1.5s (budget already exhausted). */
+/** Poll /v3/prices/{reqId} for offers — 4 attempts × 2s = 8s budget. */
 async function fxPollOffers(reqId, token) {
-  for (let i = 0; i < 1; i++) {
+  for (let i = 0; i < 4; i++) {
     await new Promise(r => setTimeout(r, 1500));
     try {
       const c = new AbortController();
@@ -285,10 +285,10 @@ async function fetchFreightifyRates(reqBody) {
     const url = `${FX_BASE}/v3/prices?${query}`;
     trace.steps.push('query_built');
 
-    // 22s timeout — maximum we can give Freightify to fan-out to carriers.
-    // No fallback; Freightify-only mode per user request.
+    // 45s timeout on first request — Node.js runtime allows 60s total budget.
+    // Freightify fan-out can take up to 30-40s for distant routes.
     const c1 = new AbortController();
-    const tid1 = setTimeout(() => c1.abort(), 22000);
+    const tid1 = setTimeout(() => c1.abort(), 45000);
     let r;
     try {
       r = await fetch(url, {
@@ -303,8 +303,8 @@ async function fetchFreightifyRates(reqBody) {
     } catch (e) {
       clearTimeout(tid1);
       if (e.name === 'AbortError') {
-        trace.steps.push('prices_timeout_22s');
-        return { source: 'freightify_timeout', offers: [], error: 'Freightify did not respond within 22s', trace, url };
+        trace.steps.push('prices_timeout_45s');
+        return { source: 'freightify_timeout', offers: [], error: 'Freightify did not respond within 45s', trace, url };
       }
       throw e;
       throw e;
@@ -529,7 +529,7 @@ export default async function handler(req) {
       }
     }
     return json({
-      status: 'ok', version: '2.9.0', time: new Date().toISOString(),
+      status: 'ok', version: '2.10.0', time: new Date().toISOString(),
       services: {
         database: dbStatus, supabase_url: SUPABASE_URL,
         ai: process.env.GEMINI_API_KEY ? 'gemini' : process.env.OPENAI_API_KEY ? 'openai' : 'none',
@@ -979,4 +979,6 @@ export default async function handler(req) {
   }
 }
 
-export const config = { runtime: 'edge' };
+// Switched to Node.js runtime (web-style handler) to access maxDuration: 60s
+// on Vercel Pro. Freightify /v3/prices can take 20-50s; Edge runtime is 25s hard limit.
+export const config = { runtime: 'nodejs', maxDuration: 60 };
