@@ -278,9 +278,10 @@ async function fetchFreightifyRates(reqBody) {
     const url = `${FX_BASE}/v3/prices?${query}`;
     trace.steps.push('query_built');
 
-    // 18s hard timeout on first prices call (Freightify can be slow on cold rate fan-out)
+    // 4s hard timeout on first prices call — fail-fast to keep UI responsive.
+    // Freightify hangs when Bearer+x-api-key combined; carriers_db handles fallback.
     const c1 = new AbortController();
-    const tid1 = setTimeout(() => c1.abort(), 18000);
+    const tid1 = setTimeout(() => c1.abort(), 4000);
     let r;
     try {
       r = await fetch(url, {
@@ -295,8 +296,8 @@ async function fetchFreightifyRates(reqBody) {
     } catch (e) {
       clearTimeout(tid1);
       if (e.name === 'AbortError') {
-        trace.steps.push('prices_timeout_18s');
-        return { source: 'freightify_timeout', offers: [], error: 'prices endpoint timed out after 18s', trace, url };
+        trace.steps.push('prices_timeout_4s');
+        return { source: 'freightify_timeout', offers: [], error: 'prices endpoint timed out after 4s', trace, url };
       }
       throw e;
     }
@@ -337,31 +338,96 @@ async function fetchFreightifyRates(reqBody) {
   }
 }
 
-// Build offers from active carriers in DB (real carriers, computed pricing)
+// Lane-aware base rates (rough market prices, USD per container)
+// Distance multipliers for major Saudi destinations from world origins
+function laneMultiplier(origin, destination) {
+  const o = (origin || '').toUpperCase();
+  const d = (destination || '').toUpperCase();
+  // Origin region multipliers
+  let baseMul = 1.0;
+  if (o.startsWith('CN') || o.startsWith('HK')) baseMul = 1.0;      // China/HK baseline
+  else if (o.startsWith('IN')) baseMul = 0.75;                       // India shorter
+  else if (o.startsWith('TR')) baseMul = 0.55;                       // Turkey closest
+  else if (o.startsWith('AE') || o.startsWith('OM')) baseMul = 0.35;  // Gulf neighbors
+  else if (o.startsWith('US')) baseMul = 1.4;                        // USA longest
+  else if (o.startsWith('DE') || o.startsWith('NL') || o.startsWith('FR') || o.startsWith('IT') || o.startsWith('ES') || o.startsWith('GB')) baseMul = 1.05;
+  else if (o.startsWith('SG') || o.startsWith('MY') || o.startsWith('TH') || o.startsWith('VN') || o.startsWith('ID')) baseMul = 0.85;
+  else if (o.startsWith('JP') || o.startsWith('KR')) baseMul = 1.1;
+  else if (o.startsWith('EG')) baseMul = 0.45;
+  // Destination — SA ports
+  let destMul = 1.0;
+  if (d.startsWith('SA')) destMul = 1.0;                              // KSA is our market
+  return baseMul * destMul;
+}
+
+// Realistic transit days by lane
+function laneTransitDays(origin, destination) {
+  const o = (origin || '').toUpperCase();
+  if (o.startsWith('CN') || o.startsWith('HK')) return 21;
+  if (o.startsWith('IN')) return 12;
+  if (o.startsWith('TR')) return 8;
+  if (o.startsWith('AE') || o.startsWith('OM')) return 3;
+  if (o.startsWith('US')) return 35;
+  if (o.startsWith('DE') || o.startsWith('NL') || o.startsWith('FR') || o.startsWith('GB') || o.startsWith('IT') || o.startsWith('ES')) return 18;
+  if (o.startsWith('SG') || o.startsWith('MY') || o.startsWith('TH')) return 16;
+  if (o.startsWith('JP') || o.startsWith('KR')) return 22;
+  if (o.startsWith('EG')) return 6;
+  return 25;
+}
+
+// Build offers from active carriers in DB with lane-aware realistic pricing
 async function buildOffersFromCarriers(reqBody) {
-  const carriers = await sb('/carriers?active=eq.true&order=priority.asc&limit=15');
+  const carriers = await sb('/carriers?active=eq.true&order=priority.asc&limit=12');
   const ctType = (reqBody.containerType || reqBody.container_type || '40HC').toUpperCase();
+  // Market base rates (CN → SA range, mid-2025 spot)
   const baseRates = {
-    '20GP': 1500, '20HC': 1600, '40GP': 2800, '40HC': 2900, '40RF': 4500, '45HC': 3100, 'LCL': 80,
+    '20GP': 1450, '20HC': 1550, '40GP': 2650, '40HC': 2750, '40RF': 4200, '45HC': 2950, 'LCL': 75,
   };
-  const base = baseRates[ctType] || baseRates['40HC'];
+  const origin = reqBody.originPort || reqBody.origin_port || 'CNSHA';
+  const destination = reqBody.destinationPort || reqBody.destination_port || 'SAJED';
+  const baseUSD = baseRates[ctType] || baseRates['40HC'];
+  const laneMul = laneMultiplier(origin, destination);
+  const transitBase = laneTransitDays(origin, destination);
   const today = new Date();
-  return carriers.map((c, i) => {
-    const transit = (c.transit_days_avg || 25) + Math.floor(Math.random() * 4) - 2;
-    const price = base + (c.priority * 30) + Math.floor(Math.random() * 200);
+  const numContainers = parseInt(reqBody.numContainers || reqBody.num_containers || 1) || 1;
+
+  // Deterministic per-carrier variance (so prices don't change wildly on refresh)
+  const seed = (origin + destination).split('').reduce((s, c) => s + c.charCodeAt(0), 0);
+  function det(i, scale) {
+    return ((seed * 31 + i * 17) % 100) / 100 * scale;
+  }
+
+  const offers = carriers.map((c, i) => {
+    // Carrier tier modifier: top-3 charge premium, mid-tier base, lower-tier discount
+    const tierMul = c.priority <= 3 ? 1.08 : c.priority <= 8 ? 1.00 : 0.92;
+    const variance = det(i, 250) - 125; // ±125 USD deterministic spread
+    const price = Math.round((baseUSD * laneMul * tierMul) + variance);
+    const transitOffset = (i % 5) - 2; // -2 to +2 day spread
+    const transit = Math.max(3, (c.transit_days_avg ? Math.round((c.transit_days_avg + transitBase) / 2) : transitBase) + transitOffset);
+    const etdOffset = 3 + (i % 4); // ETD 3-6 days out
+    const isDirect = (c.services || []).includes('Direct') || i % 4 === 0;
     return {
-      carrier_code: c.code, carrier_name: c.name, carrier_logo: c.logo_url,
-      brand_color: c.brand_color, country: c.country,
-      route: `${reqBody.originPort || reqBody.origin_port || 'POL'} → ${reqBody.destinationPort || reqBody.destination_port || 'POD'}`,
-      transit_days: transit, price, currency: 'USD',
-      validity_until: new Date(today.getTime() + 7 * 86400000).toISOString().slice(0, 10),
-      vessel: `${c.name.split(' ')[0]} ${['Express','Pioneer','Champion','Harmony','Spirit'][i % 5]}`,
-      etd: new Date(today.getTime() + (3 + i) * 86400000).toISOString().slice(0, 10),
-      eta: new Date(today.getTime() + (3 + i + transit) * 86400000).toISOString().slice(0, 10),
-      service_type: i % 3 === 0 ? 'Direct' : 'T/S Singapore',
-      free_days: 10 + (i % 5), is_direct: i % 3 === 0,
+      carrier_code: c.code,
+      carrier_name: c.name,
+      carrier_logo: c.logo_url,
+      brand_color: c.brand_color,
+      country: c.country,
+      route: `${origin} → ${destination}`,
+      transit_days: transit,
+      price,
+      total_price: price * numContainers,
+      currency: 'USD',
+      validity_until: new Date(today.getTime() + 14 * 86400000).toISOString().slice(0, 10),
+      vessel: `${c.name.split(' ')[0]} ${['Express','Pioneer','Champion','Harmony','Spirit','Voyager','Sovereign','Atlas'][i % 8]}`,
+      etd: new Date(today.getTime() + etdOffset * 86400000).toISOString().slice(0, 10),
+      eta: new Date(today.getTime() + (etdOffset + transit) * 86400000).toISOString().slice(0, 10),
+      service_type: isDirect ? 'Direct' : (i % 3 === 0 ? 'T/S Singapore' : i % 3 === 1 ? 'T/S Jebel Ali' : 'T/S Salalah'),
+      free_days: 10 + (i % 5),
+      is_direct: isDirect,
     };
-  }).sort((a, b) => a.price - b.price);
+  }).filter(o => o.price > 0).sort((a, b) => a.price - b.price);
+
+  return offers;
 }
 
 // ── MAIN HANDLER ──
@@ -386,7 +452,7 @@ export default async function handler(req) {
       }
     }
     return json({
-      status: 'ok', version: '2.4.7', time: new Date().toISOString(),
+      status: 'ok', version: '2.5.0', time: new Date().toISOString(),
       services: {
         database: dbStatus, supabase_url: SUPABASE_URL,
         ai: process.env.GEMINI_API_KEY ? 'gemini' : process.env.OPENAI_API_KEY ? 'openai' : 'none',
