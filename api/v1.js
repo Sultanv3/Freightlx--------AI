@@ -129,17 +129,30 @@ async function fxGetToken(force = false) {
   body.set('username', FREIGHTIFY_USERNAME);
   body.set('password', FREIGHTIFY_PASSWORD);
 
-  const r = await fetch(tokenUrl, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/x-www-form-urlencoded',
-      Accept: 'application/json',
-      Authorization: `Basic ${basic}`,
-      ...(FREIGHTIFY_API_KEY ? { 'x-api-key': FREIGHTIFY_API_KEY } : {}),
-      'User-Agent': 'freightlx-platform',
-    },
-    body: body.toString(),
-  });
+  // Hard 6-second timeout to avoid Vercel edge gateway timeouts
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 6000);
+
+  let r;
+  try {
+    r = await fetch(tokenUrl, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+        Accept: 'application/json',
+        Authorization: `Basic ${basic}`,
+        ...(FREIGHTIFY_API_KEY ? { 'x-api-key': FREIGHTIFY_API_KEY } : {}),
+        'User-Agent': 'freightlx-platform',
+      },
+      body: body.toString(),
+      signal: controller.signal,
+    });
+  } catch (e) {
+    clearTimeout(timeoutId);
+    if (e.name === 'AbortError') throw new Error(`Freightify auth timeout after 6s (${tokenUrl})`);
+    throw new Error(`Freightify auth network error: ${e.message}`);
+  }
+  clearTimeout(timeoutId);
 
   const text = await r.text();
   if (!r.ok) {
@@ -357,7 +370,7 @@ export default async function handler(req) {
       }
     }
     return json({
-      status: 'ok', version: '2.4.1', time: new Date().toISOString(),
+      status: 'ok', version: '2.4.3', time: new Date().toISOString(),
       services: {
         database: dbStatus, supabase_url: SUPABASE_URL,
         ai: process.env.GEMINI_API_KEY ? 'gemini' : process.env.OPENAI_API_KEY ? 'openai' : 'none',
@@ -365,6 +378,45 @@ export default async function handler(req) {
         carriers_count: carrierCount,
       },
     });
+  }
+
+  // ── Freightify network ping (no auth — pure reachability test) ──
+  if (segments[0] === 'freightify' && segments[1] === 'ping' && req.method === 'GET') {
+    const result = { base_url: FX_BASE, time: new Date().toISOString(), checks: {} };
+    // Test 1: simple GET on base URL with 5s timeout
+    try {
+      const c = new AbortController();
+      const tid = setTimeout(() => c.abort(), 5000);
+      const t0 = Date.now();
+      const r = await fetch(FX_BASE, {
+        method: 'GET',
+        headers: { Accept: 'text/html, application/json', 'User-Agent': 'freightlx-ping' },
+        signal: c.signal,
+      }).finally(() => clearTimeout(tid));
+      result.checks.base_reachable = {
+        ok: true, status: r.status, duration_ms: Date.now() - t0,
+        content_type: r.headers.get('content-type'),
+      };
+    } catch (e) {
+      result.checks.base_reachable = { ok: false, error: e.name === 'AbortError' ? 'timeout_5s' : e.message };
+    }
+    // Test 2: HEAD on /oauth2/token with 5s timeout
+    try {
+      const c = new AbortController();
+      const tid = setTimeout(() => c.abort(), 5000);
+      const t0 = Date.now();
+      const r = await fetch(`${FX_BASE}/oauth2/token`, {
+        method: 'OPTIONS',
+        headers: { Accept: 'application/json', 'User-Agent': 'freightlx-ping' },
+        signal: c.signal,
+      }).finally(() => clearTimeout(tid));
+      result.checks.oauth_endpoint_reachable = {
+        ok: true, status: r.status, duration_ms: Date.now() - t0,
+      };
+    } catch (e) {
+      result.checks.oauth_endpoint_reachable = { ok: false, error: e.name === 'AbortError' ? 'timeout_5s' : e.message };
+    }
+    return json(result);
   }
 
   // ── Freightify diagnostic (admin or public for debugging) ──
@@ -395,13 +447,17 @@ export default async function handler(req) {
       const query = fxBuildPricesQuery({
         originPort: 'CNSHA', destinationPort: 'SAJED', containerType: '40HC', mode: 'FCL',
       });
+      // 8-second hard timeout for the probe
+      const controller = new AbortController();
+      const tid = setTimeout(() => controller.abort(), 8000);
       const r = await fetch(`${FX_BASE}/v3/prices?${query}`, {
         headers: {
           'x-api-key': FREIGHTIFY_API_KEY,
           Authorization: `Bearer ${_fxToken}`,
           Accept: 'application/json',
         },
-      });
+        signal: controller.signal,
+      }).finally(() => clearTimeout(tid));
       const text = await r.text();
       let parsed = null;
       try { parsed = JSON.parse(text); } catch {}
