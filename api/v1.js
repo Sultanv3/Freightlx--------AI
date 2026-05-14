@@ -547,7 +547,7 @@ async function webHandler(req) {
       }
     }
     return json({
-      status: 'ok', version: '2.15.5', time: new Date().toISOString(),
+      status: 'ok', version: '2.15.6', time: new Date().toISOString(),
       services: {
         database: dbStatus, supabase_url: SUPABASE_URL,
         ai: process.env.GEMINI_API_KEY ? 'gemini' : process.env.OPENAI_API_KEY ? 'openai' : 'none',
@@ -1105,10 +1105,9 @@ async function webHandler(req) {
           const doc = Array.isArray(res) ? res[0] : res;
           // Also include the public file_url for convenience
           doc.file_url = fileUrl;
-          // Expose extras in response even if columns are not persisted
+          // Expose extras in response
           doc._file_size_kb = sizeKb;
           if (description) doc._description = description;
-          if (droppedCols.length) doc._dropped_cols = droppedCols;
 
           await sb('/notifications', { method: 'POST', body: [{
             user_id: user.id, type: 'success',
