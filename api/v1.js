@@ -285,10 +285,10 @@ async function fetchFreightifyRates(reqBody) {
     const url = `${FX_BASE}/v3/prices?${query}`;
     trace.steps.push('query_built');
 
-    // 45s timeout on first request — Node.js runtime allows 60s total budget.
-    // Freightify fan-out can take up to 30-40s for distant routes.
+    // 22s timeout on first request — max safe for Edge runtime (25s hard limit).
+    // For longer responses, the async polling pattern via /rates/poll handles waits.
     const c1 = new AbortController();
-    const tid1 = setTimeout(() => c1.abort(), 45000);
+    const tid1 = setTimeout(() => c1.abort(), 22000);
     let r;
     try {
       r = await fetch(url, {
@@ -303,8 +303,8 @@ async function fetchFreightifyRates(reqBody) {
     } catch (e) {
       clearTimeout(tid1);
       if (e.name === 'AbortError') {
-        trace.steps.push('prices_timeout_45s');
-        return { source: 'freightify_timeout', offers: [], error: 'Freightify did not respond within 45s', trace, url };
+        trace.steps.push('prices_timeout_22s');
+        return { source: 'freightify_timeout', offers: [], error: 'Freightify did not respond within 22s — use /rates/poll for longer waits', trace, url };
       }
       throw e;
       throw e;
@@ -529,7 +529,7 @@ export default async function handler(req) {
       }
     }
     return json({
-      status: 'ok', version: '2.10.0', time: new Date().toISOString(),
+      status: 'ok', version: '2.10.1', time: new Date().toISOString(),
       services: {
         database: dbStatus, supabase_url: SUPABASE_URL,
         ai: process.env.GEMINI_API_KEY ? 'gemini' : process.env.OPENAI_API_KEY ? 'openai' : 'none',
@@ -776,6 +776,41 @@ export default async function handler(req) {
         const offers = await sb(`/rate_offers?request_id=eq.${segments[2]}&order=price.asc&select=*`);
         return json({ data: offers, total: offers.length });
       }
+
+      // ── Async polling: GET /rates/poll/{reqId} — single quick call to Freightify
+      if (segments[1] === 'poll' && segments[2] && req.method === 'GET') {
+        const reqId = segments[2];
+        try {
+          const token = await fxGetToken();
+          const c = new AbortController();
+          const tid = setTimeout(() => c.abort(), 18000);
+          const r = await fetch(`${FX_BASE}/v3/prices/${reqId}?offset=0&limit=30`, {
+            headers: {
+              'x-api-key': FREIGHTIFY_API_KEY,
+              Authorization: `Bearer ${token}`,
+              Accept: 'application/json',
+            },
+            signal: c.signal,
+          }).finally(() => clearTimeout(tid));
+          const text = await r.text();
+          let data = null;
+          try { data = JSON.parse(text); } catch {}
+          const offers = data?.offers || data?.data?.offers || [];
+          const status = data?.status || data?.data?.status || 'UNKNOWN';
+          const fallbackRoute = '';
+          const normalized = Array.isArray(offers)
+            ? offers.map(o => fxNormalizeOffer(o, fallbackRoute)).filter(o => o.price > 0).sort((a,b) => a.price - b.price)
+            : [];
+          return json({
+            reqId, status,
+            offers: normalized, total: normalized.length,
+            completed: status === 'COMPLETED' || normalized.length >= 5,
+            httpStatus: r.status,
+          });
+        } catch (e) {
+          return json({ reqId: segments[2], error: e.message, completed: false }, 200);
+        }
+      }
     }
 
     // ─── SHIPMENTS ───
@@ -979,6 +1014,4 @@ export default async function handler(req) {
   }
 }
 
-// Switched to Node.js runtime (web-style handler) to access maxDuration: 60s
-// on Vercel Pro. Freightify /v3/prices can take 20-50s; Edge runtime is 25s hard limit.
-export const config = { runtime: 'nodejs', maxDuration: 60 };
+export const config = { runtime: 'edge' };
