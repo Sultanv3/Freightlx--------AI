@@ -277,14 +277,29 @@ async function fetchFreightifyRates(reqBody) {
     const url = `${FX_BASE}/v3/prices?${query}`;
     trace.steps.push('query_built');
 
-    const r = await fetch(url, {
-      method: 'GET',
-      headers: {
-        'x-api-key': FREIGHTIFY_API_KEY,
-        Authorization: `Bearer ${token}`,
-        Accept: 'application/json',
-      },
-    });
+    // 18s hard timeout on first prices call (Freightify can be slow on cold rate fan-out)
+    const c1 = new AbortController();
+    const tid1 = setTimeout(() => c1.abort(), 18000);
+    let r;
+    try {
+      r = await fetch(url, {
+        method: 'GET',
+        headers: {
+          'x-api-key': FREIGHTIFY_API_KEY,
+          Authorization: `Bearer ${token}`,
+          Accept: 'application/json',
+        },
+        signal: c1.signal,
+      });
+    } catch (e) {
+      clearTimeout(tid1);
+      if (e.name === 'AbortError') {
+        trace.steps.push('prices_timeout_18s');
+        return { source: 'freightify_timeout', offers: [], error: 'prices endpoint timed out after 18s', trace, url };
+      }
+      throw e;
+    }
+    clearTimeout(tid1);
     const text = await r.text();
     trace.steps.push(`prices_${r.status}`);
     if (!r.ok) {
@@ -370,7 +385,7 @@ export default async function handler(req) {
       }
     }
     return json({
-      status: 'ok', version: '2.4.3', time: new Date().toISOString(),
+      status: 'ok', version: '2.4.4', time: new Date().toISOString(),
       services: {
         database: dbStatus, supabase_url: SUPABASE_URL,
         ai: process.env.GEMINI_API_KEY ? 'gemini' : process.env.OPENAI_API_KEY ? 'openai' : 'none',
@@ -447,9 +462,9 @@ export default async function handler(req) {
       const query = fxBuildPricesQuery({
         originPort: 'CNSHA', destinationPort: 'SAJED', containerType: '40HC', mode: 'FCL',
       });
-      // 8-second hard timeout for the probe
+      // 18-second hard timeout for the probe (Freightify cold fan-out can be slow)
       const controller = new AbortController();
-      const tid = setTimeout(() => controller.abort(), 8000);
+      const tid = setTimeout(() => controller.abort(), 18000);
       const r = await fetch(`${FX_BASE}/v3/prices?${query}`, {
         headers: {
           'x-api-key': FREIGHTIFY_API_KEY,
