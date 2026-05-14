@@ -278,10 +278,10 @@ async function fetchFreightifyRates(reqBody) {
     const url = `${FX_BASE}/v3/prices?${query}`;
     trace.steps.push('query_built');
 
-    // 4s hard timeout on first prices call — fail-fast to keep UI responsive.
-    // Freightify hangs when Bearer+x-api-key combined; carriers_db handles fallback.
+    // 18s timeout — Freightify fans out to carriers in real-time, takes 10-15s.
+    // Per Freightify docs: both Bearer + x-api-key required together.
     const c1 = new AbortController();
-    const tid1 = setTimeout(() => c1.abort(), 4000);
+    const tid1 = setTimeout(() => c1.abort(), 18000);
     let r;
     try {
       r = await fetch(url, {
@@ -296,8 +296,8 @@ async function fetchFreightifyRates(reqBody) {
     } catch (e) {
       clearTimeout(tid1);
       if (e.name === 'AbortError') {
-        trace.steps.push('prices_timeout_4s');
-        return { source: 'freightify_timeout', offers: [], error: 'prices endpoint timed out after 4s', trace, url };
+        trace.steps.push('prices_timeout_18s');
+        return { source: 'freightify_timeout', offers: [], error: 'prices endpoint timed out after 18s', trace, url };
       }
       throw e;
     }
@@ -452,7 +452,7 @@ export default async function handler(req) {
       }
     }
     return json({
-      status: 'ok', version: '2.6.0', time: new Date().toISOString(),
+      status: 'ok', version: '2.7.0', time: new Date().toISOString(),
       services: {
         database: dbStatus, supabase_url: SUPABASE_URL,
         ai: process.env.GEMINI_API_KEY ? 'gemini' : process.env.OPENAI_API_KEY ? 'openai' : 'none',
@@ -529,31 +529,40 @@ export default async function handler(req) {
     const query = `mode=FCL&origin=INNSA&originType=PORT&destination=DEHAM&destinationType=PORT&departureDate=${futureDate}&containers=1X20GPX13000XKG`;
 
     result.checks.probes = [];
-    // Test if token works on other endpoints (carriers, sea-ports) — proves token is valid
-    const otherEndpoints = [
-      { name: 'carriers_apikey', url: '/v1/carriers', headers: { 'x-api-key': FREIGHTIFY_API_KEY } },
-      { name: 'carriers_bearer', url: '/v1/carriers', headers: { Authorization: `Bearer ${_fxToken}` } },
-      { name: 'seaports_apikey', url: '/v1/sea-ports?countryCode=SA', headers: { 'x-api-key': FREIGHTIFY_API_KEY } },
-      { name: 'seaports_bearer', url: '/v1/sea-ports?countryCode=SA', headers: { Authorization: `Bearer ${_fxToken}` } },
-      { name: 'prices_apikey_only', url: `/v3/prices?${query}`, headers: { 'x-api-key': FREIGHTIFY_API_KEY } },
-      { name: 'prices_bearer_only', url: `/v3/prices?${query}`, headers: { Authorization: `Bearer ${_fxToken}` } },
+    // Per Freightify docs: BOTH Bearer + x-api-key required together.
+    // Test carriers (simple GET, fast) and prices (slow, fans out to carriers)
+    const fullAuthHeaders = {
+      'x-api-key': FREIGHTIFY_API_KEY,
+      Authorization: `Bearer ${_fxToken}`,
+      Accept: 'application/json',
+      'User-Agent': 'freightlx-platform',
+    };
+    const endpoints = [
+      { name: 'carriers', url: '/v1/carriers', timeout: 5000 },
+      { name: 'sea-ports', url: '/v1/sea-ports?countryCode=SA', timeout: 5000 },
+      { name: 'prices', url: `/v3/prices?${query}`, timeout: 18000 },
     ];
-    for (const ep of otherEndpoints) {
+    for (const ep of endpoints) {
       try {
         const c = new AbortController();
-        const tid = setTimeout(() => c.abort(), 4000);
+        const tid = setTimeout(() => c.abort(), ep.timeout);
         const t0 = Date.now();
         const r = await fetch(`${FX_BASE}${ep.url}`, {
-          headers: { Accept: 'application/json', 'User-Agent': 'freightlx-probe', ...ep.headers },
-          signal: c.signal,
+          headers: fullAuthHeaders, signal: c.signal,
         }).finally(() => clearTimeout(tid));
         const text = await r.text();
+        let parsed = null;
+        try { parsed = JSON.parse(text); } catch {}
         result.checks.probes.push({
-          name: ep.name, status: r.status, duration_ms: Date.now() - t0,
-          body_preview: text.slice(0, 250),
+          name: ep.name, status: r.status, ok: r.ok, duration_ms: Date.now() - t0,
+          reqId: parsed?.reqId || parsed?.requestId || null,
+          api_status: parsed?.status || null,
+          offers_count: (parsed?.offers || []).length,
+          carriers_count: Array.isArray(parsed?.carriers || parsed?.data) ? (parsed?.carriers || parsed?.data).length : null,
+          body_preview: text.slice(0, 350),
         });
       } catch (e) {
-        result.checks.probes.push({ name: ep.name, error: e.name === 'AbortError' ? 'timeout_4s' : e.message });
+        result.checks.probes.push({ name: ep.name, error: e.name === 'AbortError' ? `timeout_${ep.timeout/1000}s` : e.message });
       }
     }
     return json(result);
