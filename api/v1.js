@@ -547,7 +547,7 @@ async function webHandler(req) {
       }
     }
     return json({
-      status: 'ok', version: '2.15.2', time: new Date().toISOString(),
+      status: 'ok', version: '2.15.3', time: new Date().toISOString(),
       services: {
         database: dbStatus, supabase_url: SUPABASE_URL,
         ai: process.env.GEMINI_API_KEY ? 'gemini' : process.env.OPENAI_API_KEY ? 'openai' : 'none',
@@ -1088,8 +1088,8 @@ async function webHandler(req) {
           // For private buckets we'd create a signed URL; for now expose via public path.
           const fileUrl = `${SUPABASE_URL}/storage/v1/object/public/documents/${storagePath}`;
 
-          // Insert metadata — only columns that exist in the current schema
-          const docRow = {
+          // Insert metadata — try with rich columns, drop any column the schema doesn't know
+          let attemptRow = {
             id: genId('DOC'),
             user_id: user.id,
             shipment_id: shipmentId,
@@ -1097,11 +1097,31 @@ async function webHandler(req) {
             file_url: fileUrl,
             file_type: category,
             mime_type: contentType,
+            file_size_kb: sizeKb,
           };
-          const [doc] = await sb('/documents', { method: 'POST', body: [docRow] });
-          // Expose size in response for the UI even though not persisted
+          let doc = null;
+          let droppedCols = [];
+          // Up to 8 retries — drop one missing column at a time based on PGRST204 error
+          for (let attempt = 0; attempt < 8; attempt++) {
+            try {
+              const res = await sb('/documents', { method: 'POST', body: [attemptRow] });
+              doc = Array.isArray(res) ? res[0] : res;
+              break;
+            } catch (e) {
+              const m = e.message.match(/Could not find the '([^']+)' column/);
+              if (m && attemptRow[m[1]] !== undefined) {
+                droppedCols.push(m[1]);
+                delete attemptRow[m[1]];
+                continue;
+              }
+              throw e; // unknown error → bubble up
+            }
+          }
+          if (!doc) throw new Error('Failed to insert document metadata after column drops: ' + droppedCols.join(','));
+          // Expose extras in response even if columns are not persisted
           doc._file_size_kb = sizeKb;
           if (description) doc._description = description;
+          if (droppedCols.length) doc._dropped_cols = droppedCols;
 
           await sb('/notifications', { method: 'POST', body: [{
             user_id: user.id, type: 'success',
