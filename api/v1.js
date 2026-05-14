@@ -385,7 +385,7 @@ export default async function handler(req) {
       }
     }
     return json({
-      status: 'ok', version: '2.4.4', time: new Date().toISOString(),
+      status: 'ok', version: '2.4.5', time: new Date().toISOString(),
       services: {
         database: dbStatus, supabase_url: SUPABASE_URL,
         ai: process.env.GEMINI_API_KEY ? 'gemini' : process.env.OPENAI_API_KEY ? 'openai' : 'none',
@@ -457,35 +457,45 @@ export default async function handler(req) {
       result.checks.token = { ok: false, error: e.message };
       return json(result);
     }
-    // Step 2: quick /v3/prices probe (NO polling — captures first response only)
-    try {
-      const query = fxBuildPricesQuery({
-        originPort: 'CNSHA', destinationPort: 'SAJED', containerType: '40HC', mode: 'FCL',
-      });
-      // 18-second hard timeout for the probe (Freightify cold fan-out can be slow)
-      const controller = new AbortController();
-      const tid = setTimeout(() => controller.abort(), 18000);
-      const r = await fetch(`${FX_BASE}/v3/prices?${query}`, {
-        headers: {
-          'x-api-key': FREIGHTIFY_API_KEY,
-          Authorization: `Bearer ${_fxToken}`,
-          Accept: 'application/json',
-        },
-        signal: controller.signal,
-      }).finally(() => clearTimeout(tid));
-      const text = await r.text();
-      let parsed = null;
-      try { parsed = JSON.parse(text); } catch {}
-      result.checks.prices_endpoint = {
-        status: r.status, ok: r.ok,
-        reqId: parsed?.reqId || parsed?.requestId || null,
-        totalOffers: parsed?.totalOffers || 0,
-        offers_in_first_response: (parsed?.offers || []).length,
-        body_preview: text.slice(0, 800),
-        query_string: query,
-      };
-    } catch (e) {
-      result.checks.prices_endpoint = { ok: false, error: e.message };
+    // Step 2: try OpenAPI example route (known-good per Freightify docs)
+    // INNSA → DEHAM, 20GP, 13000kg
+    const futureDate = new Date(Date.now() + 30 * 86400000).toISOString().slice(0, 10);
+    const probes = [
+      { name: 'openapi_example_INNSA_DEHAM', query: `mode=FCL&origin=INNSA&originType=PORT&destination=DEHAM&destinationType=PORT&departureDate=${futureDate}&containers=1X20GPX13000XKG` },
+      { name: 'user_route_CNSHA_SAJED', query: `mode=FCL&origin=CNSHA&originType=PORT&destination=SAJED&destinationType=PORT&departureDate=${futureDate}&containers=1X40HCX25000XKG` },
+    ];
+    result.checks.probes = [];
+    for (const probe of probes) {
+      const probeResult = { name: probe.name, query: probe.query };
+      try {
+        const controller = new AbortController();
+        const tid = setTimeout(() => controller.abort(), 20000);
+        const t0 = Date.now();
+        const r = await fetch(`${FX_BASE}/v3/prices?${probe.query}`, {
+          headers: {
+            'x-api-key': FREIGHTIFY_API_KEY,
+            Authorization: `Bearer ${_fxToken}`,
+            Accept: 'application/json',
+            'User-Agent': 'freightlx-platform',
+          },
+          signal: controller.signal,
+        }).finally(() => clearTimeout(tid));
+        probeResult.duration_ms = Date.now() - t0;
+        probeResult.status = r.status;
+        probeResult.ok = r.ok;
+        const text = await r.text();
+        probeResult.body_preview = text.slice(0, 500);
+        try {
+          const parsed = JSON.parse(text);
+          probeResult.reqId = parsed.reqId || parsed.requestId;
+          probeResult.offers_count = (parsed.offers || []).length;
+          probeResult.api_status = parsed.status;
+        } catch {}
+      } catch (e) {
+        probeResult.duration_ms = -1;
+        probeResult.error = e.name === 'AbortError' ? 'timeout_20s' : e.message;
+      }
+      result.checks.probes.push(probeResult);
     }
     return json(result);
   }
