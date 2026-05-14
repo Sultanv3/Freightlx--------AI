@@ -496,14 +496,49 @@ const submitBtn = document.getElementById('submitBtn');
 let allOffers = [];
 let currentSort = 'price';
 
+// Try to resolve a typed text into a port code (auto-match if user didn't click suggestion)
+function resolvePort(textInput, hiddenInput) {
+  if (hiddenInput.value) return hiddenInput.value;
+  const q = textInput.value.trim().toLowerCase();
+  if (!q) return '';
+  // Direct code match
+  const exact = PORTS.find(p => p.code.toLowerCase() === q);
+  if (exact) { hiddenInput.value = exact.code; textInput.value = exact.nameAr + ' · ' + exact.country; return exact.code; }
+  // Single best match (name/nameAr/code substring)
+  const matches = PORTS.filter(p =>
+    p.code.toLowerCase().includes(q) ||
+    p.name.toLowerCase().includes(q) ||
+    p.nameAr.includes(textInput.value.trim()) ||
+    p.country.includes(textInput.value.trim())
+  );
+  if (matches.length === 1) {
+    hiddenInput.value = matches[0].code;
+    textInput.value = matches[0].nameAr + ' · ' + matches[0].country;
+    return matches[0].code;
+  }
+  return '';
+}
+
 form.addEventListener('submit', async (e) => {
   e.preventDefault();
 
-  const originCode = form.originPort.value.trim();
-  const destCode = form.destinationPort.value.trim();
+  const originTextEl = document.getElementById('originPort');
+  const destTextEl = document.getElementById('destinationPort');
+  const originHidden = originTextEl.parentNode.querySelector('input[type=hidden]');
+  const destHidden = destTextEl.parentNode.querySelector('input[type=hidden]');
 
-  if (!originCode || !destCode) {
-    setStatus('⚠️ اختر ميناء التحميل وميناء التفريغ من القائمة', 'error');
+  // Auto-resolve typed text → code
+  const originCode = resolvePort(originTextEl, originHidden);
+  const destCode = resolvePort(destTextEl, destHidden);
+
+  if (!originCode) {
+    setStatus('⚠️ اختر ميناء التحميل من القائمة المنسدلة', 'error');
+    originTextEl.focus();
+    return;
+  }
+  if (!destCode) {
+    setStatus('⚠️ اختر ميناء التفريغ من القائمة المنسدلة', 'error');
+    destTextEl.focus();
     return;
   }
   if (originCode === destCode) {
@@ -526,7 +561,9 @@ form.addEventListener('submit', async (e) => {
   const payload = {
     mode: currentMode,
     originPort: originCode,
+    origin_port: originCode,
     destinationPort: destCode,
+    destination_port: destCode,
     containerType: primaryType,
     containers,                                  // full list for richer requests
     numContainers: totalQty,
@@ -674,8 +711,59 @@ async function bookOffer(o) {
   }
 }
 
-// ── Auth check ──
+// ── URL params prefill (chatbot → rates deep link) ──
+// Example: /rates.html?from=CNSHA&to=SAJED&type=40HC&qty=2&cargo=reefer&mode=FCL&auto=1
+function prefillFromURL() {
+  const u = new URL(location.href);
+  const from = u.searchParams.get('from') || u.searchParams.get('origin');
+  const to   = u.searchParams.get('to')   || u.searchParams.get('destination') || u.searchParams.get('dest');
+  const ctype = u.searchParams.get('type') || u.searchParams.get('container');
+  const qty   = parseInt(u.searchParams.get('qty')) || 1;
+  const cargo = u.searchParams.get('cargo') || u.searchParams.get('category');
+  const mode  = (u.searchParams.get('mode') || 'FCL').toUpperCase();
+  const auto  = u.searchParams.get('auto') === '1';
+
+  if (from) {
+    const p = PORTS.find(x => x.code.toUpperCase() === from.toUpperCase());
+    if (p) {
+      const el = document.getElementById('originPort');
+      el.value = p.nameAr + ' · ' + p.country;
+      el.parentNode.querySelector('input[type=hidden]').value = p.code;
+    }
+  }
+  if (to) {
+    const p = PORTS.find(x => x.code.toUpperCase() === to.toUpperCase());
+    if (p) {
+      const el = document.getElementById('destinationPort');
+      el.value = p.nameAr + ' · ' + p.country;
+      el.parentNode.querySelector('input[type=hidden]').value = p.code;
+    }
+  }
+  if (ctype) {
+    const sel = form.querySelector('.ct-select');
+    if (sel && [...sel.options].some(o => o.value === ctype.toUpperCase())) sel.value = ctype.toUpperCase();
+  }
+  if (qty > 1) {
+    const q = form.querySelector('.ct-qty');
+    if (q) q.value = Math.min(999, qty);
+  }
+  if (cargo) {
+    const sel = form.querySelector('#cargoCategory');
+    if (sel && [...sel.options].some(o => o.value === cargo)) sel.value = cargo;
+  }
+  if (['FCL','LCL','AIR'].includes(mode)) {
+    const btn = document.querySelector(`.mode-btn[data-mode="${mode}"]`);
+    if (btn && !btn.disabled) btn.click();
+  }
+  // Auto-submit if requested
+  if (auto && from && to) {
+    setTimeout(() => form.requestSubmit(), 400);
+  }
+}
+
+// ── Auth check + prefill ──
 window.addEventListener('load', () => {
+  prefillFromURL();
   if (!flxApi.isAuthenticated()) {
     setStatus('⚠️ يجب تسجيل الدخول لطلب الأسعار', 'error');
   }

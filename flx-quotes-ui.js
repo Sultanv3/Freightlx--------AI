@@ -562,15 +562,23 @@
 
       if (quoteMatch || containerSelected) {
         scanCurrentSelections();
-        // Use sane defaults if missing
-        const request = {
-          originPort: workflowState.originPort || 'CNSHA',
-          destinationPort: workflowState.destinationPort || 'SAJED',
-          containerType: workflowState.containerType || '40HC',
-          commodityCode: workflowState.commodityCode || '8517',
-          productName: workflowState.productName
-        };
-        setTimeout(() => window.flxShowQuotes(request), 150);
+        // Navigate to the dedicated rate-request page with deep-link params
+        const params = new URLSearchParams();
+        if (workflowState.originPort) params.set('from', workflowState.originPort);
+        if (workflowState.destinationPort) params.set('to', workflowState.destinationPort);
+        if (workflowState.containerType) params.set('type', workflowState.containerType);
+        // Map "LCL" container hint → mode
+        if ((workflowState.containerType || '').toUpperCase() === 'LCL') params.set('mode', 'LCL');
+        // Cargo category: try to infer from text
+        const lower = (text || '').toLowerCase();
+        if (lower.includes('مبرد') || lower.includes('reefer')) params.set('cargo', 'reefer');
+        else if (lower.includes('خطر') || lower.includes('dg ') || lower.includes('imo')) params.set('cargo', 'dangerous');
+        else if (lower.includes('مجمد') || lower.includes('frozen')) params.set('cargo', 'frozen');
+        // Auto-search only if both ports detected
+        if (workflowState.originPort && workflowState.destinationPort) params.set('auto', '1');
+        setTimeout(() => {
+          window.location.href = '/rates.html' + (params.toString() ? '?' + params.toString() : '');
+        }, 150);
       }
     }, false);
 
