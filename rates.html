@@ -203,24 +203,22 @@ header a:hover { text-decoration: underline; }
         </button>
       </div>
 
-      <!-- Commodity -->
+      <!-- Cargo type -->
       <div class="commodity-row">
         <span class="label-icon">📦</span>
-        <label class="field-label" style="margin: 0; min-width: 90px;">نوع البضاعة</label>
-        <select name="commodity" id="commodity">
-          <option value="dry">بضاعة جافة / عامة (Dry or General Cargo)</option>
-          <option value="electronics">إلكترونيات</option>
-          <option value="textiles">منسوجات وملابس</option>
-          <option value="machinery">آلات ومعدات</option>
-          <option value="furniture">أثاث</option>
-          <option value="food">مواد غذائية (غير مبردة)</option>
-          <option value="reefer">مبردة / مجمدة</option>
-          <option value="chemicals">كيماويات (غير خطرة)</option>
-          <option value="auto-parts">قطع غيار سيارات</option>
-          <option value="building">مواد بناء</option>
-          <option value="paper">ورق وطباعة</option>
-          <option value="plastic">منتجات بلاستيكية</option>
-          <option value="other">أخرى</option>
+        <label class="field-label" style="margin: 0; min-width: 110px;">نوع الحاوية</label>
+        <select name="cargoCategory" id="cargoCategory">
+          <option value="general">جنرال — بضاعة عامة / جافة</option>
+          <option value="reefer">مبردة — Reefer</option>
+          <option value="frozen">مجمدة — Frozen</option>
+          <option value="dangerous">مواد خطرة — IMO / DG</option>
+          <option value="oog">خارج المقاييس — OOG</option>
+          <option value="flatrack">منصة — Flat Rack</option>
+          <option value="opentop">فتحة علوية — Open Top</option>
+          <option value="tank">تانك — ISO Tank</option>
+          <option value="auto">مركبات / RoRo</option>
+          <option value="bulk">صب — Bulk</option>
+          <option value="livestock">ماشية حية — Livestock</option>
         </select>
       </div>
 
@@ -491,8 +489,10 @@ form.addEventListener('submit', async (e) => {
     containers,                                  // full list for richer requests
     numContainers: totalQty,
     cargoType: currentMode === 'FCL' ? 'FCL' : 'LCL',
-    commodityCode: form.commodity.value,
-    commodityName: form.commodity.options[form.commodity.selectedIndex].text,
+    cargoCategory: form.cargoCategory.value,
+    cargoCategoryName: form.cargoCategory.options[form.cargoCategory.selectedIndex].text,
+    commodityCode: '8517',
+    commodityName: form.cargoCategory.options[form.cargoCategory.selectedIndex].text,
     cargoWeightKg: 15000,                        // fixed < 20,000 kg
     cargoReadyDate: new Date(Date.now() + 7 * 86400000).toISOString().slice(0, 10),
     incoterms: 'FOB',
