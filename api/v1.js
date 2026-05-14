@@ -243,22 +243,29 @@ function fxNormalizeOffer(raw, fallbackRoute) {
   };
 }
 
-/** Poll /v3/prices/{reqId} for offers — max 3 attempts × 1.2s ≈ 4s total. */
+/** Poll /v3/prices/{reqId} for offers — max 6 attempts × 1.5s = 9s total. */
 async function fxPollOffers(reqId, token) {
-  for (let i = 0; i < 3; i++) {
-    await new Promise(r => setTimeout(r, 1200));
+  for (let i = 0; i < 6; i++) {
+    await new Promise(r => setTimeout(r, 1500));
     try {
-      const r = await fetch(`${FX_BASE}/v3/prices/${reqId}?offset=0&limit=20`, {
+      const c = new AbortController();
+      const tid = setTimeout(() => c.abort(), 3000);
+      const r = await fetch(`${FX_BASE}/v3/prices/${reqId}?offset=0&limit=30`, {
         headers: {
           'x-api-key': FREIGHTIFY_API_KEY,
           Authorization: `Bearer ${token}`,
           Accept: 'application/json',
         },
-      });
+        signal: c.signal,
+      }).finally(() => clearTimeout(tid));
       if (!r.ok) continue;
       const d = await r.json().catch(() => ({}));
       const offers = d.offers || (d.data && d.data.offers);
-      if (Array.isArray(offers) && offers.length > 0) return offers;
+      const status = d.status || (d.data && d.data.status);
+      // If COMPLETED OR we got offers, return them
+      if (Array.isArray(offers) && offers.length > 0) {
+        if (status === 'COMPLETED' || i >= 3) return offers;
+      }
     } catch {}
   }
   return null;
@@ -278,10 +285,10 @@ async function fetchFreightifyRates(reqBody) {
     const url = `${FX_BASE}/v3/prices?${query}`;
     trace.steps.push('query_built');
 
-    // 18s timeout — Freightify fans out to carriers in real-time, takes 10-15s.
-    // Per Freightify docs: both Bearer + x-api-key required together.
+    // 8s timeout on FIRST request — Freightify returns reqId quickly, then we poll
+    // for actual offers. Total budget: 8s + 9s polling = 17s (under Vercel's 25s).
     const c1 = new AbortController();
-    const tid1 = setTimeout(() => c1.abort(), 18000);
+    const tid1 = setTimeout(() => c1.abort(), 8000);
     let r;
     try {
       r = await fetch(url, {
@@ -296,9 +303,10 @@ async function fetchFreightifyRates(reqBody) {
     } catch (e) {
       clearTimeout(tid1);
       if (e.name === 'AbortError') {
-        trace.steps.push('prices_timeout_18s');
-        return { source: 'freightify_timeout', offers: [], error: 'prices endpoint timed out after 18s', trace, url };
+        trace.steps.push('prices_timeout_8s');
+        return { source: 'freightify_timeout', offers: [], error: 'prices first request timed out after 8s (no reqId yet)', trace, url };
       }
+      throw e;
       throw e;
     }
     clearTimeout(tid1);
@@ -452,7 +460,7 @@ export default async function handler(req) {
       }
     }
     return json({
-      status: 'ok', version: '2.7.0', time: new Date().toISOString(),
+      status: 'ok', version: '2.7.1', time: new Date().toISOString(),
       services: {
         database: dbStatus, supabase_url: SUPABASE_URL,
         ai: process.env.GEMINI_API_KEY ? 'gemini' : process.env.OPENAI_API_KEY ? 'openai' : 'none',
