@@ -452,7 +452,7 @@ export default async function handler(req) {
       }
     }
     return json({
-      status: 'ok', version: '2.5.0', time: new Date().toISOString(),
+      status: 'ok', version: '2.5.1', time: new Date().toISOString(),
       services: {
         database: dbStatus, supabase_url: SUPABASE_URL,
         ai: process.env.GEMINI_API_KEY ? 'gemini' : process.env.OPENAI_API_KEY ? 'openai' : 'none',
