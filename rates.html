@@ -793,12 +793,15 @@ form.addEventListener('submit', async (e) => {
     const data = await r.json();
     allOffers = data.offers || [];
     const ms = Date.now() - t0;
-    if (allOffers.length === 0) {
-      // Freightify-only mode: show clear message when no offers
+    const reqId = data.freightify_req_id;
+    const inProgress = data.in_progress;
+
+    // CASE A: No offers AND no reqId → genuinely no rates for this route
+    if (allOffers.length === 0 && !reqId) {
       const reason = data.freightify_fallback_reason || {};
       let msg = '⚠️ لم نتلقى أسعار من Freightify لهذا المسار';
       if (reason.error && reason.error.includes('timeout')) {
-        msg = '⏱️ Freightify لم يرد خلال 22 ثانية — حاول مرة أخرى أو جرّب مساراً آخر';
+        msg = '⏱️ Freightify لم يرد خلال 22 ثانية — حاول مرة أخرى';
       } else if (reason.error && reason.error.includes('no offers')) {
         msg = '📭 لا توجد أسعار متاحة على Freightify لهذا المسار حالياً';
       }
@@ -806,14 +809,56 @@ form.addEventListener('submit', async (e) => {
       document.getElementById('skeleton').style.display = 'none';
       return;
     }
-    setStatus(`✅ ${allOffers.length} عرض حقيقي من Freightify في ${ms}ms`, 'success');
 
+    // Display whatever offers we got initially
     document.getElementById('summary').innerHTML =
       `<strong>${lastSummary.from}</strong> → <strong>${lastSummary.to}</strong> · ${currentMode} · ${lastSummary.containers}`;
     document.getElementById('skeleton').style.display = 'none';
     document.getElementById('resultsCard').style.display = 'block';
-    renderOffers();
-    document.getElementById('resultsCard').scrollIntoView({ behavior: 'smooth' });
+
+    if (allOffers.length > 0) {
+      setStatus(`✅ ${allOffers.length} عرض من Freightify (${ms}ms)${inProgress ? ' — جاري البحث عن المزيد...' : ''}`, 'success');
+      renderOffers();
+      document.getElementById('resultsCard').scrollIntoView({ behavior: 'smooth' });
+    } else {
+      setStatus(`⏳ Freightify يبحث في الخطوط الملاحية... قد يستغرق دقيقة`, 'info');
+    }
+
+    // CASE B: We have a reqId AND status is INPROGRESS → keep polling for more offers
+    if (reqId && inProgress) {
+      let pollAttempts = 0;
+      const MAX_POLLS = 18; // up to ~90s of polling
+      const pollInterval = setInterval(async () => {
+        pollAttempts++;
+        try {
+          const pr = await fetch(`/api/v1/rates/poll/${encodeURIComponent(reqId)}`, {
+            headers: { 'Authorization': 'Bearer ' + getToken() },
+          });
+          if (!pr.ok) return;
+          const pd = await pr.json();
+          const newOffers = pd.offers || [];
+          if (newOffers.length > allOffers.length) {
+            allOffers = newOffers;
+            renderOffers();
+            if (document.getElementById('resultsCard').style.display === 'none') {
+              document.getElementById('resultsCard').style.display = 'block';
+              document.getElementById('resultsCard').scrollIntoView({ behavior: 'smooth' });
+            }
+            setStatus(`✅ ${allOffers.length} عرض من Freightify${pd.completed ? ' (مكتمل)' : ' — يبحث عن المزيد...'}`, 'success');
+          }
+          if (pd.completed || pd.status === 'COMPLETED' || pollAttempts >= MAX_POLLS) {
+            clearInterval(pollInterval);
+            if (allOffers.length === 0) {
+              setStatus('📭 لم نجد أسعار من Freightify لهذا المسار بعد محاولات متعددة', 'error');
+            } else {
+              setStatus(`✅ ${allOffers.length} عرض من Freightify (مكتمل)`, 'success');
+            }
+          }
+        } catch (e) {
+          console.error('Poll error:', e);
+        }
+      }, 5000); // poll every 5 seconds
+    }
   } catch (err) {
     setStatus('❌ فشل البحث: ' + err.message, 'error');
     document.getElementById('skeleton').style.display = 'none';
