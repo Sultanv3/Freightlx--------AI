@@ -801,7 +801,7 @@ form.addEventListener('submit', async (e) => {
       const reason = data.freightify_fallback_reason || {};
       let msg = '⚠️ لم نتلقى أسعار من Freightify لهذا المسار';
       if (reason.error && reason.error.includes('timeout')) {
-        msg = '⏱️ Freightify لم يرد خلال 22 ثانية — حاول مرة أخرى';
+        msg = '⏱️ Freightify لم يرد خلال 50 ثانية — حاول مرة أخرى أو جرّب مساراً آخر';
       } else if (reason.error && reason.error.includes('no offers')) {
         msg = '📭 لا توجد أسعار متاحة على Freightify لهذا المسار حالياً';
       }
