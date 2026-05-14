@@ -383,9 +383,64 @@ function laneTransitDays(origin, destination) {
   return 25;
 }
 
+// Fetch Freightify's live carriers list (75+ real carriers)
+let _fxCarriersCache = null;
+let _fxCarriersExpiry = 0;
+async function fxGetLiveCarriers() {
+  if (_fxCarriersCache && Date.now() < _fxCarriersExpiry) return _fxCarriersCache;
+  try {
+    const token = await fxGetToken();
+    const c = new AbortController();
+    const tid = setTimeout(() => c.abort(), 4000);
+    const r = await fetch(`${FX_BASE}/v1/carriers`, {
+      headers: {
+        'x-api-key': FREIGHTIFY_API_KEY,
+        Authorization: `Bearer ${token}`,
+        Accept: 'application/json',
+      },
+      signal: c.signal,
+    }).finally(() => clearTimeout(tid));
+    if (!r.ok) return null;
+    const data = await r.json();
+    const list = Array.isArray(data) ? data : (data.carriers || data.data || []);
+    _fxCarriersCache = list;
+    _fxCarriersExpiry = Date.now() + 6 * 60 * 60 * 1000; // cache 6 hours
+    return list;
+  } catch { return null; }
+}
+
 // Build offers from active carriers in DB with lane-aware realistic pricing
 async function buildOffersFromCarriers(reqBody) {
-  const carriers = await sb('/carriers?active=eq.true&order=priority.asc&limit=12');
+  // Try live Freightify carriers first; fall back to DB
+  let carriers;
+  const liveCarriers = await fxGetLiveCarriers();
+  if (Array.isArray(liveCarriers) && liveCarriers.length > 10) {
+    // Get our brand-enriched DB carriers to match by SCAC code
+    let dbCarriers = [];
+    try { dbCarriers = await sb('/carriers?active=eq.true&select=code,name,brand_color,logo_url,country,transit_days_avg,services'); } catch {}
+    const byCode = new Map(dbCarriers.map(c => [c.code.toUpperCase(), c]));
+    // Take top 15 Freightify carriers, enrich with our DB brand info if matched
+    carriers = liveCarriers.slice(0, 15).map((fc, i) => {
+      const code = (fc.scacCode || fc.code || `LIVE${i}`).toUpperCase();
+      const name = fc.scacName || fc.name || `Carrier ${code}`;
+      const match = byCode.get(code);
+      // Generate a deterministic brand color for unmatched carriers
+      const seed = code.split('').reduce((s, ch) => s + ch.charCodeAt(0), 0);
+      const palette = ['#003478','#E60012','#003B71','#005EB8','#CC2229','#000000','#FF7900','#0066CC','#1A1F71','#9B0000','#175E3E','#003F87'];
+      return {
+        code, name,
+        brand_color: match?.brand_color || palette[seed % palette.length],
+        logo_url: match?.logo_url || null,
+        country: match?.country || null,
+        transit_days_avg: match?.transit_days_avg || null,
+        services: match?.services || [],
+        priority: match ? (dbCarriers.indexOf(match) + 1) : (i + 5),
+      };
+    });
+  } else {
+    // Fallback: just use our local DB
+    carriers = await sb('/carriers?active=eq.true&order=priority.asc&limit=12');
+  }
   const ctType = (reqBody.containerType || reqBody.container_type || '40HC').toUpperCase();
   // Market base rates (CN → SA range, mid-2025 spot)
   const baseRates = {
@@ -460,7 +515,7 @@ export default async function handler(req) {
       }
     }
     return json({
-      status: 'ok', version: '2.7.2', time: new Date().toISOString(),
+      status: 'ok', version: '2.8.0', time: new Date().toISOString(),
       services: {
         database: dbStatus, supabase_url: SUPABASE_URL,
         ai: process.env.GEMINI_API_KEY ? 'gemini' : process.env.OPENAI_API_KEY ? 'openai' : 'none',
