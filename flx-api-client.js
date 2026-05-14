@@ -45,13 +45,31 @@
       }
       return null;
     },
-    set(access, refresh) {
+    set(access, refresh, extras) {
       if (access)  localStorage.setItem(TOKEN_KEY, access);
       if (refresh) localStorage.setItem(REFRESH_KEY, refresh);
+      // Also sync the Supabase auth-token entry so a page reload picks up the refreshed token
+      for (const k of Object.keys(localStorage)) {
+        if (k.startsWith('sb-') && k.endsWith('-auth-token')) {
+          try {
+            const data = JSON.parse(localStorage.getItem(k)) || {};
+            data.access_token = access || data.access_token;
+            data.refresh_token = refresh || data.refresh_token;
+            if (extras && extras.expires_in)  data.expires_in  = extras.expires_in;
+            if (extras && extras.expires_at)  data.expires_at  = extras.expires_at;
+            if (extras && extras.token_type)  data.token_type  = extras.token_type;
+            if (extras && extras.user)        data.user        = extras.user;
+            localStorage.setItem(k, JSON.stringify(data));
+          } catch {}
+        }
+      }
     },
     clear() {
       localStorage.removeItem(TOKEN_KEY);
       localStorage.removeItem(REFRESH_KEY);
+      for (const k of Object.keys(localStorage)) {
+        if (k.startsWith('sb-') && k.endsWith('-auth-token')) localStorage.removeItem(k);
+      }
     },
   };
 
@@ -82,7 +100,12 @@
         }).then(async (r) => {
           if (r.ok) {
             const d = await r.json();
-            Tokens.set(d.access_token, d.refresh_token);
+            Tokens.set(d.access_token, d.refresh_token, {
+              expires_in: d.expires_in,
+              expires_at: d.expires_at,
+              token_type: d.token_type,
+              user: d.user,
+            });
             return d.access_token;
           }
           Tokens.clear();
