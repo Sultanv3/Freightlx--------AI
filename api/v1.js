@@ -385,7 +385,7 @@ export default async function handler(req) {
       }
     }
     return json({
-      status: 'ok', version: '2.4.5', time: new Date().toISOString(),
+      status: 'ok', version: '2.4.6', time: new Date().toISOString(),
       services: {
         database: dbStatus, supabase_url: SUPABASE_URL,
         ai: process.env.GEMINI_API_KEY ? 'gemini' : process.env.OPENAI_API_KEY ? 'openai' : 'none',
@@ -457,45 +457,76 @@ export default async function handler(req) {
       result.checks.token = { ok: false, error: e.message };
       return json(result);
     }
-    // Step 2: try OpenAPI example route (known-good per Freightify docs)
-    // INNSA → DEHAM, 20GP, 13000kg
+    // Step 2: comprehensive probes with short timeouts (must fit in 20s total to avoid Vercel 504)
     const futureDate = new Date(Date.now() + 30 * 86400000).toISOString().slice(0, 10);
-    const probes = [
-      { name: 'openapi_example_INNSA_DEHAM', query: `mode=FCL&origin=INNSA&originType=PORT&destination=DEHAM&destinationType=PORT&departureDate=${futureDate}&containers=1X20GPX13000XKG` },
-      { name: 'user_route_CNSHA_SAJED', query: `mode=FCL&origin=CNSHA&originType=PORT&destination=SAJED&destinationType=PORT&departureDate=${futureDate}&containers=1X40HCX25000XKG` },
-    ];
+    const query = `mode=FCL&origin=INNSA&originType=PORT&destination=DEHAM&destinationType=PORT&departureDate=${futureDate}&containers=1X20GPX13000XKG`;
+
     result.checks.probes = [];
-    for (const probe of probes) {
-      const probeResult = { name: probe.name, query: probe.query };
-      try {
-        const controller = new AbortController();
-        const tid = setTimeout(() => controller.abort(), 20000);
-        const t0 = Date.now();
-        const r = await fetch(`${FX_BASE}/v3/prices?${probe.query}`, {
-          headers: {
-            'x-api-key': FREIGHTIFY_API_KEY,
-            Authorization: `Bearer ${_fxToken}`,
-            Accept: 'application/json',
-            'User-Agent': 'freightlx-platform',
-          },
-          signal: controller.signal,
-        }).finally(() => clearTimeout(tid));
-        probeResult.duration_ms = Date.now() - t0;
-        probeResult.status = r.status;
-        probeResult.ok = r.ok;
-        const text = await r.text();
-        probeResult.body_preview = text.slice(0, 500);
-        try {
-          const parsed = JSON.parse(text);
-          probeResult.reqId = parsed.reqId || parsed.requestId;
-          probeResult.offers_count = (parsed.offers || []).length;
-          probeResult.api_status = parsed.status;
-        } catch {}
-      } catch (e) {
-        probeResult.duration_ms = -1;
-        probeResult.error = e.name === 'AbortError' ? 'timeout_20s' : e.message;
-      }
-      result.checks.probes.push(probeResult);
+
+    // Probe A: NO auth — should return 401/403 fast, proving endpoint is reachable
+    try {
+      const c = new AbortController();
+      const tid = setTimeout(() => c.abort(), 6000);
+      const t0 = Date.now();
+      const r = await fetch(`${FX_BASE}/v3/prices?${query}`, {
+        headers: { Accept: 'application/json', 'User-Agent': 'freightlx-probe-noauth' },
+        signal: c.signal,
+      }).finally(() => clearTimeout(tid));
+      const text = await r.text();
+      result.checks.probes.push({
+        name: 'no_auth (expect 401/403 fast)',
+        status: r.status, duration_ms: Date.now() - t0,
+        body_preview: text.slice(0, 200),
+      });
+    } catch (e) {
+      result.checks.probes.push({ name: 'no_auth', error: e.name === 'AbortError' ? 'timeout_6s' : e.message });
+    }
+
+    // Probe B: x-api-key only (no Bearer)
+    try {
+      const c = new AbortController();
+      const tid = setTimeout(() => c.abort(), 6000);
+      const t0 = Date.now();
+      const r = await fetch(`${FX_BASE}/v3/prices?${query}`, {
+        headers: {
+          'x-api-key': FREIGHTIFY_API_KEY,
+          Accept: 'application/json',
+          'User-Agent': 'freightlx-probe-apikey',
+        },
+        signal: c.signal,
+      }).finally(() => clearTimeout(tid));
+      const text = await r.text();
+      result.checks.probes.push({
+        name: 'apikey_only',
+        status: r.status, duration_ms: Date.now() - t0,
+        body_preview: text.slice(0, 300),
+      });
+    } catch (e) {
+      result.checks.probes.push({ name: 'apikey_only', error: e.name === 'AbortError' ? 'timeout_6s' : e.message });
+    }
+
+    // Probe C: Bearer + x-api-key (full auth)
+    try {
+      const c = new AbortController();
+      const tid = setTimeout(() => c.abort(), 6000);
+      const t0 = Date.now();
+      const r = await fetch(`${FX_BASE}/v3/prices?${query}`, {
+        headers: {
+          'x-api-key': FREIGHTIFY_API_KEY,
+          Authorization: `Bearer ${_fxToken}`,
+          Accept: 'application/json',
+          'User-Agent': 'freightlx-probe-full',
+        },
+        signal: c.signal,
+      }).finally(() => clearTimeout(tid));
+      const text = await r.text();
+      result.checks.probes.push({
+        name: 'full_auth',
+        status: r.status, duration_ms: Date.now() - t0,
+        body_preview: text.slice(0, 500),
+      });
+    } catch (e) {
+      result.checks.probes.push({ name: 'full_auth', error: e.name === 'AbortError' ? 'timeout_6s' : e.message });
     }
     return json(result);
   }
