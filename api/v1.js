@@ -411,36 +411,50 @@ async function fxGetLiveCarriers() {
 
 // Build offers from active carriers in DB with lane-aware realistic pricing
 async function buildOffersFromCarriers(reqBody) {
-  // Try live Freightify carriers first; fall back to DB
-  let carriers;
-  const liveCarriers = await fxGetLiveCarriers();
-  if (Array.isArray(liveCarriers) && liveCarriers.length > 10) {
-    // Get our brand-enriched DB carriers to match by SCAC code
-    let dbCarriers = [];
-    try { dbCarriers = await sb('/carriers?active=eq.true&select=code,name,brand_color,logo_url,country,transit_days_avg,services'); } catch {}
-    const byCode = new Map(dbCarriers.map(c => [c.code.toUpperCase(), c]));
-    // Take top 15 Freightify carriers, enrich with our DB brand info if matched
-    carriers = liveCarriers.slice(0, 15).map((fc, i) => {
-      const code = (fc.scacCode || fc.code || `LIVE${i}`).toUpperCase();
-      const name = fc.scacName || fc.name || `Carrier ${code}`;
-      const match = byCode.get(code);
-      // Generate a deterministic brand color for unmatched carriers
-      const seed = code.split('').reduce((s, ch) => s + ch.charCodeAt(0), 0);
+  // Try live Freightify carriers first; fall back to DB on any error
+  let carriers = null;
+  try {
+    const liveCarriers = await fxGetLiveCarriers();
+    if (Array.isArray(liveCarriers) && liveCarriers.length > 10) {
+      let dbCarriers = [];
+      try {
+        const dbResult = await sb('/carriers?active=eq.true&select=code,name,brand_color,logo_url,country,transit_days_avg,services');
+        if (Array.isArray(dbResult)) dbCarriers = dbResult;
+      } catch {}
+      const byCode = new Map();
+      for (const c of dbCarriers) {
+        if (c && c.code) byCode.set(String(c.code).toUpperCase(), c);
+      }
       const palette = ['#003478','#E60012','#003B71','#005EB8','#CC2229','#000000','#FF7900','#0066CC','#1A1F71','#9B0000','#175E3E','#003F87'];
-      return {
-        code, name,
-        brand_color: match?.brand_color || palette[seed % palette.length],
-        logo_url: match?.logo_url || null,
-        country: match?.country || null,
-        transit_days_avg: match?.transit_days_avg || null,
-        services: match?.services || [],
-        priority: match ? (dbCarriers.indexOf(match) + 1) : (i + 5),
-      };
-    });
-  } else {
-    // Fallback: just use our local DB
-    carriers = await sb('/carriers?active=eq.true&order=priority.asc&limit=12');
+      carriers = liveCarriers.slice(0, 15).map((fc, i) => {
+        const codeRaw = fc && (fc.scacCode || fc.code);
+        const code = (codeRaw ? String(codeRaw) : `LIVE${i}`).toUpperCase();
+        const name = (fc && (fc.scacName || fc.name)) || `Carrier ${code}`;
+        const match = byCode.get(code);
+        const seed = code.split('').reduce((s, ch) => s + ch.charCodeAt(0), 0);
+        return {
+          code, name,
+          brand_color: (match && match.brand_color) || palette[seed % palette.length],
+          logo_url: (match && match.logo_url) || null,
+          country: (match && match.country) || null,
+          transit_days_avg: (match && match.transit_days_avg) || null,
+          services: (match && match.services) || [],
+          priority: match ? Math.max(1, dbCarriers.indexOf(match) + 1) : (i + 5),
+        };
+      });
+    }
+  } catch (e) {
+    carriers = null;
   }
+  // Fallback to local DB if Freightify path didn't produce carriers
+  if (!Array.isArray(carriers) || carriers.length === 0) {
+    try {
+      carriers = await sb('/carriers?active=eq.true&order=priority.asc&limit=12');
+    } catch (e) {
+      carriers = [];
+    }
+  }
+  if (!Array.isArray(carriers)) carriers = [];
   const ctType = (reqBody.containerType || reqBody.container_type || '40HC').toUpperCase();
   // Market base rates (CN → SA range, mid-2025 spot)
   const baseRates = {
@@ -515,7 +529,7 @@ export default async function handler(req) {
       }
     }
     return json({
-      status: 'ok', version: '2.8.0', time: new Date().toISOString(),
+      status: 'ok', version: '2.8.1', time: new Date().toISOString(),
       services: {
         database: dbStatus, supabase_url: SUPABASE_URL,
         ai: process.env.GEMINI_API_KEY ? 'gemini' : process.env.OPENAI_API_KEY ? 'openai' : 'none',
