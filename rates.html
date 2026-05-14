@@ -6,224 +6,438 @@
 <title>طلب عروض الشحن — FREIGHTLX</title>
 <script>window.FLX_API_BASE = '/api/v1';</script>
 <style>
+:root {
+  --brand: #0F2C4D;
+  --brand-2: #1E5BA8;
+  --accent: #06B6D4;
+  --bg: #F6F9FC;
+  --surface: #FFFFFF;
+  --line: #E6ECF3;
+  --line-2: #F1F5F9;
+  --text: #0F172A;
+  --text-2: #475569;
+  --text-3: #94A3B8;
+  --success: #047857;
+  --success-bg: #ECFDF5;
+  --warn: #92400E;
+  --warn-bg: #FEF3C7;
+  --gold: #D97706;
+  --gold-grad: linear-gradient(135deg, #FBBF24 0%, #F59E0B 100%);
+  --fast-grad: linear-gradient(135deg, #06B6D4 0%, #0EA5E9 100%);
+}
 *,*::before,*::after { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { background: var(--bg); }
 body {
-  font-family: 'Segoe UI', 'Tahoma', sans-serif;
-  background: #f4f7fb;
-  min-height: 100vh; color: #1e293b; line-height: 1.6;
+  font-family: 'SF Pro Display', 'Segoe UI', 'Tahoma', system-ui, sans-serif;
+  color: var(--text); line-height: 1.55; min-height: 100vh;
+  -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale;
 }
-.container { max-width: 1100px; margin: 0 auto; padding: 24px; }
-header { display: flex; justify-content: space-between; align-items: center; padding: 16px 0; margin-bottom: 20px; }
-header h1 { font-size: 22px; font-weight: 800; color: #1e3a5f; }
-header a { color: #1e3a5f; text-decoration: none; font-weight: 500; font-size: 14px; }
-header a:hover { text-decoration: underline; }
+.container { max-width: 1240px; margin: 0 auto; padding: 24px; }
 
-.card { background: white; border-radius: 16px; padding: 28px; box-shadow: 0 4px 24px rgba(15, 23, 42, 0.06); margin-bottom: 20px; }
+/* ───── Header ───── */
+header {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 8px 0 20px; gap: 16px;
+}
+header h1 {
+  font-size: 22px; font-weight: 800; color: var(--brand);
+  display: flex; align-items: center; gap: 10px; letter-spacing: -0.4px;
+}
+header h1 .icon {
+  width: 36px; height: 36px; border-radius: 10px;
+  background: linear-gradient(135deg, var(--brand), var(--brand-2));
+  display: flex; align-items: center; justify-content: center; color: white; font-size: 18px;
+}
+header nav { display: flex; gap: 10px; }
+header nav a {
+  color: var(--text-2); text-decoration: none; font-weight: 600; font-size: 14px;
+  padding: 8px 14px; border-radius: 999px; transition: all 0.2s;
+}
+header nav a:hover { background: var(--surface); color: var(--brand); }
 
-/* Mode toggle */
-.mode-row { display: flex; gap: 10px; padding-bottom: 18px; border-bottom: 1px solid #f1f5f9; margin-bottom: 18px; flex-wrap: wrap; }
+/* ───── Hero stats ───── */
+.hero-stats {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 12px; margin-bottom: 24px;
+}
+.stat {
+  background: var(--surface); border: 1px solid var(--line);
+  border-radius: 14px; padding: 14px 16px;
+  display: flex; align-items: center; gap: 12px;
+}
+.stat-icon { width: 36px; height: 36px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 16px; background: var(--line-2); }
+.stat-icon.blue { background: #EFF6FF; color: #1D4ED8; }
+.stat-icon.green { background: var(--success-bg); color: var(--success); }
+.stat-icon.amber { background: var(--warn-bg); color: var(--warn); }
+.stat-icon.cyan { background: #ECFEFF; color: #0E7490; }
+.stat-num { font-size: 18px; font-weight: 800; color: var(--text); font-variant-numeric: tabular-nums; }
+.stat-lbl { font-size: 12px; color: var(--text-3); font-weight: 500; }
+
+/* ───── Card ───── */
+.card {
+  background: var(--surface); border-radius: 18px; padding: 22px;
+  box-shadow: 0 1px 3px rgba(15,23,42,0.04), 0 8px 32px rgba(15,23,42,0.04);
+  border: 1px solid var(--line); margin-bottom: 16px;
+}
+
+/* ───── Mode pills ───── */
+.mode-row { display: flex; gap: 8px; margin-bottom: 18px; flex-wrap: wrap; }
 .mode-btn {
-  padding: 8px 18px; border-radius: 999px; border: 1.5px solid #e2e8f0;
+  padding: 9px 20px; border-radius: 999px; border: 1.5px solid var(--line);
   background: white; cursor: pointer; font-family: inherit; font-size: 13px; font-weight: 600;
-  color: #64748b; transition: all 0.2s;
+  color: var(--text-2); transition: all 0.2s; display: inline-flex; align-items: center; gap: 6px;
 }
-.mode-btn.active { background: #1e3a5f; color: white; border-color: #1e3a5f; }
-.mode-btn:hover:not(.active) { border-color: #1e3a5f; color: #1e3a5f; }
+.mode-btn.active {
+  background: var(--brand); color: white; border-color: var(--brand);
+  box-shadow: 0 4px 12px rgba(15, 44, 77, 0.2);
+}
+.mode-btn:not(.active):hover { border-color: var(--brand); color: var(--brand); }
+.mode-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+.mode-btn .soon { font-size: 10px; opacity: 0.7; }
 
-/* Port row */
-.port-row { display: grid; grid-template-columns: 1fr 56px 1fr; align-items: end; gap: 12px; margin-bottom: 18px; }
-@media (max-width: 700px) { .port-row { grid-template-columns: 1fr; } .port-row .swap { display: none; } }
-.field-label { display: block; font-size: 13px; font-weight: 700; color: #1e293b; margin-bottom: 6px; }
-.field-label .req { color: #ef4444; }
+/* ───── Form ───── */
+.field-label {
+  display: flex; align-items: center; gap: 6px;
+  font-size: 13px; font-weight: 700; color: var(--text); margin-bottom: 8px;
+}
+.field-label .req { color: #DC2626; }
+.field-label .hint { font-weight: 500; color: var(--text-3); font-size: 11px; }
 
-.port-input {
-  position: relative;
+.port-row {
+  display: grid; grid-template-columns: 1fr 56px 1fr;
+  align-items: end; gap: 12px; margin-bottom: 20px;
 }
-.port-input input {
-  width: 100%; padding: 12px 14px; border: 1.5px solid #e2e8f0;
-  border-radius: 12px; font-size: 14px; font-family: inherit; background: white;
-  color: #1e293b; transition: all 0.2s;
+@media (max-width: 720px) {
+  .port-row { grid-template-columns: 1fr; }
+  .port-row .swap-wrap { display: none; }
 }
-.port-input input:focus { outline: none; border-color: #1e3a5f; box-shadow: 0 0 0 3px rgba(30, 58, 95, 0.1); }
-.port-input input::placeholder { color: #94a3b8; }
+
+.port-input { position: relative; }
+.port-input input[type=text] {
+  width: 100%; padding: 14px 16px; border: 1.5px solid var(--line);
+  border-radius: 14px; font-size: 14px; font-family: inherit; background: white;
+  color: var(--text); transition: all 0.2s;
+}
+.port-input input[type=text]:focus {
+  outline: none; border-color: var(--brand-2);
+  box-shadow: 0 0 0 4px rgba(30, 91, 168, 0.12);
+}
+.port-input input[type=text]::placeholder { color: var(--text-3); }
+.port-input.selected input[type=text] { border-color: var(--success); background: #F0FDF4; }
+
 .port-suggestions {
-  position: absolute; top: 100%; left: 0; right: 0; z-index: 50;
-  background: white; border: 1px solid #e2e8f0; border-radius: 12px;
-  box-shadow: 0 10px 30px rgba(15, 23, 42, 0.12);
-  max-height: 280px; overflow-y: auto; margin-top: 4px; display: none;
+  position: absolute; top: calc(100% + 6px); inset-inline: 0; z-index: 50;
+  background: white; border: 1px solid var(--line); border-radius: 14px;
+  box-shadow: 0 16px 48px rgba(15, 23, 42, 0.15);
+  max-height: 320px; overflow-y: auto; display: none;
 }
-.port-suggestions.show { display: block; }
+.port-suggestions.show { display: block; animation: dropIn 0.18s ease-out; }
+@keyframes dropIn { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: translateY(0); } }
+.port-suggestions .group-label {
+  font-size: 10px; font-weight: 800; color: var(--text-3); padding: 10px 14px 4px;
+  text-transform: uppercase; letter-spacing: 0.8px;
+}
 .port-suggestions .item {
-  padding: 10px 14px; cursor: pointer; display: flex; justify-content: space-between; gap: 12px; font-size: 14px;
+  padding: 10px 14px; cursor: pointer; display: flex; justify-content: space-between; align-items: center; gap: 12px; font-size: 14px;
+  transition: background 0.1s;
 }
-.port-suggestions .item:hover { background: #f8fafc; }
-.port-suggestions .item .code { font-family: monospace; font-size: 12px; color: #64748b; background: #f1f5f9; padding: 2px 6px; border-radius: 4px; }
-.port-suggestions .item.empty { color: #94a3b8; text-align: center; padding: 16px; cursor: default; }
+.port-suggestions .item:hover, .port-suggestions .item.active { background: var(--line-2); }
+.port-suggestions .item .left { display: flex; align-items: center; gap: 10px; }
+.port-suggestions .item .flag { font-size: 18px; }
+.port-suggestions .item .name { font-weight: 600; color: var(--text); }
+.port-suggestions .item .country { font-size: 12px; color: var(--text-3); }
+.port-suggestions .item .code {
+  font-family: 'SF Mono', monospace; font-size: 11px; color: var(--text-2);
+  background: var(--line-2); padding: 3px 8px; border-radius: 6px; font-weight: 700;
+}
+.port-suggestions .item.empty { color: var(--text-3); text-align: center; padding: 18px; cursor: default; }
 
+.swap-wrap { display: flex; align-items: center; justify-content: center; padding-bottom: 4px; }
 .swap {
-  width: 40px; height: 40px; border-radius: 50%; background: white;
-  border: 1.5px solid #e2e8f0; display: flex; align-items: center; justify-content: center;
-  cursor: pointer; align-self: center; transition: all 0.2s; font-size: 16px;
+  width: 44px; height: 44px; border-radius: 50%; background: white;
+  border: 1.5px solid var(--line); display: flex; align-items: center; justify-content: center;
+  cursor: pointer; transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1); font-size: 18px; color: var(--brand-2);
 }
-.swap:hover { background: #f1f5f9; transform: rotate(180deg); }
+.swap:hover { background: var(--brand-2); color: white; border-color: var(--brand-2); transform: rotate(180deg) scale(1.05); }
 
-/* Containers */
-.containers-section { margin-bottom: 18px; }
-.container-row { display: grid; grid-template-columns: 1fr 90px 40px; gap: 10px; margin-bottom: 8px; align-items: center; }
+/* ───── Containers ───── */
+.containers-section { margin-bottom: 20px; }
+.container-row {
+  display: grid; grid-template-columns: 1fr 110px 44px; gap: 10px;
+  margin-bottom: 8px; align-items: center;
+}
 .container-row select, .container-row input {
-  padding: 12px 14px; border: 1.5px solid #e2e8f0;
-  border-radius: 12px; font-size: 14px; font-family: inherit; background: white; color: #1e293b;
+  padding: 13px 14px; border: 1.5px solid var(--line);
+  border-radius: 12px; font-size: 14px; font-family: inherit; background: white; color: var(--text);
+  transition: border-color 0.15s;
 }
-.container-row select:focus, .container-row input:focus { outline: none; border-color: #1e3a5f; }
+.container-row select:focus, .container-row input:focus { outline: none; border-color: var(--brand-2); }
+.container-row .ct-qty { text-align: center; font-weight: 700; font-variant-numeric: tabular-nums; }
 .remove-btn {
-  width: 40px; height: 40px; border-radius: 12px; border: 1.5px solid #fee2e2;
-  background: #fef2f2; color: #ef4444; cursor: pointer; font-size: 18px;
+  width: 44px; height: 44px; border-radius: 12px; border: 1.5px solid #FEE2E2;
+  background: #FEF2F2; color: #DC2626; cursor: pointer; font-size: 16px;
+  transition: all 0.15s;
 }
-.remove-btn:hover { background: #fee2e2; }
-.remove-btn:disabled { opacity: 0.3; cursor: not-allowed; }
+.remove-btn:hover:not(:disabled) { background: #FECACA; }
+.remove-btn:disabled { opacity: 0.35; cursor: not-allowed; }
 .add-btn {
-  padding: 10px 16px; border-radius: 12px; border: 1.5px dashed #cbd5e1;
-  background: transparent; color: #4f46e5; cursor: pointer; font-family: inherit; font-size: 13px; font-weight: 600;
-  display: inline-flex; align-items: center; gap: 6px;
+  padding: 10px 16px; border-radius: 12px; border: 1.5px dashed var(--line);
+  background: transparent; color: var(--brand-2); cursor: pointer;
+  font-family: inherit; font-size: 13px; font-weight: 700;
+  display: inline-flex; align-items: center; gap: 6px; transition: all 0.15s;
 }
-.add-btn:hover { border-color: #4f46e5; background: #eef2ff; }
+.add-btn:hover { border-color: var(--brand-2); background: #EFF6FF; }
 
-/* Commodity */
-.commodity-row { display: flex; align-items: center; gap: 8px; margin-bottom: 18px; flex-wrap: wrap; }
-.commodity-row .label-icon { font-size: 18px; }
-.commodity-row select {
-  flex: 1; min-width: 280px; padding: 12px 14px; border: 1.5px solid #e2e8f0;
-  border-radius: 12px; font-size: 14px; font-family: inherit; background: white; color: #1e293b;
+/* ───── Cargo type ───── */
+.cargo-row { display: flex; align-items: center; gap: 10px; margin-bottom: 22px; flex-wrap: wrap; }
+.cargo-row .label-block { display: flex; align-items: center; gap: 6px; min-width: 130px; }
+.cargo-row select {
+  flex: 1; min-width: 240px; padding: 13px 14px; border: 1.5px solid var(--line);
+  border-radius: 12px; font-size: 14px; font-family: inherit; background: white; color: var(--text);
 }
-.commodity-row select:focus { outline: none; border-color: #1e3a5f; }
+.cargo-row select:focus { outline: none; border-color: var(--brand-2); }
 
-/* Submit */
+/* ───── Submit ───── */
 .submit-btn {
-  width: 100%; padding: 16px; margin-top: 8px;
-  background: linear-gradient(90deg, #1e3a5f 0%, #4f46e5 50%, #22a3e6 100%);
+  width: 100%; padding: 16px; margin-top: 6px;
+  background: linear-gradient(95deg, var(--brand) 0%, var(--brand-2) 60%, var(--accent) 100%);
   color: white; border: none; border-radius: 14px;
-  font-family: inherit; font-size: 16px; font-weight: 700; cursor: pointer;
-  box-shadow: 0 6px 20px rgba(79, 70, 229, 0.25); transition: all 0.2s;
-  display: flex; align-items: center; justify-content: center; gap: 8px;
+  font-family: inherit; font-size: 16px; font-weight: 800; cursor: pointer;
+  box-shadow: 0 6px 20px rgba(30, 91, 168, 0.25); transition: all 0.2s;
+  display: flex; align-items: center; justify-content: center; gap: 10px;
+  letter-spacing: 0.2px; position: relative; overflow: hidden;
 }
-.submit-btn:hover { transform: translateY(-1px); box-shadow: 0 10px 28px rgba(79, 70, 229, 0.35); }
-.submit-btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+.submit-btn:hover { transform: translateY(-1px); box-shadow: 0 10px 28px rgba(30, 91, 168, 0.35); }
+.submit-btn:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
 
-#status { padding: 10px 16px; border-radius: 10px; margin-bottom: 14px; font-size: 14px; display: none; }
-#status.loading { background: #dbeafe; color: #1e40af; display: block; }
-#status.success { background: #dcfce7; color: #166534; display: block; }
-#status.error { background: #fee2e2; color: #b91c1c; display: block; }
-
-.spinner { width: 16px; height: 16px; border: 2px solid #c7d2fe; border-top-color: #4f46e5; border-radius: 50%; animation: spin 0.8s linear infinite; display: inline-block; vertical-align: middle; }
+/* ───── Status ───── */
+#status {
+  padding: 12px 16px; border-radius: 12px; margin-bottom: 14px;
+  font-size: 14px; display: none; font-weight: 600; align-items: center; gap: 8px;
+}
+#status.loading { background: #DBEAFE; color: #1E40AF; display: flex; }
+#status.success { background: var(--success-bg); color: var(--success); display: flex; }
+#status.error { background: #FEE2E2; color: #B91C1C; display: flex; }
+.spinner {
+  width: 16px; height: 16px;
+  border: 2px solid rgba(255,255,255,0.3); border-top-color: currentColor;
+  border-radius: 50%; animation: spin 0.7s linear infinite;
+}
 @keyframes spin { to { transform: rotate(360deg); } }
 
-/* Results */
-.results-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; gap: 16px; flex-wrap: wrap; }
-.results-header h2 { font-size: 18px; font-weight: 800; color: #1e3a5f; }
-.summary { font-size: 13px; color: #64748b; }
-.sort-buttons { display: flex; gap: 6px; }
-.sort-btn { padding: 6px 14px; font-size: 13px; border-radius: 999px; border: 1px solid #e2e8f0; background: white; cursor: pointer; font-family: inherit; }
-.sort-btn.active { background: #1e3a5f; color: white; border-color: #1e3a5f; }
-
-.offers { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 16px; }
-.offer {
-  position: relative; background: white; border-radius: 16px; overflow: hidden;
-  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.04), 0 4px 16px rgba(15, 23, 42, 0.04);
-  border: 1px solid #eef2f7; transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.25s ease;
-  animation: cardIn 0.4s cubic-bezier(0.16, 1, 0.3, 1) backwards;
+/* ───── Loading skeleton ───── */
+.skeleton-rows { display: flex; flex-direction: column; gap: 12px; }
+.skeleton-row {
+  background: white; border-radius: 16px; height: 110px; padding: 18px;
+  display: flex; gap: 18px; align-items: center; border: 1px solid var(--line);
+  position: relative; overflow: hidden;
 }
-@keyframes cardIn { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
-.offer:hover { transform: translateY(-3px); box-shadow: 0 4px 12px rgba(15, 23, 42, 0.06), 0 16px 40px rgba(15, 23, 42, 0.10); }
-.offer.featured { border-color: #fbbf24; box-shadow: 0 0 0 1px #fbbf24, 0 4px 16px rgba(251, 191, 36, 0.15); }
-.offer.fastest { border-color: #22d3ee; box-shadow: 0 0 0 1px #22d3ee, 0 4px 16px rgba(34, 211, 238, 0.15); }
+.skeleton-row::after {
+  content: ''; position: absolute; inset: 0;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.6), transparent);
+  animation: shimmer 1.5s infinite;
+}
+@keyframes shimmer { from { transform: translateX(-100%); } to { transform: translateX(100%); } }
+.sk-box { background: var(--line-2); border-radius: 8px; }
+.sk-logo { width: 100px; height: 50px; }
+.sk-text { flex: 1; display: flex; flex-direction: column; gap: 8px; }
+.sk-line { height: 12px; border-radius: 6px; background: var(--line-2); }
+.sk-line.short { width: 40%; }
+.sk-line.medium { width: 70%; }
+.sk-price { width: 110px; height: 36px; }
+
+/* ───── Results bar ───── */
+.results-bar {
+  display: flex; justify-content: space-between; align-items: center;
+  margin-bottom: 16px; gap: 16px; flex-wrap: wrap;
+}
+.results-bar h2 { font-size: 20px; font-weight: 800; color: var(--text); letter-spacing: -0.3px; }
+.results-bar .summary { font-size: 13px; color: var(--text-2); margin-top: 2px; }
+.sort-bar { display: flex; gap: 6px; background: var(--surface); padding: 4px; border-radius: 999px; border: 1px solid var(--line); }
+.sort-btn {
+  padding: 7px 16px; font-size: 13px; border-radius: 999px;
+  border: none; background: transparent; cursor: pointer; font-family: inherit; font-weight: 600;
+  color: var(--text-2); transition: all 0.15s;
+}
+.sort-btn.active { background: var(--brand); color: white; }
+
+/* ───── Horizontal Offer Row ───── */
+.offers { display: flex; flex-direction: column; gap: 12px; }
+
+.offer {
+  position: relative; background: var(--surface); border-radius: 18px;
+  border: 1.5px solid var(--line); overflow: hidden;
+  box-shadow: 0 1px 3px rgba(15,23,42,0.03), 0 4px 16px rgba(15,23,42,0.03);
+  transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.25s, border-color 0.2s;
+  animation: rowIn 0.4s cubic-bezier(0.16, 1, 0.3, 1) backwards;
+}
+@keyframes rowIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+.offer:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(15,23,42,0.06), 0 18px 40px rgba(15,23,42,0.10);
+  border-color: var(--brand-2);
+}
+.offer.featured { border-color: #FCD34D; box-shadow: 0 0 0 1px #FCD34D, 0 8px 24px rgba(245, 158, 11, 0.12); }
+.offer.fastest { border-color: #67E8F9; box-shadow: 0 0 0 1px #67E8F9, 0 8px 24px rgba(34, 211, 238, 0.12); }
 
 .offer-ribbon {
-  position: absolute; top: 12px; left: 12px; z-index: 2;
-  font-size: 11px; font-weight: 800; padding: 4px 10px; border-radius: 999px;
-  letter-spacing: 0.5px; text-transform: uppercase;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  position: absolute; top: -1px; inset-inline-start: 20px;
+  font-size: 10px; font-weight: 800; padding: 5px 12px;
+  letter-spacing: 0.6px; text-transform: uppercase;
+  border-radius: 0 0 8px 8px; color: white; z-index: 2;
 }
-.offer-ribbon.best { background: linear-gradient(135deg, #fbbf24, #f59e0b); color: white; }
-.offer-ribbon.fast { background: linear-gradient(135deg, #22d3ee, #0ea5e9); color: white; }
+.offer-ribbon.best { background: var(--gold-grad); }
+.offer-ribbon.fast { background: var(--fast-grad); }
 
-.offer-brand { height: 64px; display: flex; align-items: center; justify-content: center; padding: 10px; position: relative; }
-.offer-brand img { max-height: 44px; max-width: 75%; filter: drop-shadow(0 1px 2px rgba(0,0,0,0.08)); }
-.offer-brand::after {
-  content: ''; position: absolute; left: 0; right: 0; bottom: 0; height: 1px;
-  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent);
+.offer-body {
+  display: grid;
+  grid-template-columns: 140px 1fr auto auto;
+  gap: 24px; align-items: center;
+  padding: 22px 22px 22px 22px;
+}
+@media (max-width: 900px) {
+  .offer-body { grid-template-columns: 100px 1fr; gap: 14px 16px; padding: 16px; }
+  .offer-body .col-route, .offer-body .col-price-action { grid-column: 1 / -1; }
 }
 
-.offer-body { padding: 18px; }
-.offer-price-row { display: flex; align-items: baseline; justify-content: space-between; }
-.offer-price { font-size: 30px; font-weight: 800; color: #0f172a; font-variant-numeric: tabular-nums; letter-spacing: -0.5px; }
-.offer-currency { font-size: 13px; color: #94a3b8; margin-inline-start: 4px; font-weight: 600; }
+/* Logo column */
+.col-logo {
+  background: var(--line-2); border-radius: 12px;
+  height: 64px; display: flex; align-items: center; justify-content: center;
+  padding: 6px; overflow: hidden;
+}
+.col-logo img { max-height: 50px; max-width: 100%; object-fit: contain; filter: drop-shadow(0 1px 2px rgba(0,0,0,0.06)); }
 
-.offer-meta { display: flex; gap: 6px; margin-top: 12px; flex-wrap: wrap; }
-.tag { font-size: 11px; padding: 4px 10px; border-radius: 999px; background: #f1f5f9; color: #475569; font-weight: 600; letter-spacing: 0.2px; }
-.tag.direct { background: #ecfdf5; color: #047857; }
-.tag.ts { background: #fef3c7; color: #92400e; }
-.tag.transit { background: #eff6ff; color: #1d4ed8; }
+/* Carrier info column */
+.col-info { min-width: 0; }
+.carrier-name { font-size: 16px; font-weight: 800; color: var(--text); letter-spacing: -0.2px; }
+.carrier-meta {
+  display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px;
+}
+.tag {
+  font-size: 11px; font-weight: 700; padding: 4px 10px; border-radius: 999px;
+  letter-spacing: 0.2px; display: inline-flex; align-items: center; gap: 4px;
+}
+.tag.direct { background: var(--success-bg); color: var(--success); }
+.tag.ts { background: var(--warn-bg); color: var(--warn); }
+.tag.country { background: #F1F5F9; color: var(--text-2); }
+.tag.transit { background: #EFF6FF; color: #1D4ED8; }
 
-.offer-divider { height: 1px; background: linear-gradient(90deg, transparent, #e2e8f0, transparent); margin: 14px 0 4px; }
+/* Route column */
+.col-route {
+  display: flex; align-items: center; gap: 14px;
+  font-size: 13px; color: var(--text-2);
+  min-width: 0;
+}
+.route-leg { display: flex; flex-direction: column; min-width: 0; }
+.route-leg .port { font-size: 16px; font-weight: 800; color: var(--text); font-variant-numeric: tabular-nums; }
+.route-leg .date { font-size: 11px; color: var(--text-3); margin-top: 2px; font-weight: 600; }
+.route-arrow {
+  flex: 1; display: flex; align-items: center; gap: 6px; min-width: 80px;
+  color: var(--text-3);
+}
+.route-arrow .line {
+  flex: 1; height: 1.5px; background: var(--line); position: relative;
+}
+.route-arrow .line::before, .route-arrow .line::after {
+  content: ''; position: absolute; top: 50%; width: 6px; height: 6px;
+  border-radius: 50%; background: var(--text-3); transform: translateY(-50%);
+}
+.route-arrow .line::before { inset-inline-start: 0; }
+.route-arrow .line::after { inset-inline-end: 0; }
+.route-arrow .days {
+  font-size: 11px; font-weight: 700; color: var(--brand-2);
+  white-space: nowrap; background: white; padding: 2px 8px; border-radius: 999px;
+  border: 1px solid var(--line); position: absolute; left: 50%; transform: translate(-50%, -50%); top: 50%;
+}
 
-.offer-row { display: flex; justify-content: space-between; padding: 5px 0; font-size: 13px; }
-.offer-row span:first-child { color: #64748b; font-weight: 500; }
-.offer-row span:last-child { color: #0f172a; font-weight: 600; font-variant-numeric: tabular-nums; }
-
+/* Price + Action column */
+.col-price-action { display: flex; flex-direction: column; align-items: flex-end; gap: 10px; }
+.price-block { text-align: center; }
+.price-currency { font-size: 11px; font-weight: 700; color: var(--text-3); letter-spacing: 0.4px; }
+.price-amount { font-size: 26px; font-weight: 800; color: var(--brand); font-variant-numeric: tabular-nums; letter-spacing: -0.5px; }
 .book-btn {
-  width: 100%; margin-top: 14px; padding: 11px;
-  background: #0f172a; color: white; border: none; border-radius: 12px;
-  font-weight: 700; cursor: pointer; font-size: 14px; font-family: inherit;
-  letter-spacing: 0.2px; transition: all 0.2s; position: relative; overflow: hidden;
+  background: var(--brand); color: white; border: none;
+  padding: 11px 22px; border-radius: 12px; font-weight: 800; font-size: 13px;
+  cursor: pointer; font-family: inherit; transition: all 0.15s;
+  display: inline-flex; align-items: center; gap: 6px; white-space: nowrap;
+  letter-spacing: 0.2px;
 }
-.book-btn::before {
-  content: ''; position: absolute; inset: 0;
-  background: linear-gradient(135deg, transparent, rgba(255,255,255,0.15), transparent);
-  transform: translateX(-100%); transition: transform 0.6s;
-}
-.book-btn:hover { background: #1e293b; transform: translateY(-1px); }
-.book-btn:hover::before { transform: translateX(100%); }
+.book-btn:hover { background: var(--brand-2); transform: translateY(-1px); box-shadow: 0 6px 16px rgba(30, 91, 168, 0.3); }
 .book-btn:active { transform: translateY(0); }
+
+/* Expandable details */
+.offer-extra {
+  display: none; padding: 0 22px 18px;
+  border-top: 1px dashed var(--line); margin-top: -4px;
+}
+.offer.open .offer-extra { display: block; animation: dropIn 0.2s; }
+.extra-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 14px; padding-top: 14px; }
+.extra-item { font-size: 12px; }
+.extra-item .lbl { color: var(--text-3); font-weight: 600; display: block; margin-bottom: 2px; }
+.extra-item .val { color: var(--text); font-weight: 700; font-variant-numeric: tabular-nums; }
+
+.toggle-details {
+  position: absolute; top: 12px; inset-inline-end: 16px; font-size: 11px;
+  color: var(--text-3); cursor: pointer; padding: 4px 10px; border-radius: 8px;
+  background: transparent; border: none; font-family: inherit; font-weight: 600;
+}
+.toggle-details:hover { background: var(--line-2); color: var(--text); }
+
+/* Empty state */
+.empty-card { text-align: center; padding: 50px 24px; color: var(--text-3); }
+.empty-icon { font-size: 56px; margin-bottom: 12px; opacity: 0.4; }
+.empty-card h3 { font-size: 17px; font-weight: 700; color: var(--text); margin-bottom: 6px; }
+.empty-card p { font-size: 14px; }
 </style>
 </head>
 <body>
 <div class="container">
   <header>
-    <h1>🚢 طلب عروض الشحن</h1>
-    <a href="/dashboard.html">→ لوحة التحكم</a>
+    <h1><span class="icon">🚢</span> طلب عروض الشحن</h1>
+    <nav>
+      <a href="/dashboard.html">لوحة التحكم</a>
+      <a href="/index.html">الرئيسية</a>
+    </nav>
   </header>
+
+  <!-- Stats -->
+  <div class="hero-stats">
+    <div class="stat"><div class="stat-icon blue">🚢</div><div><div class="stat-num">30+</div><div class="stat-lbl">خط ملاحي عالمي</div></div></div>
+    <div class="stat"><div class="stat-icon green">⚡</div><div><div class="stat-num">&lt; 5s</div><div class="stat-lbl">سرعة العروض</div></div></div>
+    <div class="stat"><div class="stat-icon amber">📍</div><div><div class="stat-num">50+</div><div class="stat-lbl">ميناء حول العالم</div></div></div>
+    <div class="stat"><div class="stat-icon cyan">💎</div><div><div class="stat-num">USD</div><div class="stat-lbl">All-in pricing</div></div></div>
+  </div>
 
   <!-- Form Card -->
   <div class="card">
     <div class="mode-row">
       <button type="button" class="mode-btn active" data-mode="FCL">📦 حاوية كاملة (FCL)</button>
-      <button type="button" class="mode-btn" data-mode="LCL" disabled title="قريباً">📦 شحن جزئي (LCL)</button>
-      <button type="button" class="mode-btn" data-mode="AIR" disabled title="قريباً">✈️ جوي</button>
+      <button type="button" class="mode-btn" data-mode="LCL" disabled>📦 شحن جزئي (LCL) <span class="soon">قريباً</span></button>
+      <button type="button" class="mode-btn" data-mode="AIR" disabled>✈️ جوي <span class="soon">قريباً</span></button>
     </div>
 
     <form id="rateForm">
-      <!-- Port row -->
       <div class="port-row">
         <div>
-          <label class="field-label">ميناء التحميل (Origin) <span class="req">*</span></label>
+          <label class="field-label">ميناء التحميل (Origin) <span class="req">*</span><span class="hint">— اكتب اسم أو كود</span></label>
           <div class="port-input">
-            <input type="text" id="originPort" autocomplete="off" placeholder="ابحث: شنغهاي، جبل علي، مرسين…" required>
+            <input type="text" id="originPort" autocomplete="off" placeholder="مثال: شنغهاي، شنزن، جبل علي" required>
             <input type="hidden" name="originPort">
             <div class="port-suggestions" id="originSuggestions"></div>
           </div>
         </div>
-        <button type="button" class="swap" id="swapBtn" title="عكس الاتجاه">⇄</button>
+        <div class="swap-wrap"><button type="button" class="swap" id="swapBtn" title="عكس الاتجاه">⇄</button></div>
         <div>
           <label class="field-label">ميناء التفريغ (Destination) <span class="req">*</span></label>
           <div class="port-input">
-            <input type="text" id="destinationPort" autocomplete="off" placeholder="ابحث: جدة، الدمام، ينبع…" required>
+            <input type="text" id="destinationPort" autocomplete="off" placeholder="مثال: جدة، الدمام، ينبع" required>
             <input type="hidden" name="destinationPort">
             <div class="port-suggestions" id="destinationSuggestions"></div>
           </div>
         </div>
       </div>
 
-      <!-- Containers -->
       <div class="containers-section">
         <label class="field-label">نوع الحاوية والكمية <span class="req">*</span></label>
         <div id="containersList">
@@ -236,19 +450,18 @@ header a:hover { text-decoration: underline; }
               <option value="40RF">40'RF — مبردة</option>
               <option value="45HC">45'HC — جامبو</option>
             </select>
-            <input type="number" name="containerQty[]" min="1" max="999" value="1" class="ct-qty">
+            <input type="number" name="containerQty[]" min="1" max="999" value="1" class="ct-qty" placeholder="Qty">
             <button type="button" class="remove-btn" disabled>✕</button>
           </div>
         </div>
-        <button type="button" class="add-btn" id="addContainerBtn">
-          <span>＋</span> إضافة نوع آخر
-        </button>
+        <button type="button" class="add-btn" id="addContainerBtn"><span>＋</span> إضافة نوع آخر</button>
       </div>
 
-      <!-- Cargo type -->
-      <div class="commodity-row">
-        <span class="label-icon">📦</span>
-        <label class="field-label" style="margin: 0; min-width: 110px;">نوع الحاوية</label>
+      <div class="cargo-row">
+        <div class="label-block">
+          <span style="font-size:18px">📦</span>
+          <label class="field-label" style="margin: 0;">نوع الحاوية</label>
+        </div>
         <select name="cargoCategory" id="cargoCategory">
           <option value="general">جنرال — بضاعة عامة / جافة</option>
           <option value="reefer">مبردة — Reefer</option>
@@ -266,19 +479,19 @@ header a:hover { text-decoration: underline; }
 
       <div id="status"></div>
       <button type="submit" class="submit-btn" id="submitBtn">
-        <span>🔍</span> احصل على العروض فوراً
+        <span>🔍</span><span>احصل على العروض فوراً</span>
       </button>
     </form>
   </div>
 
   <!-- Results -->
-  <div class="card" id="resultsCard" style="display:none;">
-    <div class="results-header">
+  <div id="resultsCard" style="display:none;">
+    <div class="results-bar">
       <div>
         <h2>💰 العروض المتاحة (<span id="offerCount">0</span>)</h2>
         <div class="summary" id="summary"></div>
       </div>
-      <div class="sort-buttons">
+      <div class="sort-bar">
         <button class="sort-btn active" data-sort="price">الأرخص</button>
         <button class="sort-btn" data-sort="transit_days">الأسرع</button>
         <button class="sort-btn" data-sort="carrier_name">الناقل</button>
@@ -286,75 +499,74 @@ header a:hover { text-decoration: underline; }
     </div>
     <div class="offers" id="offers"></div>
   </div>
+
+  <!-- Loading skeleton -->
+  <div id="skeleton" style="display:none;">
+    <div class="skeleton-rows">
+      <div class="skeleton-row"><div class="sk-box sk-logo"></div><div class="sk-text"><div class="sk-line medium"></div><div class="sk-line short"></div></div><div class="sk-box sk-price"></div></div>
+      <div class="skeleton-row"><div class="sk-box sk-logo"></div><div class="sk-text"><div class="sk-line medium"></div><div class="sk-line short"></div></div><div class="sk-box sk-price"></div></div>
+      <div class="skeleton-row"><div class="sk-box sk-logo"></div><div class="sk-text"><div class="sk-line medium"></div><div class="sk-line short"></div></div><div class="sk-box sk-price"></div></div>
+    </div>
+  </div>
 </div>
 
 <script src="/flx-api-client.js"></script>
 <script>
-// ── Port catalog (top common ports, you can extend) ──
 const PORTS = [
-  // Saudi Arabia
-  { code: 'SAJED', name: 'Jeddah', nameAr: 'جدة', country: 'السعودية' },
-  { code: 'SADMM', name: 'Dammam', nameAr: 'الدمام', country: 'السعودية' },
-  { code: 'SAJUB', name: 'Jubail', nameAr: 'الجبيل', country: 'السعودية' },
-  { code: 'SAYNB', name: 'Yanbu', nameAr: 'ينبع', country: 'السعودية' },
-  { code: 'SARAB', name: 'King Abdullah', nameAr: 'الملك عبدالله — رابغ', country: 'السعودية' },
-  { code: 'SAJIZ', name: 'Jazan', nameAr: 'جازان', country: 'السعودية' },
-  { code: 'SADUB', name: 'Duba', nameAr: 'ضباء', country: 'السعودية' },
-  // GCC
-  { code: 'AEJEA', name: 'Jebel Ali', nameAr: 'جبل علي', country: 'الإمارات' },
-  { code: 'AEAUH', name: 'Abu Dhabi', nameAr: 'أبوظبي', country: 'الإمارات' },
-  { code: 'AEKLF', name: 'Khalifa', nameAr: 'خليفة', country: 'الإمارات' },
-  { code: 'BHMIN', name: 'Mina Salman', nameAr: 'ميناء سلمان', country: 'البحرين' },
-  { code: 'KWKWI', name: 'Shuwaikh', nameAr: 'الشويخ', country: 'الكويت' },
-  { code: 'QADOH', name: 'Hamad', nameAr: 'حمد', country: 'قطر' },
-  { code: 'OMSLL', name: 'Salalah', nameAr: 'صلالة', country: 'عمان' },
-  { code: 'OMSOH', name: 'Sohar', nameAr: 'صحار', country: 'عمان' },
-  // China
-  { code: 'CNSHA', name: 'Shanghai', nameAr: 'شنغهاي', country: 'الصين' },
-  { code: 'CNNGB', name: 'Ningbo-Zhoushan', nameAr: 'نينغبو', country: 'الصين' },
-  { code: 'CNSHK', name: 'Shenzhen', nameAr: 'شنزن', country: 'الصين' },
-  { code: 'CNYTN', name: 'Yantian', nameAr: 'يانتيان', country: 'الصين' },
-  { code: 'CNGZG', name: 'Guangzhou', nameAr: 'قوانغتشو', country: 'الصين' },
-  { code: 'CNTAO', name: 'Qingdao', nameAr: 'تشينغداو', country: 'الصين' },
-  { code: 'CNTSN', name: 'Tianjin', nameAr: 'تيانجين', country: 'الصين' },
-  { code: 'CNXMN', name: 'Xiamen', nameAr: 'شيامن', country: 'الصين' },
-  { code: 'CNDLC', name: 'Dalian', nameAr: 'داليان', country: 'الصين' },
-  // Asia
-  { code: 'SGSIN', name: 'Singapore', nameAr: 'سنغافورة', country: 'سنغافورة' },
-  { code: 'HKHKG', name: 'Hong Kong', nameAr: 'هونغ كونغ', country: 'هونغ كونغ' },
-  { code: 'MYPKG', name: 'Port Klang', nameAr: 'بورت كلانغ', country: 'ماليزيا' },
-  { code: 'MYTPP', name: 'Tanjung Pelepas', nameAr: 'تانجونغ بيليباس', country: 'ماليزيا' },
-  { code: 'THLCH', name: 'Laem Chabang', nameAr: 'لايم تشابانغ', country: 'تايلاند' },
-  { code: 'VNSGN', name: 'Ho Chi Minh', nameAr: 'هو تشي منه', country: 'فيتنام' },
-  { code: 'KRPUS', name: 'Busan', nameAr: 'بوسان', country: 'كوريا الجنوبية' },
-  { code: 'JPYOK', name: 'Yokohama', nameAr: 'يوكوهاما', country: 'اليابان' },
-  { code: 'JPTYO', name: 'Tokyo', nameAr: 'طوكيو', country: 'اليابان' },
-  // India
-  { code: 'INNSA', name: 'Nhava Sheva', nameAr: 'ناڤا شيفا', country: 'الهند' },
-  { code: 'INMUN', name: 'Mundra', nameAr: 'موندرا', country: 'الهند' },
-  { code: 'INMAA', name: 'Chennai', nameAr: 'تشيناي', country: 'الهند' },
-  { code: 'INCOK', name: 'Cochin', nameAr: 'كوتشي', country: 'الهند' },
-  // Turkey / Mediterranean
-  { code: 'TRMER', name: 'Mersin', nameAr: 'مرسين', country: 'تركيا' },
-  { code: 'TRIST', name: 'Istanbul', nameAr: 'إسطنبول', country: 'تركيا' },
-  { code: 'TRAYV', name: 'Ambarli', nameAr: 'أمبارلي', country: 'تركيا' },
-  { code: 'EGPSD', name: 'Port Said', nameAr: 'بورسعيد', country: 'مصر' },
-  { code: 'EGALY', name: 'Alexandria', nameAr: 'الإسكندرية', country: 'مصر' },
-  // Europe
-  { code: 'DEHAM', name: 'Hamburg', nameAr: 'هامبورغ', country: 'ألمانيا' },
-  { code: 'NLRTM', name: 'Rotterdam', nameAr: 'روتردام', country: 'هولندا' },
-  { code: 'BEANR', name: 'Antwerp', nameAr: 'أنتويرب', country: 'بلجيكا' },
-  { code: 'ITGOA', name: 'Genoa', nameAr: 'جنوة', country: 'إيطاليا' },
-  { code: 'ESVLC', name: 'Valencia', nameAr: 'فالنسيا', country: 'إسبانيا' },
-  { code: 'GBFXT', name: 'Felixstowe', nameAr: 'فيليكستو', country: 'بريطانيا' },
-  // Americas
-  { code: 'USLAX', name: 'Los Angeles', nameAr: 'لوس أنجلوس', country: 'أمريكا' },
-  { code: 'USLGB', name: 'Long Beach', nameAr: 'لونغ بيتش', country: 'أمريكا' },
-  { code: 'USNYC', name: 'New York', nameAr: 'نيويورك', country: 'أمريكا' },
-  { code: 'BRSSZ', name: 'Santos', nameAr: 'سانتوس', country: 'البرازيل' },
+  { code: 'SAJED', name: 'Jeddah', nameAr: 'جدة', country: 'السعودية', flag: '🇸🇦' },
+  { code: 'SADMM', name: 'Dammam', nameAr: 'الدمام', country: 'السعودية', flag: '🇸🇦' },
+  { code: 'SAJUB', name: 'Jubail', nameAr: 'الجبيل', country: 'السعودية', flag: '🇸🇦' },
+  { code: 'SAYNB', name: 'Yanbu', nameAr: 'ينبع', country: 'السعودية', flag: '🇸🇦' },
+  { code: 'SARAB', name: 'King Abdullah · رابغ', nameAr: 'الملك عبدالله', country: 'السعودية', flag: '🇸🇦' },
+  { code: 'SAJIZ', name: 'Jazan', nameAr: 'جازان', country: 'السعودية', flag: '🇸🇦' },
+  { code: 'SADUB', name: 'Duba', nameAr: 'ضباء', country: 'السعودية', flag: '🇸🇦' },
+  { code: 'AEJEA', name: 'Jebel Ali', nameAr: 'جبل علي', country: 'الإمارات', flag: '🇦🇪' },
+  { code: 'AEAUH', name: 'Abu Dhabi', nameAr: 'أبوظبي', country: 'الإمارات', flag: '🇦🇪' },
+  { code: 'AEKLF', name: 'Khalifa', nameAr: 'خليفة', country: 'الإمارات', flag: '🇦🇪' },
+  { code: 'BHMIN', name: 'Mina Salman', nameAr: 'ميناء سلمان', country: 'البحرين', flag: '🇧🇭' },
+  { code: 'KWKWI', name: 'Shuwaikh', nameAr: 'الشويخ', country: 'الكويت', flag: '🇰🇼' },
+  { code: 'QADOH', name: 'Hamad', nameAr: 'حمد', country: 'قطر', flag: '🇶🇦' },
+  { code: 'OMSLL', name: 'Salalah', nameAr: 'صلالة', country: 'عمان', flag: '🇴🇲' },
+  { code: 'OMSOH', name: 'Sohar', nameAr: 'صحار', country: 'عمان', flag: '🇴🇲' },
+  { code: 'CNSHA', name: 'Shanghai', nameAr: 'شنغهاي', country: 'الصين', flag: '🇨🇳' },
+  { code: 'CNNGB', name: 'Ningbo-Zhoushan', nameAr: 'نينغبو', country: 'الصين', flag: '🇨🇳' },
+  { code: 'CNSHK', name: 'Shenzhen', nameAr: 'شنزن', country: 'الصين', flag: '🇨🇳' },
+  { code: 'CNYTN', name: 'Yantian', nameAr: 'يانتيان', country: 'الصين', flag: '🇨🇳' },
+  { code: 'CNGZG', name: 'Guangzhou', nameAr: 'قوانغتشو', country: 'الصين', flag: '🇨🇳' },
+  { code: 'CNTAO', name: 'Qingdao', nameAr: 'تشينغداو', country: 'الصين', flag: '🇨🇳' },
+  { code: 'CNTSN', name: 'Tianjin', nameAr: 'تيانجين', country: 'الصين', flag: '🇨🇳' },
+  { code: 'CNXMN', name: 'Xiamen', nameAr: 'شيامن', country: 'الصين', flag: '🇨🇳' },
+  { code: 'CNDLC', name: 'Dalian', nameAr: 'داليان', country: 'الصين', flag: '🇨🇳' },
+  { code: 'SGSIN', name: 'Singapore', nameAr: 'سنغافورة', country: 'سنغافورة', flag: '🇸🇬' },
+  { code: 'HKHKG', name: 'Hong Kong', nameAr: 'هونغ كونغ', country: 'هونغ كونغ', flag: '🇭🇰' },
+  { code: 'MYPKG', name: 'Port Klang', nameAr: 'بورت كلانغ', country: 'ماليزيا', flag: '🇲🇾' },
+  { code: 'MYTPP', name: 'Tanjung Pelepas', nameAr: 'تانجونغ بيليباس', country: 'ماليزيا', flag: '🇲🇾' },
+  { code: 'THLCH', name: 'Laem Chabang', nameAr: 'لايم تشابانغ', country: 'تايلاند', flag: '🇹🇭' },
+  { code: 'VNSGN', name: 'Ho Chi Minh', nameAr: 'هو تشي منه', country: 'فيتنام', flag: '🇻🇳' },
+  { code: 'KRPUS', name: 'Busan', nameAr: 'بوسان', country: 'كوريا الجنوبية', flag: '🇰🇷' },
+  { code: 'JPYOK', name: 'Yokohama', nameAr: 'يوكوهاما', country: 'اليابان', flag: '🇯🇵' },
+  { code: 'JPTYO', name: 'Tokyo', nameAr: 'طوكيو', country: 'اليابان', flag: '🇯🇵' },
+  { code: 'INNSA', name: 'Nhava Sheva', nameAr: 'ناڤا شيفا', country: 'الهند', flag: '🇮🇳' },
+  { code: 'INMUN', name: 'Mundra', nameAr: 'موندرا', country: 'الهند', flag: '🇮🇳' },
+  { code: 'INMAA', name: 'Chennai', nameAr: 'تشيناي', country: 'الهند', flag: '🇮🇳' },
+  { code: 'INCOK', name: 'Cochin', nameAr: 'كوتشي', country: 'الهند', flag: '🇮🇳' },
+  { code: 'TRMER', name: 'Mersin', nameAr: 'مرسين', country: 'تركيا', flag: '🇹🇷' },
+  { code: 'TRIST', name: 'Istanbul', nameAr: 'إسطنبول', country: 'تركيا', flag: '🇹🇷' },
+  { code: 'TRAYV', name: 'Ambarli', nameAr: 'أمبارلي', country: 'تركيا', flag: '🇹🇷' },
+  { code: 'EGPSD', name: 'Port Said', nameAr: 'بورسعيد', country: 'مصر', flag: '🇪🇬' },
+  { code: 'EGALY', name: 'Alexandria', nameAr: 'الإسكندرية', country: 'مصر', flag: '🇪🇬' },
+  { code: 'DEHAM', name: 'Hamburg', nameAr: 'هامبورغ', country: 'ألمانيا', flag: '🇩🇪' },
+  { code: 'NLRTM', name: 'Rotterdam', nameAr: 'روتردام', country: 'هولندا', flag: '🇳🇱' },
+  { code: 'BEANR', name: 'Antwerp', nameAr: 'أنتويرب', country: 'بلجيكا', flag: '🇧🇪' },
+  { code: 'ITGOA', name: 'Genoa', nameAr: 'جنوة', country: 'إيطاليا', flag: '🇮🇹' },
+  { code: 'ESVLC', name: 'Valencia', nameAr: 'فالنسيا', country: 'إسبانيا', flag: '🇪🇸' },
+  { code: 'GBFXT', name: 'Felixstowe', nameAr: 'فيليكستو', country: 'بريطانيا', flag: '🇬🇧' },
+  { code: 'USLAX', name: 'Los Angeles', nameAr: 'لوس أنجلوس', country: 'أمريكا', flag: '🇺🇸' },
+  { code: 'USLGB', name: 'Long Beach', nameAr: 'لونغ بيتش', country: 'أمريكا', flag: '🇺🇸' },
+  { code: 'USNYC', name: 'New York', nameAr: 'نيويورك', country: 'أمريكا', flag: '🇺🇸' },
+  { code: 'BRSSZ', name: 'Santos', nameAr: 'سانتوس', country: 'البرازيل', flag: '🇧🇷' },
 ];
 
-// ── Token helper ──
 function getToken() {
   const direct = localStorage.getItem('flx_access_token');
   if (direct) return direct;
@@ -366,32 +578,36 @@ function getToken() {
   return '';
 }
 
-// ── Port autocomplete ──
-function setupPortInput(inputId, suggestionsId, hiddenName) {
+function setupPortInput(inputId, suggestionsId) {
+  const wrap = document.getElementById(inputId).parentNode;
   const input = document.getElementById(inputId);
   const suggestions = document.getElementById(suggestionsId);
-  const hidden = input.parentNode.querySelector('input[type=hidden]');
-  let selectedCode = '';
+  const hidden = wrap.querySelector('input[type=hidden]');
 
-  function render(matches) {
+  function render(matches, label) {
     if (matches.length === 0) {
       suggestions.innerHTML = '<div class="item empty">لا توجد ميناء مطابقة</div>';
     } else {
-      suggestions.innerHTML = matches.slice(0, 20).map(p => `
-        <div class="item" data-code="${p.code}" data-display="${p.nameAr} · ${p.country}">
-          <div>
-            <div style="font-weight:600">${p.nameAr}</div>
-            <div style="font-size:12px;color:#64748b">${p.country} · ${p.name}</div>
+      const html = (label ? `<div class="group-label">${label}</div>` : '') +
+        matches.slice(0, 30).map(p => `
+          <div class="item" data-code="${p.code}" data-display="${p.nameAr} · ${p.country}">
+            <div class="left">
+              <span class="flag">${p.flag}</span>
+              <div>
+                <div class="name">${p.nameAr}</div>
+                <div class="country">${p.country} · ${p.name}</div>
+              </div>
+            </div>
+            <span class="code">${p.code}</span>
           </div>
-          <span class="code">${p.code}</span>
-        </div>
-      `).join('');
+        `).join('');
+      suggestions.innerHTML = html;
       suggestions.querySelectorAll('.item').forEach(el => {
         el.addEventListener('click', () => {
-          selectedCode = el.dataset.code;
           input.value = el.dataset.display;
           hidden.value = el.dataset.code;
           suggestions.classList.remove('show');
+          wrap.classList.add('selected');
         });
       });
     }
@@ -400,44 +616,44 @@ function setupPortInput(inputId, suggestionsId, hiddenName) {
 
   input.addEventListener('input', () => {
     const q = input.value.trim().toLowerCase();
-    hidden.value = ''; // reset until selection
+    hidden.value = '';
+    wrap.classList.remove('selected');
     if (q.length < 1) { suggestions.classList.remove('show'); return; }
     const matches = PORTS.filter(p =>
       p.code.toLowerCase().includes(q) ||
       p.name.toLowerCase().includes(q) ||
-      p.nameAr.includes(q) ||
-      p.country.includes(q)
+      p.nameAr.includes(input.value.trim()) ||
+      p.country.includes(input.value.trim())
     );
     render(matches);
   });
 
   input.addEventListener('focus', () => {
-    if (input.value.trim().length === 0) {
-      render(PORTS.slice(0, 12));
-    } else {
-      input.dispatchEvent(new Event('input'));
-    }
+    if (input.value.trim().length === 0) render(PORTS.slice(0, 14), 'الموانئ الأكثر طلباً');
+    else input.dispatchEvent(new Event('input'));
   });
 
   document.addEventListener('click', (e) => {
-    if (!input.parentNode.contains(e.target)) suggestions.classList.remove('show');
+    if (!wrap.contains(e.target)) suggestions.classList.remove('show');
   });
 }
 
 setupPortInput('originPort', 'originSuggestions');
 setupPortInput('destinationPort', 'destinationSuggestions');
 
-// ── Swap ports ──
 document.getElementById('swapBtn').addEventListener('click', () => {
   const o = document.getElementById('originPort');
   const d = document.getElementById('destinationPort');
   const oH = o.parentNode.querySelector('input[type=hidden]');
   const dH = d.parentNode.querySelector('input[type=hidden]');
+  const oS = o.parentNode.classList.contains('selected');
+  const dS = d.parentNode.classList.contains('selected');
   [o.value, d.value] = [d.value, o.value];
   [oH.value, dH.value] = [dH.value, oH.value];
+  o.parentNode.classList.toggle('selected', dS);
+  d.parentNode.classList.toggle('selected', oS);
 });
 
-// ── Add/Remove container ──
 const containersList = document.getElementById('containersList');
 document.getElementById('addContainerBtn').addEventListener('click', () => {
   const row = document.createElement('div');
@@ -452,26 +668,16 @@ document.getElementById('addContainerBtn').addEventListener('click', () => {
       <option value="45HC">45'HC — جامبو</option>
     </select>
     <input type="number" name="containerQty[]" min="1" max="999" value="1" class="ct-qty">
-    <button type="button" class="remove-btn">✕</button>
-  `;
+    <button type="button" class="remove-btn">✕</button>`;
   containersList.appendChild(row);
-  row.querySelector('.remove-btn').addEventListener('click', () => {
-    row.remove();
-    updateRemoveButtons();
-  });
+  row.querySelector('.remove-btn').addEventListener('click', () => { row.remove(); updateRemoveButtons(); });
   updateRemoveButtons();
 });
-
 function updateRemoveButtons() {
   const rows = containersList.querySelectorAll('.container-row');
-  rows.forEach((r, i) => {
-    const btn = r.querySelector('.remove-btn');
-    if (rows.length === 1) btn.disabled = true;
-    else btn.disabled = false;
-  });
+  rows.forEach(r => { r.querySelector('.remove-btn').disabled = (rows.length === 1); });
 }
 
-// ── Mode buttons ──
 let currentMode = 'FCL';
 document.querySelectorAll('.mode-btn').forEach(b => {
   b.addEventListener('click', () => {
@@ -482,29 +688,19 @@ document.querySelectorAll('.mode-btn').forEach(b => {
   });
 });
 
-// ── Status helper ──
 function setStatus(msg, kind, withSpinner) {
   const el = document.getElementById('status');
-  el.innerHTML = msg + (withSpinner ? ' <span class="spinner"></span>' : '');
+  el.innerHTML = (withSpinner ? '<span class="spinner"></span>' : '') + ' ' + msg;
   el.className = kind || '';
   if (!msg) el.style.display = 'none';
 }
 
-// ── Submit ──
-const form = document.getElementById('rateForm');
-const submitBtn = document.getElementById('submitBtn');
-let allOffers = [];
-let currentSort = 'price';
-
-// Try to resolve a typed text into a port code (auto-match if user didn't click suggestion)
 function resolvePort(textInput, hiddenInput) {
   if (hiddenInput.value) return hiddenInput.value;
   const q = textInput.value.trim().toLowerCase();
   if (!q) return '';
-  // Direct code match
   const exact = PORTS.find(p => p.code.toLowerCase() === q);
-  if (exact) { hiddenInput.value = exact.code; textInput.value = exact.nameAr + ' · ' + exact.country; return exact.code; }
-  // Single best match (name/nameAr/code substring)
+  if (exact) { hiddenInput.value = exact.code; textInput.value = exact.nameAr + ' · ' + exact.country; textInput.parentNode.classList.add('selected'); return exact.code; }
   const matches = PORTS.filter(p =>
     p.code.toLowerCase().includes(q) ||
     p.name.toLowerCase().includes(q) ||
@@ -514,10 +710,17 @@ function resolvePort(textInput, hiddenInput) {
   if (matches.length === 1) {
     hiddenInput.value = matches[0].code;
     textInput.value = matches[0].nameAr + ' · ' + matches[0].country;
+    textInput.parentNode.classList.add('selected');
     return matches[0].code;
   }
   return '';
 }
+
+const form = document.getElementById('rateForm');
+const submitBtn = document.getElementById('submitBtn');
+let allOffers = [];
+let currentSort = 'price';
+let lastSummary = { from: '', to: '', containers: '' };
 
 form.addEventListener('submit', async (e) => {
   e.preventDefault();
@@ -527,61 +730,50 @@ form.addEventListener('submit', async (e) => {
   const originHidden = originTextEl.parentNode.querySelector('input[type=hidden]');
   const destHidden = destTextEl.parentNode.querySelector('input[type=hidden]');
 
-  // Auto-resolve typed text → code
   const originCode = resolvePort(originTextEl, originHidden);
   const destCode = resolvePort(destTextEl, destHidden);
 
-  if (!originCode) {
-    setStatus('⚠️ اختر ميناء التحميل من القائمة المنسدلة', 'error');
-    originTextEl.focus();
-    return;
-  }
-  if (!destCode) {
-    setStatus('⚠️ اختر ميناء التفريغ من القائمة المنسدلة', 'error');
-    destTextEl.focus();
-    return;
-  }
-  if (originCode === destCode) {
-    setStatus('⚠️ ميناء التحميل لا يمكن أن يكون نفس ميناء التفريغ', 'error');
-    return;
-  }
+  if (!originCode) { setStatus('⚠️ اختر ميناء التحميل من القائمة المنسدلة', 'error'); originTextEl.focus(); return; }
+  if (!destCode)   { setStatus('⚠️ اختر ميناء التفريغ من القائمة المنسدلة', 'error'); destTextEl.focus(); return; }
+  if (originCode === destCode) { setStatus('⚠️ ميناء التحميل لا يمكن أن يكون نفس ميناء التفريغ', 'error'); return; }
 
-  // Gather container types + qty
   const ctSelects = form.querySelectorAll('.ct-select');
   const ctQtys = form.querySelectorAll('.ct-qty');
   const containers = [];
   for (let i = 0; i < ctSelects.length; i++) {
     containers.push({ type: ctSelects[i].value, qty: parseInt(ctQtys[i].value) || 1 });
   }
-  // For backend: primary container is the first one (or use 40HC if "ALL" selected)
   const primaryType = containers[0].type === 'ALL' ? '40HC' : containers[0].type;
   const totalQty = containers.reduce((s, c) => s + c.qty, 0);
 
-  // Backend-side fixed defaults (hidden from user)
   const payload = {
     mode: currentMode,
-    originPort: originCode,
-    origin_port: originCode,
-    destinationPort: destCode,
-    destination_port: destCode,
-    containerType: primaryType,
-    containers,                                  // full list for richer requests
-    numContainers: totalQty,
+    originPort: originCode, origin_port: originCode,
+    destinationPort: destCode, destination_port: destCode,
+    containerType: primaryType, containers, numContainers: totalQty,
     cargoType: currentMode === 'FCL' ? 'FCL' : 'LCL',
     cargoCategory: form.cargoCategory.value,
     cargoCategoryName: form.cargoCategory.options[form.cargoCategory.selectedIndex].text,
     commodityCode: '8517',
     commodityName: form.cargoCategory.options[form.cargoCategory.selectedIndex].text,
-    cargoWeightKg: 15000,                        // fixed < 20,000 kg
+    cargoWeightKg: 15000,
     cargoReadyDate: new Date(Date.now() + 7 * 86400000).toISOString().slice(0, 10),
-    incoterms: 'FOB',
-    serviceModeOrigin: 'CY',                     // Port-to-Port
-    serviceModeDestination: 'CY',
+    incoterms: 'FOB', serviceModeOrigin: 'CY', serviceModeDestination: 'CY',
     hazardous: false,
   };
 
   submitBtn.disabled = true;
   setStatus('جاري البحث عن أفضل العروض من 30 خط ملاحي…', 'loading', true);
+  document.getElementById('resultsCard').style.display = 'none';
+  document.getElementById('skeleton').style.display = 'block';
+
+  const oP = PORTS.find(p => p.code === originCode);
+  const dP = PORTS.find(p => p.code === destCode);
+  lastSummary = {
+    from: oP ? `${oP.flag} ${oP.nameAr}` : originCode,
+    to: dP ? `${dP.flag} ${dP.nameAr}` : destCode,
+    containers: containers.map(c => c.qty + '×' + (c.type === 'ALL' ? 'Any' : c.type)).join(' + '),
+  };
 
   try {
     const t0 = Date.now();
@@ -601,35 +793,45 @@ form.addEventListener('submit', async (e) => {
     const data = await r.json();
     allOffers = data.offers || [];
     const ms = Date.now() - t0;
-    setStatus(`✅ ${allOffers.length} عرض (${data.source}) — ${ms}ms`, 'success');
-    document.getElementById('summary').textContent =
-      `${originCode} → ${destCode} · ${currentMode} · ${containers.map(c => c.qty + '×' + (c.type === 'ALL' ? 'Any' : c.type)).join(' + ')}`;
+    setStatus(`✅ ${allOffers.length} عرض في ${ms}ms من ${data.source === 'freightify' ? 'Freightify' : 'قاعدة بيانات الخطوط'}`, 'success');
+
+    document.getElementById('summary').innerHTML =
+      `<strong>${lastSummary.from}</strong> → <strong>${lastSummary.to}</strong> · ${currentMode} · ${lastSummary.containers}`;
+    document.getElementById('skeleton').style.display = 'none';
     document.getElementById('resultsCard').style.display = 'block';
     renderOffers();
     document.getElementById('resultsCard').scrollIntoView({ behavior: 'smooth' });
   } catch (err) {
     setStatus('❌ فشل البحث: ' + err.message, 'error');
+    document.getElementById('skeleton').style.display = 'none';
   } finally {
     submitBtn.disabled = false;
   }
 });
 
-// ── Render offers ──
-function carrierBadge(o) {
+function carrierLogoHTML(o) {
   const name = (o.carrier_name || 'Carrier').toUpperCase();
-  const bg = o.brand_color || '#1e3a5f';
+  const bg = o.brand_color || 'linear-gradient(135deg, #0F2C4D, #1E5BA8)';
   if (o.carrier_logo && o.carrier_logo.startsWith('/')) {
-    return `<div class="offer-brand" style="background:${bg};">
-      <img src="${o.carrier_logo}" alt="${name}" onerror="this.outerHTML='<span style=color:white;font-weight:800;font-size:18px;letter-spacing:1.5px>${name}</span>'">
+    return `<div class="col-logo" style="background:${bg};">
+      <img src="${o.carrier_logo}" alt="${name}" onerror="this.outerHTML='<span style=color:white;font-weight:800;font-size:14px;letter-spacing:1.5px>${name}</span>'">
     </div>`;
   }
-  return `<div class="offer-brand" style="background:${bg};">
-    <span style="color:white;font-weight:800;font-size:18px;letter-spacing:1.5px">${name}</span>
+  return `<div class="col-logo" style="background:${bg};">
+    <span style="color:white;font-weight:800;font-size:14px;letter-spacing:1.5px">${name}</span>
   </div>`;
 }
 
+function fmtDate(s) {
+  if (!s) return '—';
+  try {
+    const d = new Date(s);
+    const months = ['ينا','فبر','مار','أبر','ماي','يون','يول','أغس','سبت','أكت','نوف','ديس'];
+    return d.getDate() + ' ' + months[d.getMonth()];
+  } catch { return s; }
+}
+
 function renderOffers() {
-  // Identify cheapest + fastest for badges (computed across full set, regardless of current sort)
   let cheapest = null, fastest = null;
   for (const o of allOffers) {
     if (!cheapest || o.price < cheapest.price) cheapest = o;
@@ -645,44 +847,80 @@ function renderOffers() {
   });
 
   document.getElementById('offerCount').textContent = sorted.length;
+  if (sorted.length === 0) {
+    document.getElementById('offers').innerHTML = `
+      <div class="empty-card">
+        <div class="empty-icon">🚢</div>
+        <h3>لا توجد عروض متاحة لهذا المسار</h3>
+        <p>جرّب مسار آخر أو غيّر نوع الحاوية</p>
+      </div>`;
+    return;
+  }
+
   document.getElementById('offers').innerHTML = sorted.map((o, i) => {
     const directTag = o.is_direct
       ? '<span class="tag direct">✓ مباشر</span>'
       : '<span class="tag ts">↻ ترانزيت</span>';
-    const ribbon = isFeatured(o)
-      ? '<div class="offer-ribbon best">★ الأفضل سعراً</div>'
-      : isFastest(o)
-        ? '<div class="offer-ribbon fast">⚡ الأسرع</div>'
-        : '';
+    const ribbon = isFeatured(o) ? '<div class="offer-ribbon best">★ الأفضل سعراً</div>'
+                  : isFastest(o)  ? '<div class="offer-ribbon fast">⚡ الأسرع</div>' : '';
     const cardClass = isFeatured(o) ? 'offer featured' : isFastest(o) ? 'offer fastest' : 'offer';
-    return `<div class="${cardClass}" style="animation-delay:${Math.min(i, 12) * 40}ms">
+    const offerJson = JSON.stringify(o).replace(/'/g, '&apos;');
+    return `<article class="${cardClass}" style="animation-delay:${Math.min(i, 14) * 35}ms" data-id="${i}">
       ${ribbon}
-      ${carrierBadge(o)}
+      <button class="toggle-details" data-toggle="${i}">التفاصيل ▾</button>
       <div class="offer-body">
-        <div class="offer-price-row">
-          <div>
-            <span class="offer-price">$${Number(o.price).toLocaleString()}</span>
-            <span class="offer-currency">${o.currency || 'USD'}</span>
+        ${carrierLogoHTML(o)}
+        <div class="col-info">
+          <div class="carrier-name">${o.carrier_name || 'Carrier'}</div>
+          <div class="carrier-meta">
+            ${directTag}
+            ${o.country ? `<span class="tag country">${o.country}</span>` : ''}
+            ${o.service_type ? `<span class="tag transit">${o.service_type}</span>` : ''}
           </div>
         </div>
-        <div class="offer-meta">
-          ${directTag}
-          <span class="tag transit">${o.transit_days} يوم</span>
-          ${o.country ? `<span class="tag">${o.country}</span>` : ''}
+        <div class="col-route">
+          <div class="route-leg">
+            <span class="port">${(o.route || '').split('→')[0]?.trim() || '—'}</span>
+            <span class="date">ETD ${fmtDate(o.etd)}</span>
+          </div>
+          <div class="route-arrow" style="position:relative;">
+            <div class="line"></div>
+            <span class="days">${o.transit_days} يوم</span>
+          </div>
+          <div class="route-leg" style="text-align:end;">
+            <span class="port">${(o.route || '').split('→')[1]?.trim() || '—'}</span>
+            <span class="date">ETA ${fmtDate(o.eta)}</span>
+          </div>
         </div>
-        <div class="offer-divider"></div>
-        <div class="offer-row"><span>الإقلاع (ETD)</span><span>${o.etd || '—'}</span></div>
-        <div class="offer-row"><span>الوصول (ETA)</span><span>${o.eta || '—'}</span></div>
-        <div class="offer-row"><span>السفينة</span><span>${o.vessel || '—'}</span></div>
-        <div class="offer-row"><span>أيام مجانية</span><span>${o.free_days || 10} يوم</span></div>
-        <div class="offer-row"><span>صالح حتى</span><span>${o.validity_until || '—'}</span></div>
-        <button class="book-btn" data-offer='${JSON.stringify(o).replace(/'/g, '&apos;')}'>احجز هذا العرض</button>
+        <div class="col-price-action">
+          <div class="price-block">
+            <div class="price-currency">${o.currency || 'USD'}</div>
+            <div class="price-amount">$${Number(o.price).toLocaleString()}</div>
+          </div>
+          <button class="book-btn" data-offer='${offerJson}'>احجز الآن ←</button>
+        </div>
       </div>
-    </div>`;
+      <div class="offer-extra">
+        <div class="extra-grid">
+          <div class="extra-item"><span class="lbl">السفينة</span><span class="val">${o.vessel || '—'}</span></div>
+          <div class="extra-item"><span class="lbl">أيام مجانية في الميناء</span><span class="val">${o.free_days || 10} يوم</span></div>
+          <div class="extra-item"><span class="lbl">العرض صالح حتى</span><span class="val">${o.validity_until || '—'}</span></div>
+          <div class="extra-item"><span class="lbl">نوع الخدمة</span><span class="val">${o.is_direct ? 'مباشر' : 'مع ترانزيت'}</span></div>
+        </div>
+      </div>
+    </article>`;
   }).join('');
 
   document.querySelectorAll('.book-btn').forEach(b => {
     b.addEventListener('click', () => bookOffer(JSON.parse(b.dataset.offer.replace(/&apos;/g, "'"))));
+  });
+  document.querySelectorAll('.toggle-details').forEach(b => {
+    b.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const card = b.closest('.offer');
+      card.classList.toggle('open');
+      b.textContent = card.classList.contains('open') ? 'إخفاء ▴' : 'التفاصيل ▾';
+    });
   });
 }
 
@@ -699,20 +937,17 @@ async function bookOffer(o) {
   if (!confirm(`تأكيد الحجز مع ${o.carrier_name} بسعر $${o.price}؟`)) return;
   try {
     const quote = await flxApi.quotes.create({
-      origin: form.originPort.value, destination: form.destinationPort.value,
+      origin: document.getElementById('originPort').parentNode.querySelector('input[type=hidden]').value,
+      destination: document.getElementById('destinationPort').parentNode.querySelector('input[type=hidden]').value,
       carrier: o.carrier_name, container: '40HC',
       price: o.price, valid_until: o.validity_until || new Date(Date.now() + 7 * 86400000).toISOString().slice(0, 10),
     });
     const booked = await flxApi.quotes.book(quote.id);
     alert(`✅ تم الحجز!\nالشحنة: ${booked.shipment.id}\nالفاتورة: ${booked.invoice.id}`);
     window.location.href = '/dashboard.html';
-  } catch (e) {
-    alert('فشل الحجز: ' + e.message);
-  }
+  } catch (e) { alert('فشل الحجز: ' + e.message); }
 }
 
-// ── URL params prefill (chatbot → rates deep link) ──
-// Example: /rates.html?from=CNSHA&to=SAJED&type=40HC&qty=2&cargo=reefer&mode=FCL&auto=1
 function prefillFromURL() {
   const u = new URL(location.href);
   const from = u.searchParams.get('from') || u.searchParams.get('origin');
@@ -729,6 +964,7 @@ function prefillFromURL() {
       const el = document.getElementById('originPort');
       el.value = p.nameAr + ' · ' + p.country;
       el.parentNode.querySelector('input[type=hidden]').value = p.code;
+      el.parentNode.classList.add('selected');
     }
   }
   if (to) {
@@ -737,16 +973,14 @@ function prefillFromURL() {
       const el = document.getElementById('destinationPort');
       el.value = p.nameAr + ' · ' + p.country;
       el.parentNode.querySelector('input[type=hidden]').value = p.code;
+      el.parentNode.classList.add('selected');
     }
   }
   if (ctype) {
     const sel = form.querySelector('.ct-select');
     if (sel && [...sel.options].some(o => o.value === ctype.toUpperCase())) sel.value = ctype.toUpperCase();
   }
-  if (qty > 1) {
-    const q = form.querySelector('.ct-qty');
-    if (q) q.value = Math.min(999, qty);
-  }
+  if (qty > 1) { const q = form.querySelector('.ct-qty'); if (q) q.value = Math.min(999, qty); }
   if (cargo) {
     const sel = form.querySelector('#cargoCategory');
     if (sel && [...sel.options].some(o => o.value === cargo)) sel.value = cargo;
@@ -755,13 +989,9 @@ function prefillFromURL() {
     const btn = document.querySelector(`.mode-btn[data-mode="${mode}"]`);
     if (btn && !btn.disabled) btn.click();
   }
-  // Auto-submit if requested
-  if (auto && from && to) {
-    setTimeout(() => form.requestSubmit(), 400);
-  }
+  if (auto && from && to) setTimeout(() => form.requestSubmit(), 400);
 }
 
-// ── Auth check + prefill ──
 window.addEventListener('load', () => {
   prefillFromURL();
   if (!flxApi.isAuthenticated()) {
