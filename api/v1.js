@@ -543,7 +543,7 @@ async function webHandler(req) {
       }
     }
     return json({
-      status: 'ok', version: '2.14.0', time: new Date().toISOString(),
+      status: 'ok', version: '2.14.1', time: new Date().toISOString(),
       services: {
         database: dbStatus, supabase_url: SUPABASE_URL,
         ai: process.env.GEMINI_API_KEY ? 'gemini' : process.env.OPENAI_API_KEY ? 'openai' : 'none',
@@ -840,7 +840,7 @@ async function webHandler(req) {
         const data = await sb(q);
         return json({ data, total: data.length, page: 1, limit: data.length });
       }
-      if (req.method === 'GET' && segments[1]) {
+      if (req.method === 'GET' && segments[1] && !segments[2]) {
         const [s] = await sb(`/shipments?id=eq.${segments[1]}&user_id=eq.${user.id}&select=*&limit=1`);
         if (!s) return json({ error: { code: 'NOT_FOUND' } }, 404);
         return json(s);
@@ -857,13 +857,13 @@ async function webHandler(req) {
         }]});
         return json(s, 201);
       }
-      if (req.method === 'PATCH' && segments[1]) {
+      if (req.method === 'PATCH' && segments[1] && !segments[2]) {
         const body = await req.json();
         const [s] = await sb(`/shipments?id=eq.${segments[1]}&user_id=eq.${user.id}`, { method: 'PATCH', body });
         if (!s) return json({ error: { code: 'NOT_FOUND' } }, 404);
         return json(s);
       }
-      if (req.method === 'DELETE' && segments[1]) {
+      if (req.method === 'DELETE' && segments[1] && !segments[2]) {
         await sb(`/shipments?id=eq.${segments[1]}&user_id=eq.${user.id}`, { method: 'DELETE' });
         return json({ ok: true });
       }
@@ -1073,7 +1073,8 @@ async function webHandler(req) {
     if (segments[0] === 'search' && req.method === 'GET') {
       const q = (url.searchParams.get('q') || '').trim();
       if (!q || q.length < 2) return json({ results: [], total: 0 });
-      const qLike = `%${q}%`;
+      // PostgREST ilike uses * as wildcard, not %
+      const qLike = `*${q}*`;
       const [shipments, quotes, invoices] = await Promise.all([
         sb(`/shipments?user_id=eq.${user.id}&or=(id.ilike.${qLike},origin.ilike.${qLike},destination.ilike.${qLike},carrier.ilike.${qLike})&select=*&limit=10`).catch(() => []),
         sb(`/quotes?user_id=eq.${user.id}&or=(id.ilike.${qLike},origin.ilike.${qLike},destination.ilike.${qLike},carrier.ilike.${qLike})&select=*&limit=10`).catch(() => []),
