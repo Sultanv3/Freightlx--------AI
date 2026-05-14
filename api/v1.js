@@ -1,104 +1,125 @@
 /**
  * FREIGHTLX Backend — Vercel Serverless catch-all
- * One Edge function handling all /api/v1/* requests.
- * Uses Supabase Auth (cookie/header) + in-memory cache.
- * Persists via Vercel Edge Config or Supabase tables when configured.
+ * Persists in Supabase Postgres + Storage via REST API (no SDK needed in Edge).
+ *
+ * Required env vars:
+ *   SUPABASE_URL              — https://xxx.supabase.co
+ *   SUPABASE_SERVICE_ROLE_KEY — service_role secret key (server-side only)
+ *   JWT_SECRET                — random 32+ char string
  */
 
-// In-memory store (per-instance — survives warm invocations)
-const memStore = {
-  users: new Map(),
-  shipments: new Map(),
-  quotes: new Map(),
-  invoices: new Map(),
-  documents: new Map(),
-  notifications: new Map(),
-};
-
-// Seed demo data if empty
-function ensureSeed(userId) {
-  if (memStore.shipments.size > 0) return;
-  const seedShipments = [
-    { id: 'FLX-B-2026-7841', user_id: userId, origin: 'CNSHA', destination: 'SAJED', carrier: 'COSCO',  container: '40HC', date: '2026-04-28', status: 'transit',   status_text: 'في عرض البحر',    price: 3450 },
-    { id: 'FLX-B-2026-7639', user_id: userId, origin: 'CNSZX', destination: 'SADMM', carrier: 'MSC',    container: '40GP', date: '2026-04-30', status: 'active',    status_text: 'في التخليص',      price: 2980 },
-    { id: 'FLX-B-2026-7421', user_id: userId, origin: 'TRMER', destination: 'SAJED', carrier: 'Arkas',  container: '20GP', date: '2026-05-02', status: 'pending',   status_text: 'قيد الموافقة',    price: 1650 },
-    { id: 'FLX-B-2026-7102', user_id: userId, origin: 'INNSA', destination: 'SAJED', carrier: 'Maersk', container: '40HC', date: '2026-04-10', status: 'completed', status_text: 'مكتملة',          price: 2720 }
-  ];
-  seedShipments.forEach(s => memStore.shipments.set(s.id, s));
-
-  [
-    { id: 'Q-2026-1284', user_id: userId, origin: 'CNSHA', destination: 'SAJED', carrier: 'COSCO',  price: 3450, valid_until: '2026-05-20', status: 'valid' },
-    { id: 'Q-2026-1283', user_id: userId, origin: 'CNSZX', destination: 'SADMM', carrier: 'MSC',    price: 2980, valid_until: '2026-05-19', status: 'valid' },
-    { id: 'Q-2026-1281', user_id: userId, origin: 'TRMER', destination: 'SAJED', carrier: 'Arkas',  price: 1650, valid_until: '2026-05-25', status: 'valid' },
-  ].forEach(q => memStore.quotes.set(q.id, q));
-
-  [
-    { id: 'INV-2026-152', user_id: userId, description: 'شحن CNSHA → SAJED · COSCO 40HC', date: '2026-05-08', amount: 3450, status: 'paid' },
-    { id: 'INV-2026-150', user_id: userId, description: 'شحن CNSZX → SADMM · MSC 40GP', date: '2026-05-02', amount: 2980, status: 'pending' },
-    { id: 'INV-2026-149', user_id: userId, description: 'تخليص جمركي + رسوم', date: '2026-04-30', amount: 720, status: 'pending' },
-  ].forEach(i => memStore.invoices.set(i.id, i));
-}
-
-// Hash/sign helpers (simple JWT-like for Edge runtime)
-async function sign(payload, secret) {
-  const enc = new TextEncoder();
-  const headerB64 = btoa(JSON.stringify({ alg: 'HS256', typ: 'JWT' }));
-  const payloadB64 = btoa(JSON.stringify(payload));
-  const data = `${headerB64}.${payloadB64}`;
-  const key = await crypto.subtle.importKey('raw', enc.encode(secret), { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']);
-  const sig = await crypto.subtle.sign('HMAC', key, enc.encode(data));
-  const sigB64 = btoa(String.fromCharCode(...new Uint8Array(sig)));
-  return `${data}.${sigB64}`;
-}
-
-async function verify(token, secret) {
-  try {
-    const [headerB64, payloadB64, sigB64] = token.split('.');
-    const enc = new TextEncoder();
-    const key = await crypto.subtle.importKey('raw', enc.encode(secret), { name: 'HMAC', hash: 'SHA-256' }, false, ['verify']);
-    const expectedSig = await crypto.subtle.sign('HMAC', key, enc.encode(`${headerB64}.${payloadB64}`));
-    const expectedB64 = btoa(String.fromCharCode(...new Uint8Array(expectedSig)));
-    if (sigB64 !== expectedB64) return null;
-    const payload = JSON.parse(atob(payloadB64));
-    if (payload.exp && payload.exp < Date.now() / 1000) return null;
-    return payload;
-  } catch { return null; }
-}
-
+const SUPABASE_URL = process.env.SUPABASE_URL || 'https://pczfivhvnbewovvbquig.supabase.co';
+const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
 const JWT_SECRET = process.env.JWT_SECRET || 'flx-default-secret-change-in-production-32chars';
+
 const CORS_HEADERS = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Methods': 'GET, POST, PATCH, DELETE, OPTIONS',
-  'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+  'Access-Control-Allow-Headers': 'Content-Type, Authorization, x-supabase-auth',
 };
 
 function json(data, status = 200) {
   return new Response(JSON.stringify(data), {
-    status,
-    headers: { 'Content-Type': 'application/json', ...CORS_HEADERS },
+    status, headers: { 'Content-Type': 'application/json', ...CORS_HEADERS },
   });
+}
+
+// ═══════════════════════════════════════════════════════════════
+//   Supabase REST helper (works in Edge runtime)
+// ═══════════════════════════════════════════════════════════════
+async function sb(path, opts = {}) {
+  if (!SUPABASE_SERVICE_KEY) throw new Error('SUPABASE_SERVICE_ROLE_KEY not configured');
+  const url = `${SUPABASE_URL}/rest/v1${path}`;
+  const headers = {
+    apikey: SUPABASE_SERVICE_KEY,
+    Authorization: `Bearer ${SUPABASE_SERVICE_KEY}`,
+    'Content-Type': 'application/json',
+    Prefer: opts.prefer || 'return=representation',
+    ...(opts.headers || {}),
+  };
+  const init = { method: opts.method || 'GET', headers };
+  if (opts.body) init.body = JSON.stringify(opts.body);
+  const r = await fetch(url, init);
+  const text = await r.text();
+  if (!r.ok) {
+    throw new Error(`Supabase ${r.status}: ${text}`);
+  }
+  return text ? JSON.parse(text) : null;
+}
+
+// Verify Supabase user JWT (front-end issues these via Supabase Auth)
+async function verifySupabaseJWT(token) {
+  try {
+    // Use Supabase's /auth/v1/user endpoint to verify
+    const r = await fetch(`${SUPABASE_URL}/auth/v1/user`, {
+      headers: {
+        apikey: SUPABASE_SERVICE_KEY,
+        Authorization: `Bearer ${token}`,
+      },
+    });
+    if (!r.ok) return null;
+    const user = await r.json();
+    return { id: user.id, email: user.email, role: user.user_metadata?.role || 'user' };
+  } catch { return null; }
 }
 
 async function getUserFromAuth(req) {
   const auth = req.headers.get('authorization');
   if (!auth?.startsWith('Bearer ')) return null;
-  return await verify(auth.slice(7), JWT_SECRET);
-}
-
-// Simple password hash (Edge runtime compatible)
-async function hashPassword(pw) {
-  const data = new TextEncoder().encode(pw + 'flx-salt-v1');
-  const hash = await crypto.subtle.digest('SHA-256', data);
-  return btoa(String.fromCharCode(...new Uint8Array(hash)));
+  const token = auth.slice(7).trim();
+  return await verifySupabaseJWT(token);
 }
 
 function genId(prefix) {
   return prefix + '-' + Date.now().toString(36).toUpperCase() + Math.random().toString(36).slice(2, 6).toUpperCase();
 }
 
-// ════════════════════════════════════════════════════════
-//  MAIN HANDLER
-// ════════════════════════════════════════════════════════
+// ═══════════════════════════════════════════════════════════════
+//   Seed initial data for new users (idempotent)
+// ═══════════════════════════════════════════════════════════════
+async function seedUserData(userId) {
+  try {
+    const existing = await sb(`/shipments?user_id=eq.${userId}&select=id&limit=1`);
+    if (existing && existing.length > 0) return; // already seeded
+
+    const today = new Date().toISOString().slice(0, 10);
+    const future = new Date(Date.now() + 20 * 86400000).toISOString().slice(0, 10);
+
+    await sb('/shipments', {
+      method: 'POST',
+      body: [
+        { id: genId('FLX-B'), user_id: userId, origin: 'CNSHA', destination: 'SAJED', carrier: 'COSCO', container: '40HC', date: today, status: 'transit', status_text: 'في عرض البحر', price: 3450 },
+        { id: genId('FLX-B'), user_id: userId, origin: 'CNSZX', destination: 'SADMM', carrier: 'MSC', container: '40GP', date: today, status: 'active', status_text: 'في التخليص', price: 2980 },
+        { id: genId('FLX-B'), user_id: userId, origin: 'TRMER', destination: 'SAJED', carrier: 'Arkas', container: '20GP', date: today, status: 'pending', status_text: 'قيد الموافقة', price: 1650 },
+      ],
+      prefer: 'return=minimal',
+    });
+
+    await sb('/quotes', {
+      method: 'POST',
+      body: [
+        { id: genId('Q'), user_id: userId, origin: 'CNSHA', destination: 'SAJED', carrier: 'COSCO', price: 3450, valid_until: future, status: 'valid' },
+        { id: genId('Q'), user_id: userId, origin: 'INNSA', destination: 'SAJED', carrier: 'Maersk', price: 2720, valid_until: future, status: 'valid' },
+      ],
+      prefer: 'return=minimal',
+    });
+
+    await sb('/notifications', {
+      method: 'POST',
+      body: [{
+        user_id: userId, type: 'info',
+        text: 'مرحباً بك في FREIGHTLX 👋 — تم تجهيز حسابك بشحنات تجريبية',
+      }],
+      prefer: 'return=minimal',
+    });
+  } catch (err) {
+    console.error('Seed failed:', err.message);
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════
+//   MAIN HANDLER
+// ═══════════════════════════════════════════════════════════════
 export default async function handler(req) {
   if (req.method === 'OPTIONS') return new Response(null, { headers: CORS_HEADERS });
 
@@ -106,191 +127,266 @@ export default async function handler(req) {
   const path = url.pathname.replace(/^\/api\/v1\/?/, '').replace(/\/$/, '');
   const segments = path.split('/').filter(Boolean);
 
-  // ── Health ──
+  // ── Health (public) ──
   if (segments[0] === 'health' || segments.length === 0) {
+    let dbStatus = 'unconfigured';
+    if (SUPABASE_SERVICE_KEY) {
+      try {
+        await sb('/carriers?limit=1&select=code');
+        dbStatus = 'connected';
+      } catch (e) {
+        dbStatus = 'error: ' + e.message.slice(0, 80);
+      }
+    }
     return json({
-      status: 'ok', version: '1.0.0', time: new Date().toISOString(),
-      services: { database: 'memory', ai: !!process.env.GEMINI_API_KEY ? 'gemini' : 'none' },
-      message: 'FREIGHTLX Serverless API',
+      status: 'ok',
+      version: '2.0.0',
+      time: new Date().toISOString(),
+      services: {
+        database: dbStatus,
+        supabase_url: SUPABASE_URL,
+        ai: process.env.GEMINI_API_KEY ? 'gemini' : process.env.OPENAI_API_KEY ? 'openai' : 'none',
+      },
     });
   }
 
-  // ── Auth ──
-  if (segments[0] === 'auth') {
-    let body = {};
-    if (req.method === 'POST') {
-      try { body = await req.json(); } catch {}
+  // ── Public carriers list ──
+  if (segments[0] === 'carriers' && req.method === 'GET') {
+    try {
+      const carriers = await sb('/carriers?active=eq.true&order=name.asc');
+      return json({ data: carriers });
+    } catch { return json({ data: [] }); }
+  }
+
+  // ── Bootstrap: ensure user has seed data ──
+  if (segments[0] === 'bootstrap' && req.method === 'POST') {
+    const user = await getUserFromAuth(req);
+    if (!user) return json({ error: { code: 'UNAUTHORIZED' } }, 401);
+    await seedUserData(user.id);
+    return json({ ok: true });
+  }
+
+  // ── Auth: handled by Supabase directly, but expose /me ──
+  if (segments[0] === 'auth' && segments[1] === 'me') {
+    const user = await getUserFromAuth(req);
+    if (!user) return json({ error: { code: 'UNAUTHORIZED' } }, 401);
+    try {
+      const [profile] = await sb(`/profiles?id=eq.${user.id}&select=*&limit=1`);
+      return json({ user: profile || { id: user.id, email: user.email, role: user.role } });
+    } catch {
+      return json({ user });
     }
-
-    if (segments[1] === 'signup' && req.method === 'POST') {
-      const { email, password, name } = body;
-      if (!email || !password || !name) return json({ error: { code: 'VALIDATION', message: 'email, password, name required' } }, 422);
-      if (password.length < 8) return json({ error: { code: 'WEAK_PASSWORD', message: 'Password must be 8+ chars' } }, 422);
-      if (memStore.users.has(email)) return json({ error: { code: 'CONFLICT', message: 'Email already registered' } }, 409);
-
-      const userId = genId('U');
-      const hash = await hashPassword(password);
-      memStore.users.set(email, { id: userId, email, name, password_hash: hash, role: 'user', created_at: new Date().toISOString() });
-      ensureSeed(userId);
-
-      const token = await sign({ id: userId, email, role: 'user', exp: Math.floor(Date.now()/1000) + 7*86400 }, JWT_SECRET);
-      const refresh = await sign({ id: userId, email, role: 'user', exp: Math.floor(Date.now()/1000) + 30*86400 }, JWT_SECRET);
-
-      return json({
-        user: { id: userId, email, name, role: 'user' },
-        access_token: token, refresh_token: refresh, token_type: 'Bearer', expires_in: '7d',
-      }, 201);
-    }
-
-    if (segments[1] === 'login' && req.method === 'POST') {
-      const { email, password } = body;
-      const stored = memStore.users.get(email);
-      if (!stored) return json({ error: { code: 'INVALID_CREDS', message: 'Invalid email or password' } }, 401);
-      const hash = await hashPassword(password);
-      if (hash !== stored.password_hash) return json({ error: { code: 'INVALID_CREDS', message: 'Invalid email or password' } }, 401);
-      ensureSeed(stored.id);
-
-      const token = await sign({ id: stored.id, email, role: stored.role, exp: Math.floor(Date.now()/1000) + 7*86400 }, JWT_SECRET);
-      const refresh = await sign({ id: stored.id, email, role: stored.role, exp: Math.floor(Date.now()/1000) + 30*86400 }, JWT_SECRET);
-
-      return json({
-        user: { id: stored.id, email, name: stored.name, role: stored.role },
-        access_token: token, refresh_token: refresh, token_type: 'Bearer', expires_in: '7d',
-      });
-    }
-
-    if (segments[1] === 'refresh' && req.method === 'POST') {
-      const { refresh_token } = body;
-      const payload = await verify(refresh_token, JWT_SECRET);
-      if (!payload) return json({ error: { code: 'INVALID_TOKEN', message: 'Invalid refresh token' } }, 401);
-      const token = await sign({ id: payload.id, email: payload.email, role: payload.role, exp: Math.floor(Date.now()/1000) + 7*86400 }, JWT_SECRET);
-      return json({ access_token: token, refresh_token, token_type: 'Bearer', expires_in: '7d' });
-    }
-
-    if (segments[1] === 'me') {
-      const user = await getUserFromAuth(req);
-      if (!user) return json({ error: { code: 'UNAUTHORIZED' } }, 401);
-      const stored = Array.from(memStore.users.values()).find(u => u.id === user.id);
-      return json({ user: stored ? { id: stored.id, email: stored.email, name: stored.name, role: stored.role } : null });
-    }
-
-    if (segments[1] === 'logout') return json({ ok: true });
-
-    return json({ error: { code: 'NOT_FOUND' } }, 404);
   }
 
   // ── Protected routes ──
   const user = await getUserFromAuth(req);
-  if (!user) return json({ error: { code: 'UNAUTHORIZED', message: 'Bearer token required' } }, 401);
-  ensureSeed(user.id);
+  if (!user) return json({ error: { code: 'UNAUTHORIZED', message: 'Supabase Bearer token required' } }, 401);
 
-  function listResource(table) {
-    const all = Array.from(memStore[table].values()).filter(r => r.user_id === user.id);
-    return { data: all, total: all.length, page: 1, limit: all.length };
+  // Auto-seed on first request
+  if (req.method === 'GET' && segments[0] === 'shipments' && !segments[1]) {
+    await seedUserData(user.id);
   }
 
-  // ── Shipments ──
-  if (segments[0] === 'shipments') {
-    if (req.method === 'GET' && !segments[1]) return json(listResource('shipments'));
-    if (req.method === 'GET' && segments[1]) {
-      const s = memStore.shipments.get(segments[1]);
-      if (!s || s.user_id !== user.id) return json({ error: { code: 'NOT_FOUND' } }, 404);
-      return json(s);
+  try {
+    // ── SHIPMENTS ──
+    if (segments[0] === 'shipments') {
+      if (req.method === 'GET' && !segments[1]) {
+        const status = url.searchParams.get('status');
+        let q = `/shipments?user_id=eq.${user.id}&select=*&order=created_at.desc`;
+        if (status) q += `&status=eq.${status}`;
+        const data = await sb(q);
+        return json({ data, total: data.length, page: 1, limit: data.length });
+      }
+      if (req.method === 'GET' && segments[1]) {
+        const [s] = await sb(`/shipments?id=eq.${segments[1]}&user_id=eq.${user.id}&select=*&limit=1`);
+        if (!s) return json({ error: { code: 'NOT_FOUND' } }, 404);
+        return json(s);
+      }
+      if (req.method === 'POST') {
+        const body = await req.json();
+        const id = body.id || genId('FLX-B');
+        const [s] = await sb('/shipments', { method: 'POST', body: [{
+          id, user_id: user.id,
+          origin: body.origin, destination: body.destination,
+          carrier: body.carrier, container: body.container || '40HC',
+          price: body.price || 0, status: body.status || 'pending',
+          status_text: body.status_text || 'قيد الموافقة',
+          date: new Date().toISOString().slice(0, 10),
+        }]});
+        return json(s, 201);
+      }
+      if (req.method === 'PATCH' && segments[1]) {
+        const body = await req.json();
+        const [s] = await sb(`/shipments?id=eq.${segments[1]}&user_id=eq.${user.id}`, {
+          method: 'PATCH', body,
+        });
+        if (!s) return json({ error: { code: 'NOT_FOUND' } }, 404);
+        return json(s);
+      }
+      if (req.method === 'DELETE' && segments[1]) {
+        await sb(`/shipments?id=eq.${segments[1]}&user_id=eq.${user.id}`, { method: 'DELETE' });
+        return json({ ok: true });
+      }
     }
-    if (req.method === 'POST') {
-      const body = await req.json();
-      const id = body.id || genId('FLX-B');
-      const shipment = {
-        id, user_id: user.id,
-        origin: body.origin, destination: body.destination,
-        carrier: body.carrier, container: body.container || '40HC',
-        price: body.price || 0, status: body.status || 'pending',
-        status_text: body.status_text || 'قيد الموافقة',
-        date: new Date().toISOString().slice(0, 10),
-      };
-      memStore.shipments.set(id, shipment);
-      return json(shipment, 201);
-    }
-    if (req.method === 'PATCH' && segments[1]) {
-      const s = memStore.shipments.get(segments[1]);
-      if (!s || s.user_id !== user.id) return json({ error: { code: 'NOT_FOUND' } }, 404);
-      const body = await req.json();
-      Object.assign(s, body, { updated_at: new Date().toISOString() });
-      return json(s);
-    }
-  }
 
-  // ── Quotes ──
-  if (segments[0] === 'quotes') {
-    if (req.method === 'GET') return json(listResource('quotes'));
-    if (req.method === 'POST' && segments[2] === 'book') {
-      const q = memStore.quotes.get(segments[1]);
-      if (!q) return json({ error: { code: 'NOT_FOUND' } }, 404);
-      const shipmentId = genId('FLX-B');
-      const shipment = { id: shipmentId, user_id: user.id, origin: q.origin, destination: q.destination, carrier: q.carrier, container: '40HC', price: q.price, status: 'pending', status_text: 'قيد الموافقة', date: new Date().toISOString().slice(0, 10) };
-      memStore.shipments.set(shipmentId, shipment);
-      const invId = genId('INV');
-      const invoice = { id: invId, user_id: user.id, description: `شحن ${q.origin} → ${q.destination} · ${q.carrier}`, date: new Date().toISOString().slice(0, 10), amount: q.price + 580, status: 'pending' };
-      memStore.invoices.set(invId, invoice);
-      q.status = 'booked';
-      return json({ shipment, invoice }, 201);
-    }
-  }
+    // ── QUOTES ──
+    if (segments[0] === 'quotes') {
+      if (req.method === 'GET' && !segments[1]) {
+        const data = await sb(`/quotes?user_id=eq.${user.id}&select=*&order=created_at.desc`);
+        return json({ data, total: data.length, page: 1, limit: data.length });
+      }
+      if (req.method === 'POST' && !segments[1]) {
+        const body = await req.json();
+        const [q] = await sb('/quotes', { method: 'POST', body: [{
+          id: body.id || genId('Q'), user_id: user.id,
+          origin: body.origin, destination: body.destination,
+          carrier: body.carrier, container: body.container || '40HC',
+          price: body.price, valid_until: body.validUntil || body.valid_until,
+          status: 'valid',
+        }]});
+        return json(q, 201);
+      }
+      if (req.method === 'POST' && segments[2] === 'book') {
+        const [q] = await sb(`/quotes?id=eq.${segments[1]}&user_id=eq.${user.id}&select=*&limit=1`);
+        if (!q) return json({ error: { code: 'NOT_FOUND' } }, 404);
 
-  // ── Invoices ──
-  if (segments[0] === 'invoices') {
-    if (req.method === 'GET' && !segments[1]) return json(listResource('invoices'));
-    if (req.method === 'PATCH' && segments[1] && segments[2] === 'status') {
-      const i = memStore.invoices.get(segments[1]);
-      if (!i || i.user_id !== user.id) return json({ error: { code: 'NOT_FOUND' } }, 404);
-      const body = await req.json();
-      i.status = body.status;
-      if (body.status === 'paid') i.paid_at = new Date().toISOString();
-      return json(i);
-    }
-    if (req.method === 'GET' && segments[1] && segments[2] === 'data') {
-      const i = memStore.invoices.get(segments[1]);
-      if (!i || i.user_id !== user.id) return json({ error: { code: 'NOT_FOUND' } }, 404);
-      return json({ invoice: i, formatted: { number: i.id, amount: i.amount, vat_amount: i.amount - i.amount/1.15, subtotal: i.amount/1.15, vat_rate: 0.15 } });
-    }
-  }
+        // Create shipment
+        const shipmentId = genId('FLX-B');
+        const [shipment] = await sb('/shipments', { method: 'POST', body: [{
+          id: shipmentId, user_id: user.id,
+          origin: q.origin, destination: q.destination,
+          carrier: q.carrier, container: q.container || '40HC',
+          price: q.price, status: 'pending', status_text: 'قيد الموافقة',
+          date: new Date().toISOString().slice(0, 10),
+          source_quote_id: q.id,
+        }]});
 
-  // ── Documents ──
-  if (segments[0] === 'documents' && req.method === 'GET') {
-    return json(listResource('documents'));
-  }
+        // Create invoice
+        const invoiceId = genId('INV');
+        const [invoice] = await sb('/invoices', { method: 'POST', body: [{
+          id: invoiceId, user_id: user.id, shipment_id: shipmentId,
+          description: `شحن ${q.origin} → ${q.destination} · ${q.carrier}`,
+          amount: q.price + 580,
+          status: 'pending',
+        }]});
 
-  // ── Notifications ──
-  if (segments[0] === 'notifications') {
-    if (req.method === 'GET' && !segments[1]) {
-      const all = Array.from(memStore.notifications.values()).filter(n => n.user_id === user.id);
-      return json({ data: all, unread: all.filter(n => !n.read).length });
-    }
-    if (req.method === 'POST' && segments[1] === 'mark-read') {
-      Array.from(memStore.notifications.values())
-        .filter(n => n.user_id === user.id)
-        .forEach(n => n.read = true);
-      return json({ ok: true });
-    }
-  }
+        // Mark quote as booked
+        await sb(`/quotes?id=eq.${q.id}&user_id=eq.${user.id}`, {
+          method: 'PATCH', body: { status: 'booked' }, prefer: 'return=minimal',
+        });
 
-  // ── Admin ──
-  if (segments[0] === 'admin') {
-    if (segments[1] === 'stats') {
-      const ships = Array.from(memStore.shipments.values());
-      const invs = Array.from(memStore.invoices.values());
-      const paid = invs.filter(i => i.status === 'paid').reduce((s, i) => s + i.amount, 0);
-      return json({
-        totalRevenue: paid,
-        totalShipments: ships.length,
-        totalInvoices: invs.length,
-        totalUsers: memStore.users.size,
-        activeShipments: ships.filter(s => ['active','transit','pending'].includes(s.status)).length,
-      });
-    }
-  }
+        // Create notifications
+        await sb('/notifications', { method: 'POST', body: [
+          { user_id: user.id, type: 'success', text: `تم إنشاء شحنة <strong>${shipmentId}</strong> من العرض ${q.id}` },
+          { user_id: user.id, type: 'info', text: `فاتورة جديدة <strong>${invoiceId}</strong> قيد التسديد ($${(q.price + 580).toLocaleString()})` },
+        ], prefer: 'return=minimal' });
 
-  return json({ error: { code: 'NOT_FOUND', message: `${req.method} /${path} not found` } }, 404);
+        return json({ shipment, invoice }, 201);
+      }
+      if (req.method === 'DELETE' && segments[1]) {
+        await sb(`/quotes?id=eq.${segments[1]}&user_id=eq.${user.id}`, { method: 'DELETE' });
+        return json({ ok: true });
+      }
+    }
+
+    // ── INVOICES ──
+    if (segments[0] === 'invoices') {
+      if (req.method === 'GET' && !segments[1]) {
+        const data = await sb(`/invoices?user_id=eq.${user.id}&select=*&order=created_at.desc`);
+        return json({ data, total: data.length, page: 1, limit: data.length });
+      }
+      if (req.method === 'PATCH' && segments[1] && segments[2] === 'status') {
+        const body = await req.json();
+        const patch = { status: body.status };
+        if (body.status === 'paid') patch.paid_at = new Date().toISOString();
+        const [inv] = await sb(`/invoices?id=eq.${segments[1]}&user_id=eq.${user.id}`, {
+          method: 'PATCH', body: patch,
+        });
+        if (!inv) return json({ error: { code: 'NOT_FOUND' } }, 404);
+        if (body.status === 'paid') {
+          await sb('/notifications', { method: 'POST', body: [{
+            user_id: user.id, type: 'success',
+            text: `تم استلام دفعة <strong>$${(inv.amount).toLocaleString()}</strong> للفاتورة ${inv.id}`,
+          }], prefer: 'return=minimal' });
+        }
+        return json(inv);
+      }
+      if (req.method === 'GET' && segments[1] && segments[2] === 'data') {
+        const [inv] = await sb(`/invoices?id=eq.${segments[1]}&user_id=eq.${user.id}&select=*&limit=1`);
+        if (!inv) return json({ error: { code: 'NOT_FOUND' } }, 404);
+        return json({
+          invoice: inv,
+          formatted: {
+            number: inv.id, amount: inv.amount,
+            vat_amount: inv.amount - inv.amount / 1.15,
+            subtotal: inv.amount / 1.15, vat_rate: 0.15,
+          },
+        });
+      }
+    }
+
+    // ── DOCUMENTS ──
+    if (segments[0] === 'documents') {
+      if (req.method === 'GET' && !segments[1]) {
+        const data = await sb(`/documents?user_id=eq.${user.id}&select=*&order=created_at.desc`);
+        return json({ data, total: data.length, page: 1, limit: data.length });
+      }
+    }
+
+    // ── NOTIFICATIONS ──
+    if (segments[0] === 'notifications') {
+      if (req.method === 'GET' && !segments[1]) {
+        const data = await sb(`/notifications?user_id=eq.${user.id}&select=*&order=created_at.desc&limit=50`);
+        const unread = data.filter(n => !n.read).length;
+        return json({ data, unread });
+      }
+      if (req.method === 'POST' && segments[1] === 'mark-read') {
+        await sb(`/notifications?user_id=eq.${user.id}&read=eq.false`, {
+          method: 'PATCH', body: { read: true }, prefer: 'return=minimal',
+        });
+        return json({ ok: true });
+      }
+    }
+
+    // ── ADMIN ──
+    if (segments[0] === 'admin') {
+      // Verify admin role
+      const [profile] = await sb(`/profiles?id=eq.${user.id}&select=role&limit=1`);
+      if (!profile || !['admin', 'super_admin'].includes(profile.role)) {
+        return json({ error: { code: 'FORBIDDEN', message: 'Admin role required' } }, 403);
+      }
+
+      if (segments[1] === 'stats' && req.method === 'GET') {
+        const [shipments, invoices, profiles, quotes] = await Promise.all([
+          sb('/shipments?select=status,price'),
+          sb('/invoices?select=status,amount'),
+          sb('/profiles?select=id,status'),
+          sb('/quotes?select=status'),
+        ]);
+        const totalRevenue = invoices.filter(i => i.status === 'paid').reduce((s, i) => s + Number(i.amount), 0);
+        const pendingInvoices = invoices.filter(i => i.status === 'pending').length;
+        const activeShipments = shipments.filter(s => ['active','transit','pending'].includes(s.status)).length;
+        return json({
+          totalRevenue, pendingInvoices, activeShipments,
+          totalShipments: shipments.length,
+          totalInvoices: invoices.length,
+          totalQuotes: quotes.length,
+          totalUsers: profiles.length,
+        });
+      }
+
+      if (segments[1] === 'users' && req.method === 'GET') {
+        const users = await sb('/profiles?select=*&order=created_at.desc');
+        return json({ data: users, total: users.length });
+      }
+    }
+
+    return json({ error: { code: 'NOT_FOUND', message: `${req.method} /${path} not found` } }, 404);
+
+  } catch (err) {
+    console.error('API error:', err.message);
+    return json({ error: { code: 'INTERNAL_ERROR', message: err.message } }, 500);
+  }
 }
 
 export const config = { runtime: 'edge' };
