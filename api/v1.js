@@ -547,7 +547,7 @@ async function webHandler(req) {
       }
     }
     return json({
-      status: 'ok', version: '2.15.6', time: new Date().toISOString(),
+      status: 'ok', version: '2.15.7', time: new Date().toISOString(),
       services: {
         database: dbStatus, supabase_url: SUPABASE_URL,
         ai: process.env.GEMINI_API_KEY ? 'gemini' : process.env.OPENAI_API_KEY ? 'openai' : 'none',
@@ -1128,9 +1128,12 @@ async function webHandler(req) {
         if (!path) {
           return json({ error: { code: 'NO_PATH', message: 'document has no storage_path' } }, 422);
         }
-        // Try signed URL first (works for private buckets)
+        // Try signed URL first (works for private buckets).
+        // Important: do NOT URL-encode the slashes in the path — Supabase signs the raw path
+        // and would reject a URL-encoded path with InvalidSignature.
+        const encodedPath = path.split('/').map(seg => encodeURIComponent(seg)).join('/');
         try {
-          const r = await fetch(`${SUPABASE_URL}/storage/v1/object/sign/documents/${encodeURIComponent(path)}`, {
+          const r = await fetch(`${SUPABASE_URL}/storage/v1/object/sign/documents/${encodedPath}`, {
             method: 'POST',
             headers: {
               Authorization: `Bearer ${SUPABASE_SERVICE_KEY}`,
@@ -1148,8 +1151,8 @@ async function webHandler(req) {
             }
           }
         } catch {}
-        // Fall back to public URL
-        const publicUrl = `${SUPABASE_URL}/storage/v1/object/public/documents/${path}`;
+        // Fall back to public URL (only works if bucket is public)
+        const publicUrl = `${SUPABASE_URL}/storage/v1/object/public/documents/${encodedPath}`;
         return json({ url: publicUrl, name: doc.name, mime: doc.mime, public: true });
       }
       if (req.method === 'GET' && segments[1] && !segments[2]) {
