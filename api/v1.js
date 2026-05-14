@@ -94,42 +94,223 @@ async function seedUserData(userId) {
   }
 }
 
-// ── Freightify rate fetcher (best-effort with fallback) ──
-async function fetchFreightifyRates(reqBody) {
-  if (!FREIGHTIFY_API_KEY) return { source: 'no_credentials', offers: [] };
-  const bases = [FREIGHTIFY_BASE_URL, 'https://link.freightify.com', 'https://api.freightify.com'].filter(Boolean);
-  const paths = ['/v1/rates/search', '/api/v1/rates/search', '/v1/spot-rates/search'];
-  const payload = {
-    originPortCode: reqBody.originPort || reqBody.origin_port,
-    destinationPortCode: reqBody.destinationPort || reqBody.destination_port,
-    containerType: reqBody.containerType || reqBody.container_type || '40HC',
-    commodityCode: reqBody.commodityCode || reqBody.commodity_code || '8517',
-    cargoReadyDate: reqBody.cargoReadyDate || reqBody.cargo_ready_date || new Date(Date.now() + 7 * 86400000).toISOString().slice(0, 10),
-    incoterms: reqBody.incoterms || 'FOB',
-    weight: reqBody.cargo_weight_kg || reqBody.weight,
-    volume: reqBody.cargo_volume_m3 || reqBody.volume,
-  };
-  for (const base of bases) {
-    for (const p of paths) {
+// ─── Freightify integration (OAuth2 + v4 /prices) ───────────────────
+// Token cache (module-scope; survives warm Edge invocations)
+let _fxToken = null;
+let _fxTokenExpiry = 0;
+
+const FX_BASE = FREIGHTIFY_BASE_URL || 'https://api.freightify.com';
+
+/** Fetch OAuth2 access_token using client_credentials. Tries multiple endpoint/body patterns. */
+async function fxGetToken(force = false) {
+  if (!force && _fxToken && Date.now() < _fxTokenExpiry - 30_000) return _fxToken;
+  if (!FREIGHTIFY_CUSTOMER_ID || !FREIGHTIFY_CLIENT_SECRET) {
+    throw new Error('Freightify credentials not configured (CUSTOMER_ID / CLIENT_SECRET)');
+  }
+  // Common token URL patterns
+  const tokenPaths = [
+    '/oauth/token',
+    '/v1/oauth/token',
+    '/v1/auth/token',
+    '/auth/oauth/token',
+    '/auth/token',
+    '/oauth2/token',
+  ];
+  // Body variations (different vendors use different naming)
+  const bodyVariants = [
+    { customer_id: FREIGHTIFY_CUSTOMER_ID, client_secret: FREIGHTIFY_CLIENT_SECRET, grant_type: 'client_credentials' },
+    { client_id: FREIGHTIFY_CUSTOMER_ID, client_secret: FREIGHTIFY_CLIENT_SECRET, grant_type: 'client_credentials' },
+    { customerId: FREIGHTIFY_CUSTOMER_ID, clientSecret: FREIGHTIFY_CLIENT_SECRET, grantType: 'client_credentials' },
+  ];
+  let lastErr = null;
+  for (const path of tokenPaths) {
+    for (const body of bodyVariants) {
       try {
-        const r = await fetch(`${base}${p}`, {
+        const r = await fetch(`${FX_BASE}${path}`, {
           method: 'POST',
           headers: {
-            'Content-Type': 'application/json', Accept: 'application/json',
-            'X-API-Key': FREIGHTIFY_API_KEY, apikey: FREIGHTIFY_API_KEY,
-            ...(FREIGHTIFY_CUSTOMER_ID ? { 'X-Customer-Id': FREIGHTIFY_CUSTOMER_ID } : {}),
+            'Content-Type': 'application/json',
+            Accept: 'application/json',
+            'x-api-key': FREIGHTIFY_API_KEY,
           },
-          body: JSON.stringify(payload),
+          body: JSON.stringify(body),
         });
-        if (!r.ok) continue;
-        const data = await r.json().catch(() => null);
-        if (!data) continue;
-        const offers = data.rates || data.offers || data.results || data.data || (Array.isArray(data) ? data : null);
-        if (Array.isArray(offers) && offers.length > 0) return { source: 'freightify', base, path: p, offers };
-      } catch {}
+        const text = await r.text();
+        if (!r.ok) { lastErr = `${path}: HTTP ${r.status} ${text.slice(0, 150)}`; continue; }
+        let data;
+        try { data = JSON.parse(text); } catch { continue; }
+        const token = data.access_token || data.accessToken || data.token || data.id_token || data.jwt;
+        const exp   = data.expires_in   || data.expiresIn   || 3600;
+        if (token) {
+          _fxToken = token;
+          _fxTokenExpiry = Date.now() + exp * 1000;
+          return token;
+        }
+        lastErr = `${path}: no token field in ${Object.keys(data).join(',')}`;
+      } catch (e) {
+        lastErr = `${path}: ${e.message}`;
+      }
     }
   }
-  return { source: 'no_response', offers: [] };
+  // Try Basic auth as alternative (some APIs use it for token exchange)
+  try {
+    const basic = btoa(`${FREIGHTIFY_CUSTOMER_ID}:${FREIGHTIFY_CLIENT_SECRET}`);
+    const r = await fetch(`${FX_BASE}/oauth/token`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+        Authorization: `Basic ${basic}`,
+        'x-api-key': FREIGHTIFY_API_KEY,
+      },
+      body: 'grant_type=client_credentials',
+    });
+    if (r.ok) {
+      const data = await r.json();
+      const token = data.access_token || data.token;
+      if (token) {
+        _fxToken = token;
+        _fxTokenExpiry = Date.now() + (data.expires_in || 3600) * 1000;
+        return token;
+      }
+    } else {
+      lastErr = `basic /oauth/token: HTTP ${r.status}`;
+    }
+  } catch (e) { lastErr = `basic auth: ${e.message}`; }
+
+  throw new Error('Freightify auth failed: ' + (lastErr || 'unknown'));
+}
+
+/** Build query string for v4/prices per the OpenAPI spec. */
+function fxBuildPricesQuery(reqBody) {
+  const mode = (reqBody.mode || 'FCL').toUpperCase();
+  const origin = reqBody.originPort || reqBody.origin_port;
+  const dest   = reqBody.destinationPort || reqBody.destination_port;
+  const ctype  = (reqBody.containerType || reqBody.container_type || '40HC').toUpperCase();
+  const qty    = reqBody.numContainers || 1;
+  const weight = reqBody.cargoWeightKg || reqBody.weight || 15000;
+  const ready  = reqBody.cargoReadyDate || reqBody.cargo_ready_date ||
+                 new Date(Date.now() + 7 * 86400000).toISOString().slice(0, 10);
+
+  // Freightify Master Load format: 1X40HCX25000XKG  →  {qty}X{type}X{weight}X{unit}
+  const containerLoad = `${qty}X${ctype}X${weight}XKG`;
+
+  const params = new URLSearchParams();
+  params.append('mode', mode);
+  params.append('origins', origin);
+  params.append('destinations', dest);
+  params.append('serviceModeOrigin', reqBody.serviceModeOrigin || 'CY');
+  params.append('serviceModeDestination', reqBody.serviceModeDestination || 'CY');
+  params.append('cargoReadyDateFrom', ready);
+  if (mode === 'FCL') {
+    params.append('containers', containerLoad);
+  } else if (mode === 'LCL') {
+    params.append('cargoWeight', `${weight}XKG`);
+    if (reqBody.cargoVolumeM3 || reqBody.volume) {
+      params.append('cargoVolume', `${reqBody.cargoVolumeM3 || reqBody.volume}XCBM`);
+    }
+  }
+  params.append('documentsQuantityBL', '1');
+  return params.toString();
+}
+
+/** Normalize a Freightify v4 offer into our internal shape. */
+function fxNormalizeOffer(raw, fallbackRoute) {
+  // Drill into common shapes — actual response can be { rates: [...] } or nested
+  const carrier = raw.carrier || raw.carrierName || raw.carrierCode || raw.shippingLine || {};
+  const carrierName = (typeof carrier === 'string' ? carrier : carrier.name || carrier.carrierName || carrier.code || raw.carrierName || 'Unknown');
+  const carrierCode = (typeof carrier === 'object' ? carrier.code || carrier.scac : raw.carrierCode || raw.scac);
+  const total = raw.totalPrice || raw.total || raw.netRate || raw.allInRate || raw.amount || raw.sellAmount || raw.buyAmount || raw.price ||
+                (raw.charges ? raw.charges.reduce((s, c) => s + (parseFloat(c.amount) || 0), 0) : 0);
+  return {
+    carrier_code: carrierCode,
+    carrier_name: carrierName,
+    vessel: raw.vesselName || raw.vessel || `${carrierName} EXP`,
+    route: raw.routing || raw.route || fallbackRoute,
+    transit_days: parseInt(raw.transitTime || raw.transit_days || raw.tt || raw.transitDays || 0) || 25,
+    price: parseFloat(total) || 0,
+    currency: raw.currency || raw.totalCurrency || 'USD',
+    validity_until: (raw.validityTo || raw.validUntil || raw.validity || '').toString().slice(0, 10) || null,
+    etd: (raw.etd || raw.departureDate || '').toString().slice(0, 10) || null,
+    eta: (raw.eta || raw.arrivalDate || '').toString().slice(0, 10) || null,
+    service_type: raw.serviceType || raw.routingType || (raw.transhipment ? 'T/S' : 'Direct'),
+    free_days: parseInt(raw.freeDaysAtDestination || raw.freeDays || 10),
+    is_direct: !raw.transhipment && (raw.serviceType !== 'T/S'),
+    raw,
+  };
+}
+
+/** Poll the v4 status endpoint until offers are ready (max 10 attempts × 1s). */
+async function fxPollStatus(reqId, token) {
+  for (let i = 0; i < 10; i++) {
+    await new Promise(r => setTimeout(r, 1000));
+    const r = await fetch(`${FX_BASE}/v4/prices/status/${reqId}`, {
+      headers: { 'x-api-key': FREIGHTIFY_API_KEY, Authorization: `Bearer ${token}` },
+    });
+    if (!r.ok) continue;
+    const s = await r.json().catch(() => ({}));
+    if (s.status === 'COMPLETED' || s.status === 'completed' || s.ready === true) return true;
+  }
+  return false;
+}
+
+/** Main: call Freightify v4 /prices and return normalized offers. */
+async function fetchFreightifyRates(reqBody) {
+  if (!FREIGHTIFY_API_KEY || !FREIGHTIFY_CUSTOMER_ID) {
+    return { source: 'no_credentials', offers: [], error: 'API key or Customer ID missing' };
+  }
+  const trace = { steps: [] };
+  try {
+    const token = await fxGetToken();
+    trace.steps.push('token_ok');
+
+    const query = fxBuildPricesQuery(reqBody);
+    const url = `${FX_BASE}/v4/prices?${query}`;
+    trace.steps.push('query_built');
+
+    const r = await fetch(url, {
+      method: 'GET',
+      headers: {
+        'x-api-key': FREIGHTIFY_API_KEY,
+        Authorization: `Bearer ${token}`,
+        Accept: 'application/json',
+      },
+    });
+    const text = await r.text();
+    trace.steps.push(`prices_${r.status}`);
+    if (!r.ok) {
+      return { source: 'freightify_error', offers: [], error: `HTTP ${r.status}: ${text.slice(0, 300)}`, trace, url };
+    }
+    let data;
+    try { data = JSON.parse(text); } catch { return { source: 'freightify_invalid_json', offers: [], error: 'invalid JSON', trace }; }
+
+    let offers = data.rates || data.offers || data.prices || data.results || data.data || (Array.isArray(data) ? data : null);
+
+    // Async pattern: server returned a reqId → poll for completion
+    if ((!offers || offers.length === 0) && (data.reqId || data.requestId)) {
+      const reqId = data.reqId || data.requestId;
+      trace.steps.push('polling_' + reqId);
+      const ready = await fxPollStatus(reqId, token);
+      if (ready) {
+        const r2 = await fetch(`${FX_BASE}/v4/prices/${reqId}`, {
+          headers: { 'x-api-key': FREIGHTIFY_API_KEY, Authorization: `Bearer ${token}`, Accept: 'application/json' },
+        });
+        if (r2.ok) {
+          const d2 = await r2.json().catch(() => ({}));
+          offers = d2.rates || d2.offers || d2.prices || d2.results || d2.data || (Array.isArray(d2) ? d2 : null);
+          trace.steps.push('polled_ok');
+        }
+      }
+    }
+
+    if (!Array.isArray(offers) || offers.length === 0) {
+      return { source: 'freightify_empty', offers: [], error: 'no offers in response', trace, sample: text.slice(0, 500) };
+    }
+    const fallbackRoute = `${reqBody.originPort || reqBody.origin_port} → ${reqBody.destinationPort || reqBody.destination_port}`;
+    return { source: 'freightify', offers: offers.map(o => fxNormalizeOffer(o, fallbackRoute)), trace };
+
+  } catch (err) {
+    return { source: 'freightify_exception', offers: [], error: err.message, trace };
+  }
 }
 
 // Build offers from active carriers in DB (real carriers, computed pricing)
@@ -181,7 +362,7 @@ export default async function handler(req) {
       }
     }
     return json({
-      status: 'ok', version: '2.1.0', time: new Date().toISOString(),
+      status: 'ok', version: '2.2.0', time: new Date().toISOString(),
       services: {
         database: dbStatus, supabase_url: SUPABASE_URL,
         ai: process.env.GEMINI_API_KEY ? 'gemini' : process.env.OPENAI_API_KEY ? 'openai' : 'none',
@@ -189,6 +370,60 @@ export default async function handler(req) {
         carriers_count: carrierCount,
       },
     });
+  }
+
+  // ── Freightify diagnostic (admin or public for debugging) ──
+  if (segments[0] === 'freightify' && segments[1] === 'diagnose' && req.method === 'GET') {
+    const result = {
+      env: {
+        has_api_key: !!FREIGHTIFY_API_KEY,
+        has_customer_id: !!FREIGHTIFY_CUSTOMER_ID,
+        has_client_secret: !!FREIGHTIFY_CLIENT_SECRET,
+        base_url: FX_BASE,
+        api_key_len: FREIGHTIFY_API_KEY.length,
+      },
+      checks: {},
+    };
+    // Step 1: token
+    try {
+      const t = await fxGetToken(true);
+      result.checks.token = { ok: true, length: t.length, prefix: t.slice(0, 20) + '…' };
+    } catch (e) {
+      result.checks.token = { ok: false, error: e.message };
+    }
+    // Step 2: ping carriers endpoint (small probe)
+    if (result.checks.token?.ok) {
+      try {
+        const r = await fetch(`${FX_BASE}/v1/carriers`, {
+          headers: {
+            'x-api-key': FREIGHTIFY_API_KEY,
+            Authorization: `Bearer ${_fxToken}`,
+            Accept: 'application/json',
+          },
+        });
+        const text = await r.text();
+        result.checks.carriers_endpoint = {
+          status: r.status, ok: r.ok,
+          body_preview: text.slice(0, 300),
+        };
+      } catch (e) {
+        result.checks.carriers_endpoint = { ok: false, error: e.message };
+      }
+    }
+    // Step 3: sample /v4/prices call
+    if (result.checks.token?.ok) {
+      try {
+        const sample = { originPort: 'CNSHA', destinationPort: 'SAJED', containerType: '40HC', mode: 'FCL', numContainers: 1, cargoWeightKg: 15000 };
+        const res = await fetchFreightifyRates(sample);
+        result.checks.sample_prices = {
+          source: res.source, offers_count: (res.offers || []).length,
+          error: res.error, trace: res.trace, sample_response: res.sample,
+        };
+      } catch (e) {
+        result.checks.sample_prices = { ok: false, error: e.message };
+      }
+    }
+    return json(result);
   }
 
   // ── Public carriers list (full brand info, no auth required) ──
@@ -237,28 +472,35 @@ export default async function handler(req) {
         const t0 = Date.now();
         const requestId = genId('RR');
 
-        let result = await fetchFreightifyRates(body);
-        let usedSource = result.source;
+        // 1) Try Freightify (now fully normalized by fetchFreightifyRates)
+        const fxResult = await fetchFreightifyRates(body);
+        let usedSource = fxResult.source;
         let normalized;
+        let freightifyDebug = null;
 
-        if (result.offers.length > 0) {
-          normalized = result.offers.map(r => ({
-            carrier_name: r.carrierName || r.carrier || r.shippingLine || 'Carrier',
-            route: `${r.originPortCode || body.originPort} → ${r.destinationPortCode || body.destinationPort}`,
-            transit_days: r.transitTime || r.transit_days || 25,
-            price: parseFloat(r.totalPrice || r.price || r.netRate || 0),
-            currency: r.currency || 'USD',
-            validity_until: (r.validityTo || r.validUntil || '').toString().slice(0, 10) || null,
-            vessel: r.vesselName || r.vessel || `${r.carrierName || 'Vessel'} EXP`,
-            etd: (r.etd || '').toString().slice(0, 10) || null,
-            eta: (r.eta || '').toString().slice(0, 10) || null,
-            service_type: r.routingType || (r.transhipment ? 'T/S' : 'Direct'),
-            free_days: r.freeDaysAtDestination || r.freeDays || 10,
-            is_direct: !r.transhipment,
-          })).filter(o => o.price > 0).sort((a, b) => a.price - b.price);
+        if (fxResult.offers && fxResult.offers.length > 0) {
+          // Sort by price; enrich missing fields via carriers DB
+          let cars = [];
+          try { cars = await sb('/carriers?active=eq.true&select=code,name,brand_color,logo_url,country'); } catch {}
+          const byCode = new Map(cars.map(c => [c.code, c]));
+          const byName = new Map(cars.map(c => [c.name.toLowerCase(), c]));
+          normalized = fxResult.offers
+            .map(o => {
+              const c = byCode.get(o.carrier_code) || byName.get((o.carrier_name || '').toLowerCase());
+              return {
+                ...o,
+                carrier_logo: o.carrier_logo || c?.logo_url,
+                brand_color: o.brand_color || c?.brand_color,
+                country: o.country || c?.country,
+              };
+            })
+            .filter(o => o.price > 0)
+            .sort((a, b) => a.price - b.price);
         } else {
+          // 2) Fallback to carriers-DB-based offers
           normalized = await buildOffersFromCarriers(body);
           usedSource = 'carriers_db';
+          freightifyDebug = { reason: fxResult.source, error: fxResult.error, trace: fxResult.trace };
         }
 
         await sb('/rate_requests', { method: 'POST', body: [{
@@ -294,6 +536,7 @@ export default async function handler(req) {
           request_id: requestId, source: usedSource,
           offers: normalized, total: normalized.length,
           duration_ms: Date.now() - t0,
+          ...(freightifyDebug ? { freightify_fallback_reason: freightifyDebug } : {}),
         });
       }
 
