@@ -128,6 +128,7 @@ async function fxGetToken(force = false) {
   body.set('grant_type', 'password');
   body.set('username', FREIGHTIFY_USERNAME);
   body.set('password', FREIGHTIFY_PASSWORD);
+  body.set('scope', '*'); // Freightify OpenAPI declares scope "*"
 
   // Hard 6-second timeout to avoid Vercel edge gateway timeouts
   const controller = new AbortController();
@@ -385,7 +386,7 @@ export default async function handler(req) {
       }
     }
     return json({
-      status: 'ok', version: '2.4.6', time: new Date().toISOString(),
+      status: 'ok', version: '2.4.7', time: new Date().toISOString(),
       services: {
         database: dbStatus, supabase_url: SUPABASE_URL,
         ai: process.env.GEMINI_API_KEY ? 'gemini' : process.env.OPENAI_API_KEY ? 'openai' : 'none',
@@ -505,10 +506,10 @@ export default async function handler(req) {
       result.checks.probes.push({ name: 'apikey_only', error: e.name === 'AbortError' ? 'timeout_6s' : e.message });
     }
 
-    // Probe C: Bearer + x-api-key (full auth)
+    // Probe C: Bearer + x-api-key (full auth, with scope=*)
     try {
       const c = new AbortController();
-      const tid = setTimeout(() => c.abort(), 6000);
+      const tid = setTimeout(() => c.abort(), 5000);
       const t0 = Date.now();
       const r = await fetch(`${FX_BASE}/v3/prices?${query}`, {
         headers: {
@@ -521,12 +522,35 @@ export default async function handler(req) {
       }).finally(() => clearTimeout(tid));
       const text = await r.text();
       result.checks.probes.push({
-        name: 'full_auth',
+        name: 'bearer_plus_apikey',
         status: r.status, duration_ms: Date.now() - t0,
         body_preview: text.slice(0, 500),
       });
     } catch (e) {
-      result.checks.probes.push({ name: 'full_auth', error: e.name === 'AbortError' ? 'timeout_6s' : e.message });
+      result.checks.probes.push({ name: 'bearer_plus_apikey', error: e.name === 'AbortError' ? 'timeout_5s' : e.message });
+    }
+
+    // Probe D: Bearer only (no x-api-key)
+    try {
+      const c = new AbortController();
+      const tid = setTimeout(() => c.abort(), 5000);
+      const t0 = Date.now();
+      const r = await fetch(`${FX_BASE}/v3/prices?${query}`, {
+        headers: {
+          Authorization: `Bearer ${_fxToken}`,
+          Accept: 'application/json',
+          'User-Agent': 'freightlx-probe-bearer-only',
+        },
+        signal: c.signal,
+      }).finally(() => clearTimeout(tid));
+      const text = await r.text();
+      result.checks.probes.push({
+        name: 'bearer_only',
+        status: r.status, duration_ms: Date.now() - t0,
+        body_preview: text.slice(0, 500),
+      });
+    } catch (e) {
+      result.checks.probes.push({ name: 'bearer_only', error: e.name === 'AbortError' ? 'timeout_5s' : e.message });
     }
     return json(result);
   }
