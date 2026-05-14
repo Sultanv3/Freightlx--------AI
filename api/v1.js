@@ -215,27 +215,65 @@ function fxBuildPricesQuery(reqBody) {
 
 /** Normalize a Freightify v4 offer into our internal shape. */
 function fxNormalizeOffer(raw, fallbackRoute) {
-  // Drill into common shapes — actual response can be { rates: [...] } or nested
-  const carrier = raw.carrier || raw.carrierName || raw.carrierCode || raw.shippingLine || {};
-  const carrierName = (typeof carrier === 'string' ? carrier : carrier.name || carrier.carrierName || carrier.code || raw.carrierName || 'Unknown');
-  const carrierCode = (typeof carrier === 'object' ? carrier.code || carrier.scac : raw.carrierCode || raw.scac);
-  const total = raw.totalPrice || raw.total || raw.netRate || raw.allInRate || raw.amount || raw.sellAmount || raw.buyAmount || raw.price ||
-                (raw.charges ? raw.charges.reduce((s, c) => s + (parseFloat(c.amount) || 0), 0) : 0);
+  // Freightify v4 shape: { _id, meta: { origins, destinations }, carrier, charges, transitTime, etd, eta, ... }
+  const meta = raw.meta || {};
+  const originObj = (meta.origins && meta.origins[0]) || {};
+  const destObj = (meta.destinations && meta.destinations[0]) || {};
+  const polObj = (meta.pols && meta.pols[0]) || originObj;
+  const podObj = (meta.pods && meta.pods[0]) || destObj;
+  const route = `${polObj.code || originObj.code || ''} → ${podObj.code || destObj.code || ''}` || fallbackRoute;
+
+  // Carrier — multiple possible locations
+  const carrier = raw.carrier || raw.shippingLine || raw.mainCarrier || raw.serviceProvider || meta.carrier || {};
+  const carrierName = (typeof carrier === 'string' ? carrier
+    : carrier.name || carrier.carrierName || carrier.scacName || carrier.shortName
+    || raw.carrierName || raw.scacName || 'Unknown');
+  const carrierCode = (typeof carrier === 'object'
+    ? carrier.code || carrier.scac || carrier.scacCode
+    : raw.carrierCode || raw.scac || raw.scacCode);
+
+  // Price extraction — Freightify uses charges[] arrays + totalPrice
+  let totalPrice = raw.totalPrice || raw.total || raw.netRate || raw.allInRate ||
+                   raw.sellAmount || raw.buyAmount || raw.amount || raw.price || 0;
+  let currency = raw.currency || raw.totalCurrency || raw.sellCurrency || raw.buyCurrency;
+  if (!totalPrice && Array.isArray(raw.charges)) {
+    totalPrice = raw.charges.reduce((s, c) => s + (parseFloat(c.sellAmount || c.amount || c.value || 0)), 0);
+    currency = currency || raw.charges[0]?.sellCurrency || raw.charges[0]?.currency;
+  }
+  if (!totalPrice && raw.priceBreakdown) {
+    const pb = raw.priceBreakdown;
+    totalPrice = parseFloat(pb.totalSellAmount || pb.totalBuyAmount || pb.total || 0);
+    currency = currency || pb.currency;
+  }
+  if (!totalPrice && raw.totalSellAmount) totalPrice = parseFloat(raw.totalSellAmount);
+
+  // Transit time
+  const transit = parseInt(raw.transitTime || raw.transit_days || raw.tt
+    || raw.transitDays || meta.transitTime || 0) || 25;
+
+  // Dates
+  const etd = raw.etd || raw.departureDate || raw.cargoReadyDate || meta.etd;
+  const eta = raw.eta || raw.arrivalDate || meta.eta;
+
+  // Routing/service
+  const isDirect = !raw.transhipment && raw.routingType !== 'T/S'
+    && (raw.serviceType !== 'T/S') && !(raw.viaPorts && raw.viaPorts.length > 0);
+
   return {
     carrier_code: carrierCode,
     carrier_name: carrierName,
-    vessel: raw.vesselName || raw.vessel || `${carrierName} EXP`,
-    route: raw.routing || raw.route || fallbackRoute,
-    transit_days: parseInt(raw.transitTime || raw.transit_days || raw.tt || raw.transitDays || 0) || 25,
-    price: parseFloat(total) || 0,
-    currency: raw.currency || raw.totalCurrency || 'USD',
-    validity_until: (raw.validityTo || raw.validUntil || raw.validity || '').toString().slice(0, 10) || null,
-    etd: (raw.etd || raw.departureDate || '').toString().slice(0, 10) || null,
-    eta: (raw.eta || raw.arrivalDate || '').toString().slice(0, 10) || null,
+    vessel: raw.vesselName || raw.vessel || raw.feederVessel || `${carrierName} Service`,
+    route,
+    transit_days: transit,
+    price: parseFloat(totalPrice) || 0,
+    currency: currency || 'USD',
+    validity_until: (raw.validityTo || raw.validUntil || raw.validity || raw.rateValidity || '').toString().slice(0, 10) || null,
+    etd: etd ? etd.toString().slice(0, 10) : null,
+    eta: eta ? eta.toString().slice(0, 10) : null,
     service_type: raw.serviceType || raw.routingType || (raw.transhipment ? 'T/S' : 'Direct'),
-    free_days: parseInt(raw.freeDaysAtDestination || raw.freeDays || 10),
-    is_direct: !raw.transhipment && (raw.serviceType !== 'T/S'),
-    raw,
+    free_days: parseInt(raw.freeDaysAtDestination || raw.freeDays || meta.freeDays || 10),
+    is_direct: isDirect,
+    raw_id: raw._id || raw.id,
   };
 }
 
@@ -283,20 +321,26 @@ async function fetchFreightifyRates(reqBody) {
     let data;
     try { data = JSON.parse(text); } catch { return { source: 'freightify_invalid_json', offers: [], error: 'invalid JSON', trace }; }
 
-    let offers = data.rates || data.offers || data.prices || data.results || data.data || (Array.isArray(data) ? data : null);
+    // Freightify v4 nests offers in data.data.offers
+    let offers = (data.data && data.data.offers) || (data.data && data.data.rates) ||
+                 data.rates || data.offers || data.prices || data.results ||
+                 (Array.isArray(data.data) ? data.data : null) ||
+                 (Array.isArray(data) ? data : null);
 
     // Async pattern: server returned a reqId → poll for completion
-    if ((!offers || offers.length === 0) && (data.reqId || data.requestId)) {
-      const reqId = data.reqId || data.requestId;
-      trace.steps.push('polling_' + reqId);
-      const ready = await fxPollStatus(reqId, token);
+    const reqIdField = data.reqId || data.requestId || (data.data && (data.data.reqId || data.data.requestId));
+    if ((!offers || offers.length === 0) && reqIdField) {
+      trace.steps.push('polling_' + reqIdField);
+      const ready = await fxPollStatus(reqIdField, token);
       if (ready) {
-        const r2 = await fetch(`${FX_BASE}/v4/prices/${reqId}`, {
+        const r2 = await fetch(`${FX_BASE}/v4/prices/${reqIdField}`, {
           headers: { 'x-api-key': FREIGHTIFY_API_KEY, Authorization: `Bearer ${token}`, Accept: 'application/json' },
         });
         if (r2.ok) {
           const d2 = await r2.json().catch(() => ({}));
-          offers = d2.rates || d2.offers || d2.prices || d2.results || d2.data || (Array.isArray(d2) ? d2 : null);
+          offers = (d2.data && d2.data.offers) || d2.rates || d2.offers || d2.prices ||
+                   d2.results || (Array.isArray(d2.data) ? d2.data : null) ||
+                   (Array.isArray(d2) ? d2 : null);
           trace.steps.push('polled_ok');
         }
       }
@@ -362,7 +406,7 @@ export default async function handler(req) {
       }
     }
     return json({
-      status: 'ok', version: '2.2.0', time: new Date().toISOString(),
+      status: 'ok', version: '2.3.0', time: new Date().toISOString(),
       services: {
         database: dbStatus, supabase_url: SUPABASE_URL,
         ai: process.env.GEMINI_API_KEY ? 'gemini' : process.env.OPENAI_API_KEY ? 'openai' : 'none',
