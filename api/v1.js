@@ -229,18 +229,25 @@ function fxNormalizeOffer(raw, fallbackRoute) {
   };
 }
 
-/** Poll the v4 status endpoint until offers are ready (max 10 attempts × 1s). */
-async function fxPollStatus(reqId, token) {
-  for (let i = 0; i < 10; i++) {
-    await new Promise(r => setTimeout(r, 1000));
-    const r = await fetch(`${FX_BASE}/v3/prices/status/${reqId}`, {
-      headers: { 'x-api-key': FREIGHTIFY_API_KEY, Authorization: `Bearer ${token}` },
-    });
-    if (!r.ok) continue;
-    const s = await r.json().catch(() => ({}));
-    if (s.status === 'COMPLETED' || s.status === 'completed' || s.ready === true) return true;
+/** Poll /v3/prices/{reqId} for offers — max 3 attempts × 1.2s ≈ 4s total. */
+async function fxPollOffers(reqId, token) {
+  for (let i = 0; i < 3; i++) {
+    await new Promise(r => setTimeout(r, 1200));
+    try {
+      const r = await fetch(`${FX_BASE}/v3/prices/${reqId}?offset=0&limit=20`, {
+        headers: {
+          'x-api-key': FREIGHTIFY_API_KEY,
+          Authorization: `Bearer ${token}`,
+          Accept: 'application/json',
+        },
+      });
+      if (!r.ok) continue;
+      const d = await r.json().catch(() => ({}));
+      const offers = d.offers || (d.data && d.data.offers);
+      if (Array.isArray(offers) && offers.length > 0) return offers;
+    } catch {}
   }
-  return false;
+  return null;
 }
 
 /** Main: call Freightify v4 /prices and return normalized offers. */
@@ -279,22 +286,14 @@ async function fetchFreightifyRates(reqBody) {
                  (Array.isArray(data.data) ? data.data : null) ||
                  (Array.isArray(data) ? data : null);
 
-    // Async pattern: server returned a reqId → poll for completion
+    // Async pattern: server returned reqId with empty/partial offers → poll for fuller list
     const reqIdField = data.reqId || data.requestId || (data.data && (data.data.reqId || data.data.requestId));
     if ((!offers || offers.length === 0) && reqIdField) {
       trace.steps.push('polling_' + reqIdField);
-      const ready = await fxPollStatus(reqIdField, token);
-      if (ready) {
-        const r2 = await fetch(`${FX_BASE}/v3/prices/${reqIdField}`, {
-          headers: { 'x-api-key': FREIGHTIFY_API_KEY, Authorization: `Bearer ${token}`, Accept: 'application/json' },
-        });
-        if (r2.ok) {
-          const d2 = await r2.json().catch(() => ({}));
-          offers = (d2.data && d2.data.offers) || d2.rates || d2.offers || d2.prices ||
-                   d2.results || (Array.isArray(d2.data) ? d2.data : null) ||
-                   (Array.isArray(d2) ? d2 : null);
-          trace.steps.push('polled_ok');
-        }
+      const polled = await fxPollOffers(reqIdField, token);
+      if (Array.isArray(polled) && polled.length > 0) {
+        offers = polled;
+        trace.steps.push('polled_ok');
       }
     }
 
@@ -358,7 +357,7 @@ export default async function handler(req) {
       }
     }
     return json({
-      status: 'ok', version: '2.4.0', time: new Date().toISOString(),
+      status: 'ok', version: '2.4.1', time: new Date().toISOString(),
       services: {
         database: dbStatus, supabase_url: SUPABASE_URL,
         ai: process.env.GEMINI_API_KEY ? 'gemini' : process.env.OPENAI_API_KEY ? 'openai' : 'none',
@@ -375,49 +374,47 @@ export default async function handler(req) {
         has_api_key: !!FREIGHTIFY_API_KEY,
         has_customer_id: !!FREIGHTIFY_CUSTOMER_ID,
         has_client_secret: !!FREIGHTIFY_CLIENT_SECRET,
+        has_username: !!FREIGHTIFY_USERNAME,
+        has_password: !!FREIGHTIFY_PASSWORD,
         base_url: FX_BASE,
         api_key_len: FREIGHTIFY_API_KEY.length,
+        username_hint: FREIGHTIFY_USERNAME ? FREIGHTIFY_USERNAME.replace(/(.{3}).+(@.+)/, '$1***$2') : null,
       },
       checks: {},
     };
     // Step 1: token
     try {
       const t = await fxGetToken(true);
-      result.checks.token = { ok: true, length: t.length, prefix: t.slice(0, 20) + '…' };
+      result.checks.token = { ok: true, length: t.length, prefix: t.slice(0, 24) + '…' };
     } catch (e) {
       result.checks.token = { ok: false, error: e.message };
+      return json(result);
     }
-    // Step 2: ping carriers endpoint (small probe)
-    if (result.checks.token?.ok) {
-      try {
-        const r = await fetch(`${FX_BASE}/v1/carriers`, {
-          headers: {
-            'x-api-key': FREIGHTIFY_API_KEY,
-            Authorization: `Bearer ${_fxToken}`,
-            Accept: 'application/json',
-          },
-        });
-        const text = await r.text();
-        result.checks.carriers_endpoint = {
-          status: r.status, ok: r.ok,
-          body_preview: text.slice(0, 300),
-        };
-      } catch (e) {
-        result.checks.carriers_endpoint = { ok: false, error: e.message };
-      }
-    }
-    // Step 3: sample /v3/prices call
-    if (result.checks.token?.ok) {
-      try {
-        const sample = { originPort: 'CNSHA', destinationPort: 'SAJED', containerType: '40HC', mode: 'FCL', numContainers: 1, cargoWeightKg: 15000 };
-        const res = await fetchFreightifyRates(sample);
-        result.checks.sample_prices = {
-          source: res.source, offers_count: (res.offers || []).length,
-          error: res.error, trace: res.trace, sample_response: res.sample,
-        };
-      } catch (e) {
-        result.checks.sample_prices = { ok: false, error: e.message };
-      }
+    // Step 2: quick /v3/prices probe (NO polling — captures first response only)
+    try {
+      const query = fxBuildPricesQuery({
+        originPort: 'CNSHA', destinationPort: 'SAJED', containerType: '40HC', mode: 'FCL',
+      });
+      const r = await fetch(`${FX_BASE}/v3/prices?${query}`, {
+        headers: {
+          'x-api-key': FREIGHTIFY_API_KEY,
+          Authorization: `Bearer ${_fxToken}`,
+          Accept: 'application/json',
+        },
+      });
+      const text = await r.text();
+      let parsed = null;
+      try { parsed = JSON.parse(text); } catch {}
+      result.checks.prices_endpoint = {
+        status: r.status, ok: r.ok,
+        reqId: parsed?.reqId || parsed?.requestId || null,
+        totalOffers: parsed?.totalOffers || 0,
+        offers_in_first_response: (parsed?.offers || []).length,
+        body_preview: text.slice(0, 800),
+        query_string: query,
+      };
+    } catch (e) {
+      result.checks.prices_endpoint = { ok: false, error: e.message };
     }
     return json(result);
   }
