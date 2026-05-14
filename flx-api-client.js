@@ -15,10 +15,36 @@
   const TOKEN_KEY = 'flx_access_token';
   const REFRESH_KEY = 'flx_refresh_token';
 
-  // ── Token storage ──
+  // ── Token storage — reads Supabase auth token if present ──
   const Tokens = {
-    get access()  { return localStorage.getItem(TOKEN_KEY); },
-    get refresh() { return localStorage.getItem(REFRESH_KEY); },
+    get access() {
+      // Try local first, then Supabase auth-token in localStorage
+      const local = localStorage.getItem(TOKEN_KEY);
+      if (local) return local;
+      // Find any Supabase auth-token key
+      for (const k of Object.keys(localStorage)) {
+        if (k.startsWith('sb-') && k.endsWith('-auth-token')) {
+          try {
+            const data = JSON.parse(localStorage.getItem(k));
+            if (data?.access_token) return data.access_token;
+          } catch {}
+        }
+      }
+      return null;
+    },
+    get refresh() {
+      const local = localStorage.getItem(REFRESH_KEY);
+      if (local) return local;
+      for (const k of Object.keys(localStorage)) {
+        if (k.startsWith('sb-') && k.endsWith('-auth-token')) {
+          try {
+            const data = JSON.parse(localStorage.getItem(k));
+            if (data?.refresh_token) return data.refresh_token;
+          } catch {}
+        }
+      }
+      return null;
+    },
     set(access, refresh) {
       if (access)  localStorage.setItem(TOKEN_KEY, access);
       if (refresh) localStorage.setItem(REFRESH_KEY, refresh);
