@@ -547,7 +547,7 @@ async function webHandler(req) {
       }
     }
     return json({
-      status: 'ok', version: '2.15.4', time: new Date().toISOString(),
+      status: 'ok', version: '2.15.5', time: new Date().toISOString(),
       services: {
         database: dbStatus, supabase_url: SUPABASE_URL,
         ai: process.env.GEMINI_API_KEY ? 'gemini' : process.env.OPENAI_API_KEY ? 'openai' : 'none',
@@ -1088,58 +1088,23 @@ async function webHandler(req) {
           // For private buckets we'd create a signed URL; for now expose via public path.
           const fileUrl = `${SUPABASE_URL}/storage/v1/object/public/documents/${storagePath}`;
 
-          // Insert metadata — adaptive to whatever schema the documents table has.
-          // Supports both naming conventions: file_url|url, file_type|type, mime_type|content_type, file_size_kb|size_kb
-          let attemptRow = {
+          // Insert metadata — actual schema discovered v2.15.4:
+          // documents(id, user_id, shipment_id, name, type, mime, size, category, storage_path, created_at)
+          const attemptRow = {
             id: genId('DOC'),
             user_id: user.id,
             shipment_id: shipmentId,
             name: filename,
-            file_url: fileUrl,
-            url: fileUrl,
-            file_type: category,
-            type: category,
-            mime_type: contentType,
-            content_type: contentType,
-            file_size_kb: sizeKb,
-            size_kb: sizeKb,
-            size_bytes: fileBuf.byteLength,
+            type: category || 'document',
+            mime: contentType,
+            size: fileBuf.byteLength,
+            category: category || 'other',
+            storage_path: storagePath,
           };
-          let doc = null;
-          let droppedCols = [];
-          let defaultsAdded = [];
-          // Up to 16 retries: handle PGRST204 (col missing → drop) and 23502 (NOT NULL → add default)
-          for (let attempt = 0; attempt < 16; attempt++) {
-            try {
-              const res = await sb('/documents', { method: 'POST', body: [attemptRow] });
-              doc = Array.isArray(res) ? res[0] : res;
-              break;
-            } catch (e) {
-              // PGRST204: column doesn't exist → drop it
-              const colMissing = e.message.match(/Could not find the '([^']+)' column/);
-              if (colMissing && attemptRow[colMissing[1]] !== undefined) {
-                droppedCols.push(colMissing[1]);
-                delete attemptRow[colMissing[1]];
-                continue;
-              }
-              // 23502: NOT NULL violation → set a sensible default
-              const notNull = e.message.match(/null value in column "([^"]+)"/);
-              if (notNull) {
-                const col = notNull[1];
-                let val = 'document';
-                if (/url|path/i.test(col)) val = fileUrl;
-                else if (/name|title/i.test(col)) val = filename;
-                else if (/type|kind|category/i.test(col)) val = category || 'other';
-                else if (/mime|content_type/i.test(col)) val = contentType;
-                else if (/size/i.test(col)) val = sizeKb;
-                attemptRow[col] = val;
-                defaultsAdded.push(col);
-                continue;
-              }
-              throw e; // unknown error → bubble up
-            }
-          }
-          if (!doc) throw new Error('Failed to insert document metadata. Dropped: ' + droppedCols.join(',') + ' | Defaulted: ' + defaultsAdded.join(','));
+          const res = await sb('/documents', { method: 'POST', body: [attemptRow] });
+          const doc = Array.isArray(res) ? res[0] : res;
+          // Also include the public file_url for convenience
+          doc.file_url = fileUrl;
           // Expose extras in response even if columns are not persisted
           doc._file_size_kb = sizeKb;
           if (description) doc._description = description;
@@ -1159,31 +1124,34 @@ async function webHandler(req) {
       if (req.method === 'GET' && segments[1] && segments[2] === 'download') {
         const [doc] = await sb(`/documents?id=eq.${segments[1]}&user_id=eq.${user.id}&select=*&limit=1`);
         if (!doc) return json({ error: { code: 'NOT_FOUND' } }, 404);
-        // Try to create a 1-hour signed URL (works for private buckets); fall back to public file_url
+        // Resolve the storage path — schema uses `storage_path` column
+        const path = doc.storage_path || (doc.file_url || '').match(/documents\/(.+)$/)?.[1];
+        if (!path) {
+          return json({ error: { code: 'NO_PATH', message: 'document has no storage_path' } }, 422);
+        }
+        // Try signed URL first (works for private buckets)
         try {
-          const m = doc.file_url && doc.file_url.match(/storage\/v1\/object\/public\/documents\/(.+)$/);
-          if (m) {
-            const path = decodeURIComponent(m[1]);
-            const r = await fetch(`${SUPABASE_URL}/storage/v1/object/sign/documents/${encodeURIComponent(path)}`, {
-              method: 'POST',
-              headers: {
-                Authorization: `Bearer ${SUPABASE_SERVICE_KEY}`,
-                apikey: SUPABASE_SERVICE_KEY,
-                'Content-Type': 'application/json',
-              },
-              body: JSON.stringify({ expiresIn: 3600 }),
-            });
-            if (r.ok) {
-              const sd = await r.json();
-              if (sd.signedURL || sd.signedUrl) {
-                const signedPath = sd.signedURL || sd.signedUrl;
-                const fullUrl = signedPath.startsWith('http') ? signedPath : `${SUPABASE_URL}/storage/v1${signedPath}`;
-                return json({ url: fullUrl, name: doc.name, mime_type: doc.mime_type, expires_in: 3600 });
-              }
+          const r = await fetch(`${SUPABASE_URL}/storage/v1/object/sign/documents/${encodeURIComponent(path)}`, {
+            method: 'POST',
+            headers: {
+              Authorization: `Bearer ${SUPABASE_SERVICE_KEY}`,
+              apikey: SUPABASE_SERVICE_KEY,
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ expiresIn: 3600 }),
+          });
+          if (r.ok) {
+            const sd = await r.json();
+            const signedPath = sd.signedURL || sd.signedUrl;
+            if (signedPath) {
+              const fullUrl = signedPath.startsWith('http') ? signedPath : `${SUPABASE_URL}/storage/v1${signedPath}`;
+              return json({ url: fullUrl, name: doc.name, mime: doc.mime, expires_in: 3600, signed: true });
             }
           }
         } catch {}
-        return json({ url: doc.file_url, name: doc.name, mime_type: doc.mime_type, public: true });
+        // Fall back to public URL
+        const publicUrl = `${SUPABASE_URL}/storage/v1/object/public/documents/${path}`;
+        return json({ url: publicUrl, name: doc.name, mime: doc.mime, public: true });
       }
       if (req.method === 'GET' && segments[1] && !segments[2]) {
         const [doc] = await sb(`/documents?id=eq.${segments[1]}&user_id=eq.${user.id}&select=*&limit=1`);
