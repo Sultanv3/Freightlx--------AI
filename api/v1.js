@@ -10,6 +10,8 @@ const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
 const FREIGHTIFY_API_KEY     = process.env.FREIGHTIFY_API_KEY || '';
 const FREIGHTIFY_CUSTOMER_ID = process.env.FREIGHTIFY_CUSTOMER_ID || '';
 const FREIGHTIFY_CLIENT_SECRET = process.env.FREIGHTIFY_CLIENT_SECRET || '';
+const FREIGHTIFY_USERNAME    = process.env.FREIGHTIFY_USERNAME || '';
+const FREIGHTIFY_PASSWORD    = process.env.FREIGHTIFY_PASSWORD || '';
 const FREIGHTIFY_BASE_URL    = process.env.FREIGHTIFY_BASE_URL || '';
 
 const CORS_HEADERS = {
@@ -101,179 +103,129 @@ let _fxTokenExpiry = 0;
 
 const FX_BASE = FREIGHTIFY_BASE_URL || 'https://api.freightify.com';
 
-/** Fetch OAuth2 access_token using client_credentials. Tries multiple endpoint/body patterns. */
+/**
+ * Fetch OAuth2 access_token from Freightify.
+ * Replicates the working Laravel flow:
+ *   POST {base}/oauth2/token
+ *   Authorization: Basic base64(customer_id:client_secret)
+ *   x-api-key: <API_KEY>
+ *   Content-Type: application/x-www-form-urlencoded
+ *   Body: grant_type=password&username=...&password=...
+ */
 async function fxGetToken(force = false) {
   if (!force && _fxToken && Date.now() < _fxTokenExpiry - 30_000) return _fxToken;
   if (!FREIGHTIFY_CUSTOMER_ID || !FREIGHTIFY_CLIENT_SECRET) {
-    throw new Error('Freightify credentials not configured (CUSTOMER_ID / CLIENT_SECRET)');
+    throw new Error('Freightify credentials missing (CUSTOMER_ID / CLIENT_SECRET).');
   }
-  // Common token URL patterns
-  const tokenPaths = [
-    '/oauth/token',
-    '/v1/oauth/token',
-    '/v1/auth/token',
-    '/auth/oauth/token',
-    '/auth/token',
-    '/oauth2/token',
-  ];
-  // Body variations (different vendors use different naming)
-  const bodyVariants = [
-    { customer_id: FREIGHTIFY_CUSTOMER_ID, client_secret: FREIGHTIFY_CLIENT_SECRET, grant_type: 'client_credentials' },
-    { client_id: FREIGHTIFY_CUSTOMER_ID, client_secret: FREIGHTIFY_CLIENT_SECRET, grant_type: 'client_credentials' },
-    { customerId: FREIGHTIFY_CUSTOMER_ID, clientSecret: FREIGHTIFY_CLIENT_SECRET, grantType: 'client_credentials' },
-  ];
-  let lastErr = null;
-  for (const path of tokenPaths) {
-    for (const body of bodyVariants) {
-      try {
-        const r = await fetch(`${FX_BASE}${path}`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            Accept: 'application/json',
-            'x-api-key': FREIGHTIFY_API_KEY,
-          },
-          body: JSON.stringify(body),
-        });
-        const text = await r.text();
-        if (!r.ok) { lastErr = `${path}: HTTP ${r.status} ${text.slice(0, 150)}`; continue; }
-        let data;
-        try { data = JSON.parse(text); } catch { continue; }
-        const token = data.access_token || data.accessToken || data.token || data.id_token || data.jwt;
-        const exp   = data.expires_in   || data.expiresIn   || 3600;
-        if (token) {
-          _fxToken = token;
-          _fxTokenExpiry = Date.now() + exp * 1000;
-          return token;
-        }
-        lastErr = `${path}: no token field in ${Object.keys(data).join(',')}`;
-      } catch (e) {
-        lastErr = `${path}: ${e.message}`;
-      }
-    }
+  if (!FREIGHTIFY_USERNAME || !FREIGHTIFY_PASSWORD) {
+    throw new Error('Freightify username/password missing. Set FREIGHTIFY_USERNAME and FREIGHTIFY_PASSWORD.');
   }
-  // Try Basic auth as alternative (some APIs use it for token exchange)
-  try {
-    const basic = btoa(`${FREIGHTIFY_CUSTOMER_ID}:${FREIGHTIFY_CLIENT_SECRET}`);
-    const r = await fetch(`${FX_BASE}/oauth/token`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/x-www-form-urlencoded',
-        Authorization: `Basic ${basic}`,
-        'x-api-key': FREIGHTIFY_API_KEY,
-      },
-      body: 'grant_type=client_credentials',
-    });
-    if (r.ok) {
-      const data = await r.json();
-      const token = data.access_token || data.token;
-      if (token) {
-        _fxToken = token;
-        _fxTokenExpiry = Date.now() + (data.expires_in || 3600) * 1000;
-        return token;
-      }
-    } else {
-      lastErr = `basic /oauth/token: HTTP ${r.status}`;
-    }
-  } catch (e) { lastErr = `basic auth: ${e.message}`; }
 
-  throw new Error('Freightify auth failed: ' + (lastErr || 'unknown'));
+  const tokenUrl = `${FX_BASE}/oauth2/token`;
+  const basic = btoa(`${FREIGHTIFY_CUSTOMER_ID}:${FREIGHTIFY_CLIENT_SECRET}`);
+
+  const body = new URLSearchParams();
+  body.set('grant_type', 'password');
+  body.set('username', FREIGHTIFY_USERNAME);
+  body.set('password', FREIGHTIFY_PASSWORD);
+
+  const r = await fetch(tokenUrl, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/x-www-form-urlencoded',
+      Accept: 'application/json',
+      Authorization: `Basic ${basic}`,
+      ...(FREIGHTIFY_API_KEY ? { 'x-api-key': FREIGHTIFY_API_KEY } : {}),
+      'User-Agent': 'freightlx-platform',
+    },
+    body: body.toString(),
+  });
+
+  const text = await r.text();
+  if (!r.ok) {
+    throw new Error(`Freightify auth ${r.status}: ${text.slice(0, 300)}`);
+  }
+  let data;
+  try { data = JSON.parse(text); } catch { throw new Error('Freightify auth: invalid JSON response'); }
+
+  const token = data.access_token || data.accessToken || data.token;
+  if (!token) {
+    throw new Error('Freightify auth: missing access_token in response. Keys: ' + Object.keys(data).join(','));
+  }
+  const expiresIn = parseInt(data.expires_in || data.expiresIn || 3600);
+  // Buffer of 2 min so we refresh before expiry
+  const ttl = Math.max(60, expiresIn - 120);
+  _fxToken = token;
+  _fxTokenExpiry = Date.now() + ttl * 1000;
+  return token;
 }
 
-/** Build query string for v4/prices per the OpenAPI spec. */
+/** Build query string for /v3/prices — matches working Laravel implementation. */
 function fxBuildPricesQuery(reqBody) {
   const mode = (reqBody.mode || 'FCL').toUpperCase();
   const origin = reqBody.originPort || reqBody.origin_port;
   const dest   = reqBody.destinationPort || reqBody.destination_port;
-  const ctype  = (reqBody.containerType || reqBody.container_type || '40HC').toUpperCase();
-  const qty    = reqBody.numContainers || 1;
-  const weight = reqBody.cargoWeightKg || reqBody.weight || 15000;
-  const ready  = reqBody.cargoReadyDate || reqBody.cargo_ready_date ||
-                 new Date(Date.now() + 7 * 86400000).toISOString().slice(0, 10);
+  let ctype    = (reqBody.containerType || reqBody.container_type || '40HC').toUpperCase();
+  // Freightify wants: 20GP, 40GP, 40HC (not 40FT, etc.)
+  if (ctype === '40FT' || ctype === '40DC') ctype = '40GP';
+  if (ctype === '20FT' || ctype === '20DC') ctype = '20GP';
+  if (ctype === 'ALL') ctype = '40HC';
+
+  const weight = reqBody.cargoWeightKg || reqBody.weight || 25000;
+  const departure = reqBody.cargoReadyDate || reqBody.cargo_ready_date || reqBody.departureDate ||
+                    new Date(Date.now() + 7 * 86400000).toISOString().slice(0, 10);
 
   // Freightify Master Load format: 1X40HCX25000XKG  →  {qty}X{type}X{weight}X{unit}
-  const containerLoad = `${qty}X${ctype}X${weight}XKG`;
+  // We use qty=1 here; UI multiplies by user's quantity for booking.
+  const containers = `1X${ctype}X${weight}XKG`;
 
   const params = new URLSearchParams();
+  params.append('originType', 'PORT');
+  params.append('destinationType', 'PORT');
   params.append('mode', mode);
-  params.append('origins', origin);
-  params.append('destinations', dest);
-  params.append('serviceModeOrigin', reqBody.serviceModeOrigin || 'CY');
-  params.append('serviceModeDestination', reqBody.serviceModeDestination || 'CY');
-  params.append('cargoReadyDateFrom', ready);
-  if (mode === 'FCL') {
-    params.append('containers', containerLoad);
-  } else if (mode === 'LCL') {
-    params.append('cargoWeight', `${weight}XKG`);
-    if (reqBody.cargoVolumeM3 || reqBody.volume) {
-      params.append('cargoVolume', `${reqBody.cargoVolumeM3 || reqBody.volume}XCBM`);
-    }
-  }
-  params.append('documentsQuantityBL', '1');
+  params.append('origin', origin);
+  params.append('destination', dest);
+  params.append('departureDate', departure);
+  params.append('containers', containers);
   return params.toString();
 }
 
-/** Normalize a Freightify v4 offer into our internal shape. */
+/** Normalize a Freightify /v3/prices offer — matches Laravel mapOffer() shape. */
 function fxNormalizeOffer(raw, fallbackRoute) {
-  // Freightify v4 shape: { _id, meta: { origins, destinations }, carrier, charges, transitTime, etd, eta, ... }
-  const meta = raw.meta || {};
-  const originObj = (meta.origins && meta.origins[0]) || {};
-  const destObj = (meta.destinations && meta.destinations[0]) || {};
-  const polObj = (meta.pols && meta.pols[0]) || originObj;
-  const podObj = (meta.pods && meta.pods[0]) || destObj;
-  const route = `${polObj.code || originObj.code || ''} → ${podObj.code || destObj.code || ''}` || fallbackRoute;
+  // Freightify v3 shape: { freightifyId, productOffer: {...}, productPrice: {...} }
+  const productOffer = raw.productOffer || {};
+  const productPrice = raw.productPrice || {};
 
-  // Carrier — multiple possible locations
-  const carrier = raw.carrier || raw.shippingLine || raw.mainCarrier || raw.serviceProvider || meta.carrier || {};
-  const carrierName = (typeof carrier === 'string' ? carrier
-    : carrier.name || carrier.carrierName || carrier.scacName || carrier.shortName
-    || raw.carrierName || raw.scacName || 'Unknown');
-  const carrierCode = (typeof carrier === 'object'
-    ? carrier.code || carrier.scac || carrier.scacCode
-    : raw.carrierCode || raw.scac || raw.scacCode);
+  const carrierName = productOffer.carrierName || raw.carrierName || 'Unknown';
+  const carrierScac = productOffer.carrierScac || raw.carrierScac || '';
 
-  // Price extraction — Freightify uses charges[] arrays + totalPrice
-  let totalPrice = raw.totalPrice || raw.total || raw.netRate || raw.allInRate ||
-                   raw.sellAmount || raw.buyAmount || raw.amount || raw.price || 0;
-  let currency = raw.currency || raw.totalCurrency || raw.sellCurrency || raw.buyCurrency;
-  if (!totalPrice && Array.isArray(raw.charges)) {
-    totalPrice = raw.charges.reduce((s, c) => s + (parseFloat(c.sellAmount || c.amount || c.value || 0)), 0);
-    currency = currency || raw.charges[0]?.sellCurrency || raw.charges[0]?.currency;
-  }
-  if (!totalPrice && raw.priceBreakdown) {
-    const pb = raw.priceBreakdown;
-    totalPrice = parseFloat(pb.totalSellAmount || pb.totalBuyAmount || pb.total || 0);
-    currency = currency || pb.currency;
-  }
-  if (!totalPrice && raw.totalSellAmount) totalPrice = parseFloat(raw.totalSellAmount);
+  // Price: prefer SELL, then BUY, in USD
+  const usdAmount = productPrice.totalUSDAmount || {};
+  const totalPrice = parseFloat(usdAmount.SELL || usdAmount.BUY || productPrice.total || raw.totalPrice || 0);
 
-  // Transit time
-  const transit = parseInt(raw.transitTime || raw.transit_days || raw.tt
-    || raw.transitDays || meta.transitTime || 0) || 25;
+  const transit = parseInt(productPrice.transitTimeInDays || raw.transitTime || raw.transit_days || 0) || 25;
+  const validTo = productPrice.validTo || raw.validTo || raw.validityTo;
+  const etd = productOffer.departureDate || raw.etd || raw.departureDate;
+  const eta = productOffer.arrivalDate   || raw.eta || raw.arrivalDate;
 
-  // Dates
-  const etd = raw.etd || raw.departureDate || raw.cargoReadyDate || meta.etd;
-  const eta = raw.eta || raw.arrivalDate || meta.eta;
-
-  // Routing/service
-  const isDirect = !raw.transhipment && raw.routingType !== 'T/S'
-    && (raw.serviceType !== 'T/S') && !(raw.viaPorts && raw.viaPorts.length > 0);
+  const transhipment = !!(productOffer.transhipment || raw.transhipment ||
+    (productOffer.viaPorts && productOffer.viaPorts.length > 0));
 
   return {
-    carrier_code: carrierCode,
+    carrier_code: carrierScac,
     carrier_name: carrierName,
-    vessel: raw.vesselName || raw.vessel || raw.feederVessel || `${carrierName} Service`,
-    route,
+    vessel: productOffer.vesselName || raw.vesselName || `${carrierName} Service`,
+    route: productOffer.routing || raw.routing || fallbackRoute,
     transit_days: transit,
-    price: parseFloat(totalPrice) || 0,
-    currency: currency || 'USD',
-    validity_until: (raw.validityTo || raw.validUntil || raw.validity || raw.rateValidity || '').toString().slice(0, 10) || null,
+    price: totalPrice,
+    currency: 'USD',
+    validity_until: validTo ? validTo.toString().slice(0, 10) : null,
     etd: etd ? etd.toString().slice(0, 10) : null,
     eta: eta ? eta.toString().slice(0, 10) : null,
-    service_type: raw.serviceType || raw.routingType || (raw.transhipment ? 'T/S' : 'Direct'),
-    free_days: parseInt(raw.freeDaysAtDestination || raw.freeDays || meta.freeDays || 10),
-    is_direct: isDirect,
-    raw_id: raw._id || raw.id,
+    service_type: productOffer.serviceType || (transhipment ? 'T/S' : 'Direct'),
+    free_days: parseInt(productOffer.freeDays || productPrice.freeDays || 10),
+    is_direct: !transhipment,
+    raw_id: raw.freightifyId || raw._id || raw.id,
   };
 }
 
@@ -281,7 +233,7 @@ function fxNormalizeOffer(raw, fallbackRoute) {
 async function fxPollStatus(reqId, token) {
   for (let i = 0; i < 10; i++) {
     await new Promise(r => setTimeout(r, 1000));
-    const r = await fetch(`${FX_BASE}/v4/prices/status/${reqId}`, {
+    const r = await fetch(`${FX_BASE}/v3/prices/status/${reqId}`, {
       headers: { 'x-api-key': FREIGHTIFY_API_KEY, Authorization: `Bearer ${token}` },
     });
     if (!r.ok) continue;
@@ -302,7 +254,7 @@ async function fetchFreightifyRates(reqBody) {
     trace.steps.push('token_ok');
 
     const query = fxBuildPricesQuery(reqBody);
-    const url = `${FX_BASE}/v4/prices?${query}`;
+    const url = `${FX_BASE}/v3/prices?${query}`;
     trace.steps.push('query_built');
 
     const r = await fetch(url, {
@@ -321,9 +273,9 @@ async function fetchFreightifyRates(reqBody) {
     let data;
     try { data = JSON.parse(text); } catch { return { source: 'freightify_invalid_json', offers: [], error: 'invalid JSON', trace }; }
 
-    // Freightify v4 nests offers in data.data.offers
-    let offers = (data.data && data.data.offers) || (data.data && data.data.rates) ||
-                 data.rates || data.offers || data.prices || data.results ||
+    // Freightify v3 returns offers at top level; v4 nests under data.data.offers
+    let offers = data.offers || data.rates || data.prices || data.results ||
+                 (data.data && data.data.offers) || (data.data && data.data.rates) ||
                  (Array.isArray(data.data) ? data.data : null) ||
                  (Array.isArray(data) ? data : null);
 
@@ -333,7 +285,7 @@ async function fetchFreightifyRates(reqBody) {
       trace.steps.push('polling_' + reqIdField);
       const ready = await fxPollStatus(reqIdField, token);
       if (ready) {
-        const r2 = await fetch(`${FX_BASE}/v4/prices/${reqIdField}`, {
+        const r2 = await fetch(`${FX_BASE}/v3/prices/${reqIdField}`, {
           headers: { 'x-api-key': FREIGHTIFY_API_KEY, Authorization: `Bearer ${token}`, Accept: 'application/json' },
         });
         if (r2.ok) {
@@ -406,7 +358,7 @@ export default async function handler(req) {
       }
     }
     return json({
-      status: 'ok', version: '2.3.0', time: new Date().toISOString(),
+      status: 'ok', version: '2.4.0', time: new Date().toISOString(),
       services: {
         database: dbStatus, supabase_url: SUPABASE_URL,
         ai: process.env.GEMINI_API_KEY ? 'gemini' : process.env.OPENAI_API_KEY ? 'openai' : 'none',
@@ -454,7 +406,7 @@ export default async function handler(req) {
         result.checks.carriers_endpoint = { ok: false, error: e.message };
       }
     }
-    // Step 3: sample /v4/prices call
+    // Step 3: sample /v3/prices call
     if (result.checks.token?.ok) {
       try {
         const sample = { originPort: 'CNSHA', destinationPort: 'SAJED', containerType: '40HC', mode: 'FCL', numContainers: 1, cargoWeightKg: 15000 };
