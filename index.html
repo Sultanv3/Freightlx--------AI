@@ -141,7 +141,9 @@ section { position: relative; z-index: 2; }
 .nav .cta-fill:hover { transform: translateY(-1px); }
 
 @media (max-width: 860px) {
-  .nav a:not(.cta-fill) { display: none; }
+  /* Hide section anchors but keep auth CTAs visible on mobile */
+  .nav a[href^="#"] { display: none; }
+  .nav { gap: 8px; }
 }
 
 /* ─── HERO ─── */
