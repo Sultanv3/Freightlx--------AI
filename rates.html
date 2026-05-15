@@ -405,8 +405,8 @@ header nav a:hover { background: var(--surface); color: var(--brand); }
 
   <!-- Stats -->
   <div class="hero-stats">
-    <div class="stat"><div class="stat-icon blue">🚢</div><div><div class="stat-num">30+</div><div class="stat-lbl">خط ملاحي عالمي</div></div></div>
-    <div class="stat"><div class="stat-icon green">⚡</div><div><div class="stat-num">&lt; 5s</div><div class="stat-lbl">سرعة العروض</div></div></div>
+    <div class="stat"><div class="stat-icon blue">🚢</div><div><div class="stat-num">12+</div><div class="stat-lbl">خط ملاحي عالمي</div></div></div>
+    <div class="stat"><div class="stat-icon green">⚡</div><div><div class="stat-num">40s</div><div class="stat-lbl">سرعة العروض</div></div></div>
     <div class="stat"><div class="stat-icon amber">📍</div><div><div class="stat-num">50+</div><div class="stat-lbl">ميناء حول العالم</div></div></div>
     <div class="stat"><div class="stat-icon cyan">💎</div><div><div class="stat-num">USD</div><div class="stat-lbl">All-in pricing</div></div></div>
   </div>
@@ -791,7 +791,7 @@ form.addEventListener('submit', async (e) => {
   };
 
   submitBtn.disabled = true;
-  setStatus('جاري البحث عن أفضل العروض من 30 خط ملاحي…', 'loading', true);
+  setStatus('جاري البحث عن أفضل العروض من 12 خط ملاحي عالمي…', 'loading', true);
   document.getElementById('resultsCard').style.display = 'none';
   document.getElementById('skeleton').style.display = 'block';
 
@@ -901,38 +901,38 @@ form.addEventListener('submit', async (e) => {
   }
 });
 
-// SCAC code → carrier logo (Wikipedia commons SVG, all 12 carriers)
+// SCAC code → local carrier logo (SVG in /assets/carriers/) for the 12 global lines
 const CARRIER_LOGOS = {
   // 1. Maersk (all SCAC variants)
-  MAEU: 'https://upload.wikimedia.org/wikipedia/commons/thumb/d/df/Maersk_Logo.svg/320px-Maersk_Logo.svg.png',
-  SEAU: 'https://upload.wikimedia.org/wikipedia/commons/thumb/d/df/Maersk_Logo.svg/320px-Maersk_Logo.svg.png',
-  MAEI: 'https://upload.wikimedia.org/wikipedia/commons/thumb/d/df/Maersk_Logo.svg/320px-Maersk_Logo.svg.png',
+  MAEU: '/assets/carriers/maersk.svg',
+  SEAU: '/assets/carriers/maersk.svg',
+  MAEI: '/assets/carriers/maersk.svg',
   // 2. MSC
-  MSCU: 'https://upload.wikimedia.org/wikipedia/commons/thumb/3/3a/MSC_Mediterranean_Shipping_Company_logo.svg/320px-MSC_Mediterranean_Shipping_Company_logo.svg.png',
+  MSCU: '/assets/carriers/msc.svg',
   // 3. COSCO
-  COSU: 'https://upload.wikimedia.org/wikipedia/commons/thumb/4/4c/Cosco_logo.svg/320px-Cosco_logo.svg.png',
+  COSU: '/assets/carriers/cosco.svg',
   // 4. CMA CGM
-  CMDU: 'https://upload.wikimedia.org/wikipedia/commons/thumb/5/57/CMA_CGM_logo.svg/320px-CMA_CGM_logo.svg.png',
+  CMDU: '/assets/carriers/cma-cgm.svg',
   // 5. Hapag-Lloyd
-  HLCU: 'https://upload.wikimedia.org/wikipedia/commons/thumb/2/2c/Hapag-Lloyd_logo.svg/320px-Hapag-Lloyd_logo.svg.png',
+  HLCU: '/assets/carriers/hapag-lloyd.svg',
   // 6. ONE
-  ONEY: 'https://upload.wikimedia.org/wikipedia/commons/thumb/0/0a/Ocean_Network_Express_logo.svg/320px-Ocean_Network_Express_logo.svg.png',
-  ONNE: 'https://upload.wikimedia.org/wikipedia/commons/thumb/0/0a/Ocean_Network_Express_logo.svg/320px-Ocean_Network_Express_logo.svg.png',
+  ONEY: '/assets/carriers/one.svg',
+  ONNE: '/assets/carriers/one.svg',
   // 7. Evergreen
-  EGLV: 'https://upload.wikimedia.org/wikipedia/commons/thumb/4/4f/Evergreen_Group_logo.svg/320px-Evergreen_Group_logo.svg.png',
+  EGLV: '/assets/carriers/evergreen.svg',
   // 8. HMM
-  HMMU: 'https://upload.wikimedia.org/wikipedia/commons/thumb/2/2a/HMM_Co.%2C_Ltd._logo.svg/320px-HMM_Co.%2C_Ltd._logo.svg.png',
+  HMMU: '/assets/carriers/hmm.svg',
   // 9. OOCL (COSCO subsidiary)
-  OOLU: 'https://upload.wikimedia.org/wikipedia/commons/thumb/5/52/OOCL_logo.svg/320px-OOCL_logo.svg.png',
+  OOLU: '/assets/carriers/oocl.svg',
   // 10. APL (CMA CGM subsidiary)
-  APLU: 'https://upload.wikimedia.org/wikipedia/commons/thumb/4/45/APL_Logo.svg/320px-APL_Logo.svg.png',
-  // 11. ANL (CMA CGM subsidiary)
-  ANNU: 'https://upload.wikimedia.org/wikipedia/commons/thumb/c/cc/ANL_Container_Line_Logo.svg/320px-ANL_Container_Line_Logo.svg.png',
-  ANLC: 'https://upload.wikimedia.org/wikipedia/commons/thumb/c/cc/ANL_Container_Line_Logo.svg/320px-ANL_Container_Line_Logo.svg.png',
-  // 12. CNC (CMA CGM subsidiary)
-  CHNL: 'https://upload.wikimedia.org/wikipedia/commons/thumb/5/57/CMA_CGM_logo.svg/320px-CMA_CGM_logo.svg.png',
-  CNCO: 'https://upload.wikimedia.org/wikipedia/commons/thumb/5/57/CMA_CGM_logo.svg/320px-CMA_CGM_logo.svg.png',
-  CNCL: 'https://upload.wikimedia.org/wikipedia/commons/thumb/5/57/CMA_CGM_logo.svg/320px-CMA_CGM_logo.svg.png',
+  APLU: '/assets/carriers/apl.svg',
+  // 11. ANL (CMA CGM subsidiary) — uses Group logo until local SVG added
+  ANNU: '/assets/carriers/anl.svg',
+  ANLC: '/assets/carriers/anl.svg',
+  // 12. CNC (CMA CGM subsidiary) — uses Group logo until local SVG added
+  CHNL: '/assets/carriers/cnc.svg',
+  CNCO: '/assets/carriers/cnc.svg',
+  CNCL: '/assets/carriers/cnc.svg',
   // Regional & Saudi-specific
   AKKU: 'https://www.arkasline.com.tr/Resources/site/img/logo.png',
   CSCL: 'https://upload.wikimedia.org/wikipedia/commons/thumb/4/4c/Cosco_logo.svg/320px-Cosco_logo.svg.png',
@@ -979,10 +979,17 @@ function getCarrierLogoUrl(o) {
   return null;
 }
 
-// Global fallback handler — safer than embedding complex onerror strings
+// Global fallback handler — try CMA CGM Group logo for subsidiaries first, then initials
 window.flxCarrierLogoFallback = function(img) {
   const parent = img.parentElement;
   if (!parent) return;
+  const cur = img.getAttribute('src') || '';
+  // CMA CGM Group subsidiaries → fall back to CMA CGM Group logo
+  if ((cur.includes('/anl.svg') || cur.includes('/cnc.svg')) && !img.dataset.fbTried) {
+    img.dataset.fbTried = '1';
+    img.src = '/assets/carriers/cma-cgm.svg';
+    return;
+  }
   const bg = parent.dataset.fallbackBg || 'linear-gradient(135deg, #0F2C4D, #1E5BA8)';
   const initials = parent.dataset.initials || 'CR';
   parent.style.background = bg;
