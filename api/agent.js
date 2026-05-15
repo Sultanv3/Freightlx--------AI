@@ -19,8 +19,10 @@
 export const config = { runtime: 'nodejs', maxDuration: 60 };
 
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY || '';
-const GEMINI_MODEL = 'gemini-2.5-flash';
-const GEMINI_URL = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${GEMINI_API_KEY}`;
+const GEMINI_MODELS = ['gemini-2.5-flash-lite', 'gemini-2.5-flash', 'gemini-2.0-flash-exp'];
+function geminiUrl(model) {
+  return `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${GEMINI_API_KEY}`;
+}
 
 // Internal base URL — same Vercel deployment
 function internalBase(req) {
@@ -365,20 +367,32 @@ async function runAgent(messages, ctx, maxSteps = 5) {
   const actions = [];
 
   for (let step = 0; step < maxSteps; step++) {
-    const r = await fetch(GEMINI_URL, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        contents,
-        systemInstruction: { parts: [{ text: SYSTEM_PROMPT }] },
-        tools: geminiTools(),
-        generationConfig: { temperature: 0.4, maxOutputTokens: 1500 },
-      }),
-    });
-    if (!r.ok) {
-      const err = await r.text();
-      throw new Error(`Gemini ${r.status}: ${err.slice(0, 300)}`);
+    // Try models in order with fallback on 503/429
+    let r, lastError;
+    for (const model of GEMINI_MODELS) {
+      try {
+        r = await fetch(geminiUrl(model), {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            contents,
+            systemInstruction: { parts: [{ text: SYSTEM_PROMPT }] },
+            tools: geminiTools(),
+            generationConfig: { temperature: 0.4, maxOutputTokens: 1500 },
+          }),
+        });
+        if (r.ok) break;
+        if (r.status !== 503 && r.status !== 429) {
+          const err = await r.text();
+          lastError = `Gemini ${r.status}: ${err.slice(0, 300)}`;
+          break;
+        }
+        lastError = `${model} returned ${r.status}, trying next...`;
+      } catch (e) {
+        lastError = e.message;
+      }
     }
+    if (!r || !r.ok) throw new Error(lastError || 'All Gemini models unavailable');
     const data = await r.json();
     const cand = data.candidates?.[0];
     if (!cand) throw new Error('Empty Gemini response');
@@ -452,7 +466,7 @@ export default async function handler(req, res) {
       reply: result.reply,
       actions: result.actions,
       steps: result.steps,
-      model: GEMINI_MODEL,
+      model: 'gemini-with-fallback',
     }));
   } catch (e) {
     res.statusCode = 500;
