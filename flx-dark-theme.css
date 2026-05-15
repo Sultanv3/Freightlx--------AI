@@ -730,6 +730,60 @@ code, .code, .mono, pre {
   background: var(--glass-bg) !important;
 }
 
+/* ═══ PORT SEARCH DROPDOWN (rates.html) — readable on dark theme ═══ */
+.port-suggestions {
+  background: rgba(7, 28, 44, 0.96) !important;
+  backdrop-filter: blur(24px) saturate(1.5) !important;
+  -webkit-backdrop-filter: blur(24px) saturate(1.5) !important;
+  border: 1px solid rgba(57, 198, 255, 0.28) !important;
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.05) inset,
+    0 24px 60px rgba(0, 0, 0, 0.55) !important;
+  color: rgba(244, 247, 250, 0.92) !important;
+}
+.port-suggestions .group-label {
+  color: rgba(57, 198, 255, 0.78) !important;
+  background: rgba(10, 132, 255, 0.08);
+  border-bottom: 1px solid rgba(57, 198, 255, 0.10);
+}
+.port-suggestions .item {
+  color: rgba(244, 247, 250, 0.92) !important;
+  border-bottom: 1px solid rgba(57, 198, 255, 0.06);
+}
+.port-suggestions .item:hover,
+.port-suggestions .item.active {
+  background: rgba(10, 132, 255, 0.14) !important;
+}
+.port-suggestions .item .name {
+  color: #ffffff !important;
+  font-weight: 600 !important;
+}
+.port-suggestions .item .country {
+  color: rgba(244, 247, 250, 0.62) !important;
+}
+.port-suggestions .item .code {
+  background: rgba(10, 132, 255, 0.18) !important;
+  color: var(--cyan) !important;
+  font-family: 'JetBrains Mono', monospace !important;
+  border: 1px solid rgba(57, 198, 255, 0.24);
+}
+.port-suggestions .item.empty {
+  color: rgba(244, 247, 250, 0.42) !important;
+}
+/* Selected port input — green tint should not clash with dark */
+.port-input.selected input[type=text] {
+  background: rgba(34, 197, 94, 0.10) !important;
+  border-color: rgba(34, 197, 94, 0.4) !important;
+  color: #fff !important;
+}
+/* Swap button */
+.swap {
+  background: rgba(11, 42, 64, 0.7) !important;
+  border-color: var(--glass-border-strong) !important;
+  color: var(--cyan) !important;
+}
+.swap:hover { background: rgba(10, 132, 255, 0.18) !important; }
+
 /* ═══ CARRIER LOGO BOXES — keep white for brand color logos ═══ */
 .col-logo {
   background: #ffffff !important;
