@@ -5,6 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>طلب عروض الشحن — FREIGHTLX</title>
 <script>window.FLX_API_BASE = '/api/v1';</script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/flx-dark-theme.css">
 <style>
 :root {
   --brand: #0F2C4D;
@@ -867,16 +869,88 @@ form.addEventListener('submit', async (e) => {
   }
 });
 
+// SCAC code → Wikipedia/CDN logo (canonical, white background variant)
+const CARRIER_LOGOS = {
+  // Top global carriers
+  MAEU: 'https://upload.wikimedia.org/wikipedia/commons/thumb/3/30/Maersk_Group_Logo.svg/320px-Maersk_Group_Logo.svg.png',
+  SEAU: 'https://upload.wikimedia.org/wikipedia/commons/thumb/3/30/Maersk_Group_Logo.svg/320px-Maersk_Group_Logo.svg.png',
+  MAEI: 'https://upload.wikimedia.org/wikipedia/commons/thumb/3/30/Maersk_Group_Logo.svg/320px-Maersk_Group_Logo.svg.png',
+  MSCU: 'https://upload.wikimedia.org/wikipedia/commons/thumb/3/3a/MSC_Mediterranean_Shipping_Company_logo.svg/320px-MSC_Mediterranean_Shipping_Company_logo.svg.png',
+  COSU: 'https://upload.wikimedia.org/wikipedia/commons/thumb/4/4c/Cosco_logo.svg/320px-Cosco_logo.svg.png',
+  CMDU: 'https://upload.wikimedia.org/wikipedia/commons/thumb/5/57/CMA_CGM_logo.svg/320px-CMA_CGM_logo.svg.png',
+  HLCU: 'https://upload.wikimedia.org/wikipedia/commons/thumb/2/2c/Hapag-Lloyd_logo.svg/320px-Hapag-Lloyd_logo.svg.png',
+  ONEY: 'https://upload.wikimedia.org/wikipedia/commons/thumb/0/0a/Ocean_Network_Express_logo.svg/320px-Ocean_Network_Express_logo.svg.png',
+  ONNE: 'https://upload.wikimedia.org/wikipedia/commons/thumb/0/0a/Ocean_Network_Express_logo.svg/320px-Ocean_Network_Express_logo.svg.png',
+  EGLV: 'https://upload.wikimedia.org/wikipedia/commons/thumb/4/4f/Evergreen_Group_logo.svg/320px-Evergreen_Group_logo.svg.png',
+  OOLU: 'https://upload.wikimedia.org/wikipedia/commons/thumb/5/52/OOCL_logo.svg/320px-OOCL_logo.svg.png',
+  YMLU: 'https://upload.wikimedia.org/wikipedia/commons/thumb/c/c0/Yang_Ming_logo.svg/320px-Yang_Ming_logo.svg.png',
+  HMMU: 'https://upload.wikimedia.org/wikipedia/commons/thumb/5/55/HMM_logo.svg/320px-HMM_logo.svg.png',
+  ZIMU: 'https://upload.wikimedia.org/wikipedia/commons/thumb/4/4e/ZIM_logo.svg/320px-ZIM_logo.svg.png',
+  PABV: 'https://upload.wikimedia.org/wikipedia/commons/thumb/6/65/PIL_Logo.svg/320px-PIL_Logo.svg.png',
+  WHLC: 'https://upload.wikimedia.org/wikipedia/commons/thumb/8/87/Wan_Hai_Lines_logo.svg/320px-Wan_Hai_Lines_logo.svg.png',
+  // Regional & Saudi-specific
+  AKKU: 'https://www.arkasline.com.tr/Resources/site/img/logo.png',
+  CSCL: 'https://upload.wikimedia.org/wikipedia/commons/thumb/4/4c/Cosco_logo.svg/320px-Cosco_logo.svg.png',
+  KMTU: 'https://logo.clearbit.com/kmtcline.com',
+  TSLU: 'https://logo.clearbit.com/tsline.com.tw',
+  IRSU: 'https://logo.clearbit.com/irisl.net',
+  UASU: 'https://upload.wikimedia.org/wikipedia/commons/thumb/8/87/United_Arab_Shipping_Company_logo.png/320px-United_Arab_Shipping_Company_logo.png',
+  ANNU: 'https://upload.wikimedia.org/wikipedia/commons/thumb/0/0a/Ocean_Network_Express_logo.svg/320px-Ocean_Network_Express_logo.svg.png',
+};
+// Map common carrier names → SCAC (case-insensitive)
+const NAME_TO_SCAC = {
+  'maersk': 'MAEU', 'a.p. moller-maersk': 'MAEU', 'apm-maersk': 'MAEU',
+  'mediterranean shipping company': 'MSCU', 'msc': 'MSCU',
+  'cosco shipping lines': 'COSU', 'cosco': 'COSU', 'china cosco shipping': 'COSU',
+  'cma cgm': 'CMDU',
+  'hapag-lloyd': 'HLCU', 'hapag lloyd': 'HLCU',
+  'ocean network express': 'ONEY', 'one': 'ONEY',
+  'evergreen marine': 'EGLV', 'evergreen': 'EGLV',
+  'oocl': 'OOLU', 'orient overseas container line': 'OOLU',
+  'yang ming': 'YMLU', 'yang ming marine transport': 'YMLU',
+  'hmm': 'HMMU', 'hyundai merchant marine': 'HMMU',
+  'zim': 'ZIMU', 'zim integrated shipping services': 'ZIMU',
+  'pil': 'PABV', 'pacific international lines': 'PABV',
+  'wan hai': 'WHLC', 'wan hai lines': 'WHLC',
+  'arkas': 'AKKU', 'arkas line': 'AKKU',
+};
+
+function getCarrierLogoUrl(o) {
+  // 1) If backend gave us a logo, use it (works for both /local and https://)
+  if (o.carrier_logo) return o.carrier_logo;
+  // 2) Try mapping by SCAC code
+  const code = (o.carrier_code || '').toUpperCase();
+  if (code && CARRIER_LOGOS[code]) return CARRIER_LOGOS[code];
+  // 3) Try mapping by name
+  const key = (o.carrier_name || '').toLowerCase().trim();
+  if (NAME_TO_SCAC[key] && CARRIER_LOGOS[NAME_TO_SCAC[key]]) {
+    return CARRIER_LOGOS[NAME_TO_SCAC[key]];
+  }
+  // 4) Partial match (e.g. "Maersk Line" → MAEU)
+  for (const [n, scac] of Object.entries(NAME_TO_SCAC)) {
+    if (key.includes(n) && CARRIER_LOGOS[scac]) return CARRIER_LOGOS[scac];
+  }
+  return null;
+}
+
 function carrierLogoHTML(o) {
   const name = (o.carrier_name || 'Carrier').toUpperCase();
   const bg = o.brand_color || 'linear-gradient(135deg, #0F2C4D, #1E5BA8)';
-  if (o.carrier_logo && o.carrier_logo.startsWith('/')) {
-    return `<div class="col-logo" style="background:${bg};">
-      <img src="${o.carrier_logo}" alt="${name}" onerror="this.outerHTML='<span style=color:white;font-weight:800;font-size:14px;letter-spacing:1.5px>${name}</span>'">
+  const initials = name.split(/\s+/).slice(0, 2).map(w => w[0] || '').join('').slice(0, 3) || 'CR';
+  const logoUrl = getCarrierLogoUrl(o);
+
+  // SVG-encoded fallback (initials on brand-colored circle) — replaces broken img
+  const fallbackEscaped = `'<div style=\"display:flex;align-items:center;justify-content:center;width:100%;height:100%;color:white;font-weight:800;font-size:16px;letter-spacing:0.05em\">${initials}</div>'`;
+
+  if (logoUrl) {
+    return `<div class="col-logo" style="background:#ffffff;border:1px solid rgba(57,198,255,0.18);padding:8px;">
+      <img src="${logoUrl}" alt="${name}"
+           style="max-width:100%;max-height:100%;object-fit:contain;display:block;"
+           onerror="this.parentElement.style.background='${bg.replace(/'/g, '')}';this.parentElement.innerHTML=${fallbackEscaped}">
     </div>`;
   }
   return `<div class="col-logo" style="background:${bg};">
-    <span style="color:white;font-weight:800;font-size:14px;letter-spacing:1.5px">${name}</span>
+    <span style="color:white;font-weight:800;font-size:16px;letter-spacing:0.05em">${initials}</span>
   </div>`;
 }
 
