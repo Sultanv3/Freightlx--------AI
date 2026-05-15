@@ -807,12 +807,23 @@ footer {
 <!-- ─── TOPBAR ─── -->
 <header class="topbar">
   <div class="wrap topbar-row">
-    <a href="/" class="brand">
-      <div class="brand-mark">
-        <svg viewBox="0 0 24 24" fill="none"><path d="M3 12L12 3L21 12L12 21L3 12Z" stroke="url(#g1)" stroke-width="2" stroke-linejoin="round"/><defs><linearGradient id="g1" x1="0" y1="0" x2="24" y2="24"><stop stop-color="#39C6FF"/><stop offset="1" stop-color="#0A84FF"/></linearGradient></defs></svg>
-      </div>
-      <div class="brand-name">FREIGHT<b>LX</b></div>
+    <a href="/" class="brand" style="display:inline-flex;align-items:center;gap:0">
+      <img src="/assets/logo/white-logo.svg" alt="FREIGHTLX" id="navLogo"
+           style="height:38px;width:auto;filter:drop-shadow(0 0 14px rgba(57,198,255,0.32));transition:filter .25s">
+      <noscript><div class="brand-name">FREIGHT<b>LX</b></div></noscript>
     </a>
+    <script>
+      // Fallback to wordmark if SVG fails to load
+      (function(){
+        var l = document.getElementById('navLogo');
+        if (!l) return;
+        l.addEventListener('error', function(){
+          var a = l.parentElement;
+          l.remove();
+          a.innerHTML = '<div class="brand-mark"><svg viewBox="0 0 24 24" fill="none"><path d="M3 12L12 3L21 12L12 21L3 12Z" stroke="url(#g1)" stroke-width="2" stroke-linejoin="round"/><defs><linearGradient id="g1" x1="0" y1="0" x2="24" y2="24"><stop stop-color="#39C6FF"/><stop offset="1" stop-color="#0A84FF"/></linearGradient></defs></svg></div><div class="brand-name">FREIGHT<b>LX</b></div>';
+        });
+      })();
+    </script>
     <nav class="nav">
       <a href="#platform">المنصة</a>
       <a href="#network">الشبكة</a>
