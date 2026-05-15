@@ -156,6 +156,18 @@ const TOOLS = [
       },
     },
   },
+  {
+    name: 'lookup_hs_code',
+    description: 'يبحث في قاعدة بيانات الـ 9,862 HS code السعودية المعتمدة من SABER+ZATCA. يعطي رمز التعرفة الجمركية الدقيق، اللائحة الفنية، والشهادات المطلوبة (QM, COC, IECEE, إلخ). استخدمه عند سؤال المستخدم عن HS code أو متطلبات شهادة لمنتج معيّن.',
+    parameters: {
+      type: 'object',
+      properties: {
+        q: { type: 'string', description: 'كلمة بحث بالعربية أو الإنجليزية، مثلاً "سماعات بلوتوث" أو "marble" أو "cosmetics"' },
+        hs: { type: 'string', description: 'بادئة HS code رقمية للبحث المباشر، مثلاً 851830 أو 2515' },
+        limit: { type: 'number', description: 'عدد النتائج (1-20، افتراضي 5)' },
+      },
+    },
+  },
 ];
 
 // Format tools for Gemini API
@@ -1201,6 +1213,39 @@ async function execTool(name, args, ctx) {
         id: i.id, amount_sar: i.amount, status: i.status, created: i.created_at,
       })),
     };
+  }
+
+  if (name === 'lookup_hs_code') {
+    const params = new URLSearchParams();
+    if (args.q) params.set('q', args.q);
+    if (args.hs) params.set('hs', String(args.hs));
+    params.set('limit', String(Math.min(args.limit || 5, 10)));
+    try {
+      const r = await fetch(`${base}/api/hs-codes?${params.toString()}`);
+      if (!r.ok) return { error: `HS lookup failed: ${r.status}` };
+      const j = await r.json();
+      const results = (j.results || []).map(x => ({
+        hs: x.hs,
+        category_ar: x.cat_ar,
+        category_en: x.cat_en,
+        regulation_ar: x.reg_ar,
+        regulation_en: x.reg_en,
+        regulated: x.reg_en !== 'Non Regulated',
+        required_certificates: x.certs,
+        saber_required: x.certs.length > 0 && x.reg_en !== 'Non Regulated',
+      }));
+      return {
+        query: args.q || null,
+        hs_prefix: args.hs || null,
+        count: results.length,
+        results,
+        note: results.length === 0
+          ? 'لم نعثر على مطابقة في قاعدة الـ 9,862 HS code. جرّب مصطلحاً مختلفاً أو HS code بادئة 4-6 أرقام.'
+          : `وُجد ${results.length} نتيجة. الشهادات المطلوبة تُحدّد التعامل مع سابر/SFDA/CITC.`,
+      };
+    } catch (e) {
+      return { error: `lookup_hs_code error: ${e.message}` };
+    }
   }
 
   return { error: `Unknown tool: ${name}` };
