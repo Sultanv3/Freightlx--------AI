@@ -117,6 +117,63 @@
   box-shadow: 0 6px 20px rgba(10, 132, 255, 0.32);
 }
 
+/* ─── AGENT ACTION TIMELINE (real tools executed by FREIGHTLX AI) ─── */
+.ai-actions-timeline {
+  display: flex; flex-direction: column; gap: 8px;
+  margin-bottom: 14px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid rgba(57,198,255,0.10);
+}
+.ai-action {
+  background: linear-gradient(180deg, rgba(10,132,255,0.10), rgba(10,132,255,0.04));
+  border: 1px solid rgba(57,198,255,0.22);
+  border-radius: 10px;
+  padding: 10px 12px;
+  animation: aiActionPop 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.ai-action.err { border-color: rgba(239,68,68,0.32); background: rgba(239,68,68,0.06); }
+@keyframes aiActionPop {
+  from { opacity: 0; transform: translateY(-4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.ai-action-head {
+  display: flex; align-items: center; gap: 8px;
+  font-size: 12.5px; font-weight: 700;
+}
+.ai-action-icon-sm {
+  width: 22px; height: 22px;
+  display: inline-flex; align-items: center; justify-content: center;
+  background: rgba(10,132,255,0.18);
+  border-radius: 6px;
+  font-size: 12px;
+}
+.ai-action-name { flex: 1; color: #fff; }
+.ai-action-status {
+  font-size: 10px; font-weight: 700;
+  color: #4ade80;
+  background: rgba(34,197,94,0.14);
+  padding: 2px 8px;
+  border-radius: 999px;
+  letter-spacing: 0.04em;
+}
+.ai-action.err .ai-action-status { color: #f87171; background: rgba(239,68,68,0.14); }
+.ai-action-body {
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px solid rgba(57,198,255,0.10);
+  font-size: 12.5px;
+  display: flex; flex-direction: column; gap: 4px;
+}
+.ai-mini-row { line-height: 1.6; }
+.ai-mini-row code {
+  background: rgba(10,132,255,0.12);
+  color: #39C6FF;
+  padding: 1px 6px;
+  border-radius: 4px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+}
+
 /* ─── HYPER ACTION CARDS inside bot bubbles ─── */
 .ai-action-cards {
   display: grid;
@@ -1448,16 +1505,93 @@ if (new URLSearchParams(window.location.search).get('login') === '1') {
     return `<div class="ai-action-cards">${cards}</div>`;
   }
 
+  // ─── Build agent action timeline (shows what tools the agent actually executed) ───
+  const TOOL_LABELS = {
+    search_freight_rates: { icon: '🔍', label: 'بحث أسعار شحن' },
+    calculate_customs_clearance: { icon: '🧾', label: 'حساب الجمارك' },
+    calculate_full_import_cost: { icon: '💵', label: 'تكلفة الاستيراد الكاملة' },
+    request_saber_certificate: { icon: '🛡️', label: 'طلب شهادة سابر' },
+    get_my_shipments: { icon: '📦', label: 'جلب الشحنات' },
+    track_shipment: { icon: '📍', label: 'تتبع الشحنة' },
+    subscribe_package: { icon: '⭐', label: 'تفعيل باقة' },
+    get_invoices: { icon: '📋', label: 'جلب الفواتير' },
+  };
+  function buildActionTimeline(actions) {
+    if (!actions || !actions.length) return '';
+    const items = actions.map(a => {
+      const tool = TOOL_LABELS[a.tool] || { icon: '⚙️', label: a.tool };
+      const ok = !a.result?.error;
+      const summary = renderActionSummary(a);
+      return `<div class="ai-action ${ok ? 'ok' : 'err'}">
+        <div class="ai-action-head">
+          <span class="ai-action-icon-sm">${tool.icon}</span>
+          <span class="ai-action-name">${tool.label}</span>
+          <span class="ai-action-status">${ok ? '✓ نُفّذ' : '✗ فشل'}</span>
+        </div>
+        ${summary ? `<div class="ai-action-body">${summary}</div>` : ''}
+      </div>`;
+    }).join('');
+    return `<div class="ai-actions-timeline">${items}</div>`;
+  }
+  function renderActionSummary(a) {
+    const r = a.result;
+    if (!r || r.error) return r?.error ? `<span style="color:#f87171">${escapeHTML(r.error)}</span>` : '';
+    if (a.tool === 'search_freight_rates' && r.top_5) {
+      return r.top_5.slice(0, 3).map(o =>
+        `<div class="ai-mini-row"><strong>${escapeHTML(o.carrier)}</strong> · $${o.price_usd} · ${o.transit_days} يوم${o.direct ? ' · مباشر' : ''}</div>`
+      ).join('') + (r.offers_count > 3 ? `<div class="ai-mini-row" style="color:rgba(244,247,250,0.5)">و ${r.offers_count - 3} عروض أخرى...</div>` : '');
+    }
+    if (a.tool === 'calculate_customs_clearance') {
+      return `<div class="ai-mini-row">جمارك: <strong>$${r.customs_duty_usd}</strong> (${r.duty_rate_percent}%)</div>
+              <div class="ai-mini-row">ضريبة 15%: <strong>$${r.vat_15_usd}</strong></div>
+              <div class="ai-mini-row">المجموع: <strong style="color:#39C6FF">$${r.total_gov_fees_usd}</strong> ≈ ${r.total_gov_fees_sar} ر.س</div>`;
+    }
+    if (a.tool === 'calculate_full_import_cost') {
+      const b = r.breakdown_usd || {};
+      return `<div class="ai-mini-row">CIF: $${b.cif_subtotal}</div>
+              <div class="ai-mini-row">جمارك + ضريبة: $${(b.customs_duty + b.vat_15_percent).toFixed(2)}</div>
+              <div class="ai-mini-row">خدمات (تخليص + سابر): $${(b.clearance_service + b.saber_certificate).toFixed(2)}</div>
+              <div class="ai-mini-row" style="border-top:1px solid rgba(57,198,255,0.12);padding-top:6px;margin-top:4px"><strong style="color:#39C6FF">إجمالي: $${r.total_landed_cost_usd}</strong> ≈ ${r.total_landed_cost_sar} ر.س</div>`;
+    }
+    if (a.tool === 'request_saber_certificate') {
+      return `<div class="ai-mini-row">رقم الطلب: <code>${r.saber_application_id}</code></div>
+              <div class="ai-mini-row">الرسوم: <strong>${r.saber_fee_sar} ر.س</strong> · المدة: ${r.estimated_days} أيام</div>`;
+    }
+    if (a.tool === 'get_my_shipments' && r.shipments) {
+      return r.shipments.slice(0, 3).map(s =>
+        `<div class="ai-mini-row"><code>${s.id}</code> · ${escapeHTML(s.route)} · ${escapeHTML(s.status_ar || s.status)}</div>`
+      ).join('') + (r.total > 3 ? `<div class="ai-mini-row" style="color:rgba(244,247,250,0.5)">و ${r.total - 3} شحنات أخرى...</div>` : '');
+    }
+    if (a.tool === 'track_shipment' && r.shipment) {
+      return `<div class="ai-mini-row">${escapeHTML(r.shipment.route)} · <strong>${escapeHTML(r.shipment.status)}</strong></div>` +
+        (r.events || []).slice(0, 3).map(e => `<div class="ai-mini-row" style="color:rgba(244,247,250,0.62)">• ${escapeHTML(e.status)}</div>`).join('');
+    }
+    if (a.tool === 'subscribe_package') {
+      return `<div class="ai-mini-row"><strong>${escapeHTML(r.tier_ar)}</strong> · ${r.single_shipment_sar} ر.س/شحنة</div>`;
+    }
+    if (a.tool === 'get_invoices' && r.invoices) {
+      return r.invoices.slice(0, 3).map(i =>
+        `<div class="ai-mini-row"><code>${i.id}</code> · ${i.amount_sar} ر.س · ${escapeHTML(i.status)}</div>`
+      ).join('');
+    }
+    return '';
+  }
+
   function addMsg(text, who, opts) {
     const row = document.createElement('div');
     row.className = 'ai-msg ai-msg-' + who;
     const bubble = document.createElement('div');
     bubble.className = 'ai-bubble';
+    // Action timeline appears BEFORE the reply text (shows what agent did first)
+    if (who === 'bot' && opts?.actions?.length) {
+      bubble.insertAdjacentHTML('afterbegin', buildActionTimeline(opts.actions));
+    }
     let html = escapeHTML(text);
-    // Convert markdown-style **bold** to <strong>
     html = html.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
-    bubble.innerHTML = html;
-    // Append action cards for bot messages
+    const textDiv = document.createElement('div');
+    textDiv.className = 'ai-bubble-text';
+    textDiv.innerHTML = html;
+    bubble.appendChild(textDiv);
     if (who === 'bot' && opts?.actionCards?.length) {
       const cardsHtml = buildActionCardsHTML(opts.actionCards);
       if (cardsHtml) bubble.insertAdjacentHTML('beforeend', cardsHtml);
@@ -1488,18 +1622,32 @@ if (new URLSearchParams(window.location.search).get('login') === '1') {
     const typing = addTyping();
 
     try {
-      const r = await fetch('/api/chat', {
+      // Get auth token if user is logged in (so agent can call protected tools)
+      let authHeader = {};
+      try {
+        for (const k of Object.keys(localStorage)) {
+          if (k.startsWith('sb-') && k.endsWith('-auth-token')) {
+            const d = JSON.parse(localStorage.getItem(k));
+            if (d?.access_token) { authHeader = { 'Authorization': `Bearer ${d.access_token}` }; break; }
+          }
+        }
+      } catch {}
+
+      // Call the AI Agent endpoint (Gemini + function calling)
+      const r = await fetch('/api/agent', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', ...authHeader },
         body: JSON.stringify({ message: text, history }),
       });
       const j = await r.json();
       typing.remove();
-      const reply = j.reply || j.error?.message || 'عذراً، حدث خطأ. حاول مرة ثانية.';
-      // Detect actionable topics in both the user question and bot reply
+      const reply = j.reply || j.error || 'عذراً، حدث خطأ. حاول مرة ثانية.';
+
+      // Render bot reply WITH action timeline (tools the agent executed)
+      const actions = j.actions || [];
       const combined = text + ' ' + reply;
       const cards = pickActionCards(combined);
-      addMsg(reply, 'bot', { actionCards: cards });
+      addMsg(reply, 'bot', { actionCards: cards, actions });
       history.push({ role: 'assistant', content: reply });
     } catch (e) {
       typing.remove();
@@ -1520,9 +1668,9 @@ if (new URLSearchParams(window.location.search).get('login') === '1') {
     }
   });
 
-  // Initial welcome message with hyper-cards (shows on load)
+  // Initial welcome — emphasize agent capability, not just chat
   addMsg(
-    '👋 مرحباً! أنا FREIGHTLX AI. اختر خدمة من البطاقات أو اسألني مباشرة عن أي شي يخص الشحن الدولي والاستيراد للسعودية:',
+    '👋 مرحباً! أنا FREIGHTLX AI — المهندس التشغيلي للمنصة.\n\nأنا لا أجيب فقط. أنفّذ خدماتك فعلياً:\n• أبحث عن أسعار شحن من 12 خط ملاحي live\n• أحسب التخليص الجمركي وضريبة 15%\n• أبدأ طلبات سابر\n• أتتبع شحناتك وأدير فواتيرك\n\nاكتب ما تحتاج، أو اختر بطاقة:',
     'bot',
     { actionCards: ['rates', 'customs', 'cert', 'fullcost'] }
   );
