@@ -869,28 +869,38 @@ form.addEventListener('submit', async (e) => {
   }
 });
 
-// SCAC code → Wikipedia/CDN logo (canonical, white background variant)
+// SCAC code → carrier logo (Wikipedia commons SVG, all 12 carriers)
 const CARRIER_LOGOS = {
-  // Top global carriers
-  MAEU: 'https://upload.wikimedia.org/wikipedia/commons/thumb/3/30/Maersk_Group_Logo.svg/320px-Maersk_Group_Logo.svg.png',
-  SEAU: 'https://upload.wikimedia.org/wikipedia/commons/thumb/3/30/Maersk_Group_Logo.svg/320px-Maersk_Group_Logo.svg.png',
-  MAEI: 'https://upload.wikimedia.org/wikipedia/commons/thumb/3/30/Maersk_Group_Logo.svg/320px-Maersk_Group_Logo.svg.png',
+  // 1. Maersk (all SCAC variants)
+  MAEU: 'https://upload.wikimedia.org/wikipedia/commons/thumb/d/df/Maersk_Logo.svg/320px-Maersk_Logo.svg.png',
+  SEAU: 'https://upload.wikimedia.org/wikipedia/commons/thumb/d/df/Maersk_Logo.svg/320px-Maersk_Logo.svg.png',
+  MAEI: 'https://upload.wikimedia.org/wikipedia/commons/thumb/d/df/Maersk_Logo.svg/320px-Maersk_Logo.svg.png',
+  // 2. MSC
   MSCU: 'https://upload.wikimedia.org/wikipedia/commons/thumb/3/3a/MSC_Mediterranean_Shipping_Company_logo.svg/320px-MSC_Mediterranean_Shipping_Company_logo.svg.png',
+  // 3. COSCO
   COSU: 'https://upload.wikimedia.org/wikipedia/commons/thumb/4/4c/Cosco_logo.svg/320px-Cosco_logo.svg.png',
+  // 4. CMA CGM
   CMDU: 'https://upload.wikimedia.org/wikipedia/commons/thumb/5/57/CMA_CGM_logo.svg/320px-CMA_CGM_logo.svg.png',
+  // 5. Hapag-Lloyd
   HLCU: 'https://upload.wikimedia.org/wikipedia/commons/thumb/2/2c/Hapag-Lloyd_logo.svg/320px-Hapag-Lloyd_logo.svg.png',
+  // 6. ONE
   ONEY: 'https://upload.wikimedia.org/wikipedia/commons/thumb/0/0a/Ocean_Network_Express_logo.svg/320px-Ocean_Network_Express_logo.svg.png',
   ONNE: 'https://upload.wikimedia.org/wikipedia/commons/thumb/0/0a/Ocean_Network_Express_logo.svg/320px-Ocean_Network_Express_logo.svg.png',
+  // 7. Evergreen
   EGLV: 'https://upload.wikimedia.org/wikipedia/commons/thumb/4/4f/Evergreen_Group_logo.svg/320px-Evergreen_Group_logo.svg.png',
+  // 8. HMM
+  HMMU: 'https://upload.wikimedia.org/wikipedia/commons/thumb/2/2a/HMM_Co.%2C_Ltd._logo.svg/320px-HMM_Co.%2C_Ltd._logo.svg.png',
+  // 9. OOCL (COSCO subsidiary)
   OOLU: 'https://upload.wikimedia.org/wikipedia/commons/thumb/5/52/OOCL_logo.svg/320px-OOCL_logo.svg.png',
-  YMLU: 'https://upload.wikimedia.org/wikipedia/commons/thumb/c/c0/Yang_Ming_logo.svg/320px-Yang_Ming_logo.svg.png',
-  HMMU: 'https://upload.wikimedia.org/wikipedia/commons/thumb/5/55/HMM_logo.svg/320px-HMM_logo.svg.png',
-  // CMA CGM Group subsidiaries (all share Group brand registry)
+  // 10. APL (CMA CGM subsidiary)
   APLU: 'https://upload.wikimedia.org/wikipedia/commons/thumb/4/45/APL_Logo.svg/320px-APL_Logo.svg.png',
-  ANNU: 'https://upload.wikimedia.org/wikipedia/commons/thumb/5/57/CMA_CGM_logo.svg/320px-CMA_CGM_logo.svg.png',
-  ANLC: 'https://upload.wikimedia.org/wikipedia/commons/thumb/5/57/CMA_CGM_logo.svg/320px-CMA_CGM_logo.svg.png',
+  // 11. ANL (CMA CGM subsidiary)
+  ANNU: 'https://upload.wikimedia.org/wikipedia/commons/thumb/c/cc/ANL_Container_Line_Logo.svg/320px-ANL_Container_Line_Logo.svg.png',
+  ANLC: 'https://upload.wikimedia.org/wikipedia/commons/thumb/c/cc/ANL_Container_Line_Logo.svg/320px-ANL_Container_Line_Logo.svg.png',
+  // 12. CNC (CMA CGM subsidiary)
   CHNL: 'https://upload.wikimedia.org/wikipedia/commons/thumb/5/57/CMA_CGM_logo.svg/320px-CMA_CGM_logo.svg.png',
   CNCO: 'https://upload.wikimedia.org/wikipedia/commons/thumb/5/57/CMA_CGM_logo.svg/320px-CMA_CGM_logo.svg.png',
+  CNCL: 'https://upload.wikimedia.org/wikipedia/commons/thumb/5/57/CMA_CGM_logo.svg/320px-CMA_CGM_logo.svg.png',
   // Regional & Saudi-specific
   AKKU: 'https://www.arkasline.com.tr/Resources/site/img/logo.png',
   CSCL: 'https://upload.wikimedia.org/wikipedia/commons/thumb/4/4c/Cosco_logo.svg/320px-Cosco_logo.svg.png',
@@ -1075,8 +1085,35 @@ document.querySelectorAll('.sort-btn').forEach(b => {
   });
 });
 
+// ─── Booking workflow with rich confirmation modal ───
 async function bookOffer(o) {
-  if (!confirm(`تأكيد الحجز مع ${o.carrier_name} بسعر $${o.price}؟`)) return;
+  if (!window.flxApi || !window.flxApi.isAuthenticated()) {
+    const goLogin = await flxBookingPrompt({
+      icon: '🔐',
+      title: 'سجّل دخول أولاً',
+      desc: 'لإتمام الحجز ومتابعة شحناتك يلزم إنشاء حساب أو تسجيل الدخول.',
+      confirmText: 'تسجيل الدخول',
+      cancelText: 'إلغاء',
+    });
+    if (goLogin) window.location.href = '/?login=1';
+    return;
+  }
+  const confirmed = await flxBookingPrompt({
+    icon: '🚢',
+    title: 'تأكيد الحجز',
+    desc: `سيتم حجز شحنة مع <strong>${o.carrier_name}</strong> بسعر <strong>$${(o.price || 0).toLocaleString()}</strong> للحاوية.`,
+    meta: [
+      ['الناقل', o.carrier_name],
+      ['المسار', o.route || '—'],
+      ['ETA', o.eta || '—'],
+      ['الترانزيت', `${o.transit_days || '—'} يوم`],
+      ['السعر', `$${(o.price || 0).toLocaleString()} ${o.currency || 'USD'}`],
+    ],
+    confirmText: 'تأكيد الحجز',
+    cancelText: 'إلغاء',
+  });
+  if (!confirmed) return;
+  flxBookingLoader('جاري إنشاء الحجز...');
   try {
     const quote = await flxApi.quotes.create({
       origin: document.getElementById('originPort').parentNode.querySelector('input[type=hidden]').value,
@@ -1085,9 +1122,80 @@ async function bookOffer(o) {
       price: o.price, valid_until: o.validity_until || new Date(Date.now() + 7 * 86400000).toISOString().slice(0, 10),
     });
     const booked = await flxApi.quotes.book(quote.id);
-    alert(`✅ تم الحجز!\nالشحنة: ${booked.shipment.id}\nالفاتورة: ${booked.invoice.id}`);
-    window.location.href = '/dashboard.html';
-  } catch (e) { alert('فشل الحجز: ' + e.message); }
+    flxBookingSuccess(booked);
+  } catch (e) {
+    flxBookingError(e.message);
+  }
+}
+
+// ─── Glass-themed booking modal helpers ───
+function flxBookingModal(html) {
+  const old = document.getElementById('flxBookingOverlay');
+  if (old) old.remove();
+  const overlay = document.createElement('div');
+  overlay.id = 'flxBookingOverlay';
+  overlay.className = 'flx-book-overlay';
+  overlay.innerHTML = `<div class="flx-book-modal">${html}</div>`;
+  document.body.appendChild(overlay);
+  // Trigger animation
+  requestAnimationFrame(() => overlay.classList.add('open'));
+  return overlay;
+}
+
+function flxBookingPrompt({ icon, title, desc, meta, confirmText, cancelText }) {
+  return new Promise((resolve) => {
+    const metaHtml = meta ? `<div class="flx-book-meta">${meta.map(([k,v]) => `<div class="flx-book-meta-row"><span>${k}</span><strong>${v}</strong></div>`).join('')}</div>` : '';
+    const overlay = flxBookingModal(`
+      <div class="flx-book-icon">${icon || '🚢'}</div>
+      <h3 class="flx-book-title">${title}</h3>
+      <p class="flx-book-desc">${desc}</p>
+      ${metaHtml}
+      <div class="flx-book-actions">
+        <button class="flx-book-cancel" id="flxBookCancel">${cancelText || 'إلغاء'}</button>
+        <button class="flx-book-confirm" id="flxBookConfirm">${confirmText || 'تأكيد'}</button>
+      </div>
+    `);
+    overlay.querySelector('#flxBookConfirm').onclick = () => { overlay.remove(); resolve(true); };
+    overlay.querySelector('#flxBookCancel').onclick = () => { overlay.remove(); resolve(false); };
+    overlay.onclick = (e) => { if (e.target === overlay) { overlay.remove(); resolve(false); } };
+  });
+}
+
+function flxBookingLoader(msg) {
+  flxBookingModal(`
+    <div class="flx-book-loader"><div class="flx-spinner"></div></div>
+    <h3 class="flx-book-title">${msg || 'جاري المعالجة...'}</h3>
+    <p class="flx-book-desc">يتم تأكيد الحجز مع الناقل وإنشاء الفاتورة.</p>
+  `);
+}
+
+function flxBookingSuccess(booked) {
+  const shipmentId = booked?.shipment?.id || '';
+  const invoiceId = booked?.invoice?.id || '';
+  const overlay = flxBookingModal(`
+    <div class="flx-book-icon flx-success-icon">✓</div>
+    <h3 class="flx-book-title" style="color:#4ade80">تم الحجز بنجاح!</h3>
+    <p class="flx-book-desc">تم إنشاء شحنتك ولفاتورتك. ستجدهم في لوحة التحكم.</p>
+    <div class="flx-book-meta">
+      <div class="flx-book-meta-row"><span>رقم الشحنة</span><strong style="font-family:'JetBrains Mono',monospace;color:#39C6FF">${shipmentId}</strong></div>
+      <div class="flx-book-meta-row"><span>رقم الفاتورة</span><strong style="font-family:'JetBrains Mono',monospace;color:#39C6FF">${invoiceId}</strong></div>
+    </div>
+    <div class="flx-book-actions">
+      <button class="flx-book-cancel" onclick="location.reload()">بحث جديد</button>
+      <button class="flx-book-confirm" onclick="window.location.href='/dashboard.html#section-shipments'">عرض في لوحة التحكم →</button>
+    </div>
+  `);
+}
+
+function flxBookingError(msg) {
+  flxBookingModal(`
+    <div class="flx-book-icon flx-error-icon">!</div>
+    <h3 class="flx-book-title" style="color:#f87171">فشل الحجز</h3>
+    <p class="flx-book-desc">${msg || 'حدث خطأ غير متوقع. حاول مرة ثانية أو تواصل مع الدعم.'}</p>
+    <div class="flx-book-actions">
+      <button class="flx-book-confirm" onclick="document.getElementById('flxBookingOverlay').remove()">حسناً</button>
+    </div>
+  `);
 }
 
 function prefillFromURL() {

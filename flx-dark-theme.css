@@ -817,6 +817,264 @@ code, .code, .mono, pre {
   color: var(--white) !important;
 }
 
+/* ═══════════════════════════════════════════════════════════
+   RATES PAGE — Premium offer cards + booking modal
+   ═══════════════════════════════════════════════════════════ */
+
+/* Offer card — premium glass with elevated hover */
+.offer {
+  background: linear-gradient(180deg, rgba(11, 42, 64, 0.7), rgba(7, 28, 44, 0.6)) !important;
+  border: 1px solid rgba(57, 198, 255, 0.22) !important;
+  border-radius: 18px !important;
+  backdrop-filter: blur(18px) saturate(1.4) !important;
+  -webkit-backdrop-filter: blur(18px) saturate(1.4) !important;
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.05) inset,
+    0 16px 48px rgba(0, 0, 0, 0.32) !important;
+  transition: transform 0.22s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.22s, box-shadow 0.22s !important;
+  position: relative;
+  overflow: hidden;
+}
+.offer:hover {
+  border-color: rgba(57, 198, 255, 0.45) !important;
+  transform: translateY(-3px);
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.08) inset,
+    0 24px 60px rgba(10, 132, 255, 0.22) !important;
+}
+.offer.featured {
+  border-color: rgba(251, 191, 36, 0.45) !important;
+  box-shadow:
+    0 1px 0 rgba(255, 215, 80, 0.10) inset,
+    0 16px 48px rgba(251, 191, 36, 0.18) !important;
+}
+.offer.fastest {
+  border-color: rgba(57, 198, 255, 0.6) !important;
+  box-shadow:
+    0 1px 0 rgba(57, 198, 255, 0.12) inset,
+    0 16px 48px rgba(10, 132, 255, 0.24) !important;
+}
+
+/* Carrier name + meta */
+.carrier-name { color: #fff !important; font-weight: 800 !important; letter-spacing: -0.01em !important; font-size: 17px !important; }
+.carrier-meta .tag { font-size: 11px !important; padding: 4px 10px !important; border-radius: 999px !important; }
+.tag.direct { background: rgba(34, 197, 94, 0.14) !important; color: #4ade80 !important; border: 1px solid rgba(34, 197, 94, 0.3) !important; }
+.tag.ts { background: rgba(251, 191, 36, 0.12) !important; color: #fbbf24 !important; border: 1px solid rgba(251, 191, 36, 0.3) !important; }
+.tag.country { background: rgba(10, 132, 255, 0.12) !important; color: var(--cyan) !important; border: 1px solid rgba(57, 198, 255, 0.3) !important; }
+.tag.transit { background: rgba(94, 234, 212, 0.12) !important; color: #5eead4 !important; border: 1px solid rgba(94, 234, 212, 0.3) !important; }
+
+/* Route visualization */
+.route-leg { color: rgba(244, 247, 250, 0.92) !important; }
+.route-arrow,
+.route-line { background: linear-gradient(90deg, rgba(57, 198, 255, 0.6), rgba(10, 132, 255, 0.3)) !important; }
+.route-dot { background: var(--cyan) !important; box-shadow: 0 0 12px var(--cyan); }
+.route-mid { color: rgba(244, 247, 250, 0.62) !important; }
+.route-mid-pill {
+  background: rgba(10, 132, 255, 0.16) !important;
+  color: var(--cyan) !important;
+  border: 1px solid rgba(57, 198, 255, 0.32) !important;
+  font-family: 'JetBrains Mono', monospace !important;
+}
+
+/* Price — big & glowing */
+.col-price-action .price-amount,
+.price-amount,
+.col-price-action .price-currency {
+  color: #fff !important;
+}
+.col-price-action {
+  text-align: left;
+}
+.col-price-action [class*="price"]:not(button) {
+  background: linear-gradient(135deg, #fff 0%, var(--cyan) 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  filter: drop-shadow(0 0 12px rgba(57, 198, 255, 0.2));
+}
+
+/* Book button — large prominent */
+.book-btn {
+  background: linear-gradient(135deg, #0A84FF, #0066D6) !important;
+  color: #fff !important;
+  border: none !important;
+  padding: 12px 22px !important;
+  border-radius: 12px !important;
+  font-weight: 700 !important;
+  font-size: 14px !important;
+  letter-spacing: 0.01em !important;
+  box-shadow: 0 8px 24px rgba(10, 132, 255, 0.36) !important;
+  cursor: pointer !important;
+  transition: all 0.18s !important;
+}
+.book-btn:hover { transform: translateY(-2px); box-shadow: 0 12px 32px rgba(10, 132, 255, 0.52) !important; }
+.book-btn:active { transform: translateY(0); }
+
+/* Toggle details + offer-extra */
+.toggle-details {
+  color: var(--cyan) !important;
+  background: rgba(10, 132, 255, 0.08) !important;
+  border: 1px solid rgba(57, 198, 255, 0.18) !important;
+}
+.toggle-details:hover { background: rgba(10, 132, 255, 0.16) !important; }
+.offer-extra { background: rgba(5, 14, 24, 0.4) !important; border-top: 1px solid rgba(57, 198, 255, 0.10) !important; }
+.offer-extra .ek, .offer-extra .ev { color: rgba(244, 247, 250, 0.85) !important; }
+.offer-extra .ek { color: rgba(244, 247, 250, 0.55) !important; font-size: 11px !important; }
+
+/* Ribbon (best/fastest) */
+.offer-ribbon {
+  background: linear-gradient(135deg, #fbbf24, #f59e0b) !important;
+  color: #1a1f2e !important;
+  font-weight: 800 !important;
+  box-shadow: 0 8px 24px rgba(251, 191, 36, 0.4) !important;
+}
+.offer-ribbon.fast {
+  background: linear-gradient(135deg, #39C6FF, #0A84FF) !important;
+  color: #fff !important;
+  box-shadow: 0 8px 24px rgba(10, 132, 255, 0.5) !important;
+}
+
+/* ═══ BOOKING MODAL — Glass premium ═══ */
+.flx-book-overlay {
+  position: fixed; inset: 0;
+  background: rgba(5, 14, 24, 0.8);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  display: flex; align-items: center; justify-content: center;
+  z-index: 99999;
+  opacity: 0;
+  transition: opacity 0.24s ease;
+  padding: 20px;
+}
+.flx-book-overlay.open { opacity: 1; }
+.flx-book-modal {
+  background: linear-gradient(180deg, rgba(11, 42, 64, 0.95), rgba(7, 28, 44, 0.95));
+  border: 1px solid rgba(57, 198, 255, 0.32);
+  border-radius: 22px;
+  padding: 32px 28px;
+  max-width: 460px;
+  width: 100%;
+  text-align: center;
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.08) inset,
+    0 32px 80px rgba(0, 0, 0, 0.6),
+    0 0 80px rgba(10, 132, 255, 0.18);
+  transform: scale(0.92) translateY(20px);
+  transition: transform 0.32s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.flx-book-overlay.open .flx-book-modal { transform: scale(1) translateY(0); }
+.flx-book-icon {
+  width: 72px; height: 72px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, rgba(10, 132, 255, 0.18), rgba(57, 198, 255, 0.08));
+  border: 1px solid rgba(57, 198, 255, 0.3);
+  display: inline-flex; align-items: center; justify-content: center;
+  font-size: 32px;
+  margin: 0 auto 18px;
+  color: var(--cyan);
+}
+.flx-book-icon.flx-success-icon {
+  background: linear-gradient(135deg, rgba(34, 197, 94, 0.24), rgba(34, 197, 94, 0.08));
+  border-color: rgba(34, 197, 94, 0.5);
+  color: #4ade80;
+  font-weight: 800;
+  box-shadow: 0 0 40px rgba(34, 197, 94, 0.4);
+  animation: successPop 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.flx-book-icon.flx-error-icon {
+  background: linear-gradient(135deg, rgba(239, 68, 68, 0.24), rgba(239, 68, 68, 0.08));
+  border-color: rgba(239, 68, 68, 0.5);
+  color: #f87171;
+  font-weight: 800;
+}
+@keyframes successPop {
+  0%   { transform: scale(0.3) rotate(-20deg); opacity: 0; }
+  60%  { transform: scale(1.18) rotate(10deg); opacity: 1; }
+  100% { transform: scale(1) rotate(0); opacity: 1; }
+}
+.flx-book-title {
+  font-size: 22px;
+  font-weight: 800;
+  color: #fff;
+  margin: 0 0 8px;
+  letter-spacing: -0.01em;
+}
+.flx-book-desc {
+  color: rgba(244, 247, 250, 0.72);
+  font-size: 14px;
+  line-height: 1.7;
+  margin: 0 0 22px;
+}
+.flx-book-meta {
+  background: rgba(5, 14, 24, 0.6);
+  border: 1px solid rgba(57, 198, 255, 0.16);
+  border-radius: 14px;
+  padding: 14px 18px;
+  margin-bottom: 22px;
+  text-align: right;
+}
+.flx-book-meta-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 0;
+  border-bottom: 1px solid rgba(57, 198, 255, 0.08);
+  font-size: 13px;
+}
+.flx-book-meta-row:last-child { border-bottom: none; }
+.flx-book-meta-row span { color: rgba(244, 247, 250, 0.6); }
+.flx-book-meta-row strong { color: #fff; font-weight: 700; }
+.flx-book-actions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+.flx-book-confirm {
+  flex: 1;
+  background: linear-gradient(135deg, #0A84FF, #0066D6);
+  color: #fff;
+  border: none;
+  border-radius: 12px;
+  padding: 13px 22px;
+  font-weight: 700;
+  font-size: 14px;
+  cursor: pointer;
+  font-family: inherit;
+  box-shadow: 0 8px 24px rgba(10, 132, 255, 0.4);
+  transition: all 0.18s;
+  min-width: 140px;
+}
+.flx-book-confirm:hover { transform: translateY(-2px); box-shadow: 0 12px 32px rgba(10, 132, 255, 0.55); }
+.flx-book-cancel {
+  flex: 1;
+  background: rgba(11, 42, 64, 0.6);
+  color: rgba(244, 247, 250, 0.85);
+  border: 1px solid rgba(57, 198, 255, 0.24);
+  border-radius: 12px;
+  padding: 13px 22px;
+  font-weight: 600;
+  font-size: 14px;
+  cursor: pointer;
+  font-family: inherit;
+  transition: all 0.18s;
+  min-width: 100px;
+}
+.flx-book-cancel:hover { background: rgba(10, 132, 255, 0.12); border-color: rgba(57, 198, 255, 0.4); }
+.flx-book-loader {
+  width: 72px; height: 72px;
+  display: inline-flex; align-items: center; justify-content: center;
+  margin: 0 auto 18px;
+}
+.flx-spinner {
+  width: 48px; height: 48px;
+  border: 3px solid rgba(57, 198, 255, 0.16);
+  border-top-color: var(--cyan);
+  border-radius: 50%;
+  animation: flxSpin 0.9s linear infinite;
+}
+@keyframes flxSpin { to { transform: rotate(360deg); } }
+
 /* ═══ AI ATMOSPHERIC ORBS (float in background) ═══ */
 body::after {
   content: '';
