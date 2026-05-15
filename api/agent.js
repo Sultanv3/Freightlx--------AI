@@ -1216,12 +1216,12 @@ async function execTool(name, args, ctx) {
   }
 
   if (name === 'lookup_hs_code') {
-    const params = new URLSearchParams();
-    if (args.q) params.set('q', args.q);
-    if (args.hs) params.set('hs', String(args.hs));
-    params.set('limit', String(Math.min(args.limit || 5, 10)));
     try {
-      const r = await fetch(`${base}/api/hs-codes?${params.toString()}`);
+      const qs = [];
+      if (args && args.q) qs.push('q=' + encodeURIComponent(args.q));
+      if (args && args.hs) qs.push('hs=' + encodeURIComponent(String(args.hs)));
+      qs.push('limit=' + Math.min((args && args.limit) || 5, 10));
+      const r = await fetch(`${base}/api/hs-codes?${qs.join('&')}`);
       if (!r.ok) return { error: `HS lookup failed: ${r.status}` };
       const j = await r.json();
       const results = (j.results || []).map(x => ({
@@ -1232,16 +1232,13 @@ async function execTool(name, args, ctx) {
         regulation_en: x.reg_en,
         regulated: x.reg_en !== 'Non Regulated',
         required_certificates: x.certs,
-        saber_required: x.certs.length > 0 && x.reg_en !== 'Non Regulated',
+        saber_required: (x.certs || []).length > 0 && x.reg_en !== 'Non Regulated',
       }));
       return {
-        query: args.q || null,
-        hs_prefix: args.hs || null,
+        query: (args && args.q) || null,
+        hs_prefix: (args && args.hs) || null,
         count: results.length,
         results,
-        note: results.length === 0
-          ? 'لم نعثر على مطابقة في قاعدة الـ 9,862 HS code. جرّب مصطلحاً مختلفاً أو HS code بادئة 4-6 أرقام.'
-          : `وُجد ${results.length} نتيجة. الشهادات المطلوبة تُحدّد التعامل مع سابر/SFDA/CITC.`,
       };
     } catch (e) {
       return { error: `lookup_hs_code error: ${e.message}` };
