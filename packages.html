@@ -1,0 +1,689 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>باقات الخدمات اللوجستية — FREIGHTLX</title>
+<meta name="description" content="باقات شاملة للاستيراد إلى السعودية: شهادات سابر، التخليص الجمركي، شهادات المنشأ والمطابقة، تأمين الشحنات.">
+<link rel="icon" href="/assets/logo/color-logo.svg" type="image/svg+xml">
+<script>window.FLX_API_BASE = '/api/v1';</script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/flx-dark-theme.css">
+
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: 'Inter', 'IBM Plex Sans Arabic', system-ui, sans-serif;
+  background:
+    radial-gradient(ellipse 80% 50% at 20% 0%, rgba(10, 132, 255, 0.10), transparent 60%),
+    radial-gradient(ellipse 60% 40% at 100% 100%, rgba(57, 198, 255, 0.08), transparent 60%),
+    linear-gradient(180deg, #050E18 0%, #071C2C 100%);
+  color: rgba(244,247,250,0.92);
+  min-height: 100vh;
+  background-attachment: fixed;
+}
+body::before {
+  content: '';
+  position: fixed; inset: 0;
+  background-image:
+    linear-gradient(rgba(57,198,255,0.025) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(57,198,255,0.025) 1px, transparent 1px);
+  background-size: 80px 80px;
+  pointer-events: none;
+  z-index: 0;
+  opacity: 0.4;
+}
+
+.wrap { max-width: 1280px; margin: 0 auto; padding: 0 24px; position: relative; z-index: 2; }
+
+/* ─── TOPBAR ─── */
+.topbar {
+  position: sticky; top: 0; z-index: 100;
+  padding: 18px 0;
+  background: rgba(7, 28, 44, 0.75);
+  backdrop-filter: blur(18px) saturate(1.5);
+  -webkit-backdrop-filter: blur(18px) saturate(1.5);
+  border-bottom: 1px solid rgba(57, 198, 255, 0.12);
+}
+.topbar-row { display: flex; align-items: center; justify-content: space-between; gap: 16px; }
+.brand { display: inline-flex; align-items: center; text-decoration: none; }
+.brand img { height: 36px; width: auto; filter: drop-shadow(0 0 12px rgba(57,198,255,0.25)); }
+.nav { display: flex; gap: 8px; align-items: center; }
+.nav a {
+  text-decoration: none; color: rgba(244,247,250,0.78);
+  padding: 9px 14px; border-radius: 10px;
+  font-weight: 500; font-size: 14px;
+  transition: all 0.18s;
+}
+.nav a:hover { color: #fff; background: rgba(10, 132, 255, 0.10); }
+.nav .active { color: #fff; background: rgba(10, 132, 255, 0.16); }
+.cta-fill {
+  background: linear-gradient(135deg, #0A84FF, #0066D6) !important;
+  color: #fff !important;
+  font-weight: 700 !important;
+  box-shadow: 0 8px 24px rgba(10, 132, 255, 0.32);
+}
+
+/* ─── HEADER ─── */
+.page-header { padding: 80px 0 40px; text-align: center; }
+.page-eyebrow {
+  display: inline-flex; align-items: center; gap: 8px;
+  background: rgba(10, 132, 255, 0.10);
+  border: 1px solid rgba(57, 198, 255, 0.28);
+  color: var(--cyan, #39C6FF);
+  padding: 8px 18px;
+  border-radius: 999px;
+  font-size: 12px; font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  margin-bottom: 24px;
+}
+.page-eyebrow .dot { width: 7px; height: 7px; border-radius: 50%; background: #4ade80; box-shadow: 0 0 8px #4ade80; }
+.page-title {
+  font-size: clamp(38px, 5vw, 64px);
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  line-height: 1.05;
+  color: #fff;
+  margin-bottom: 18px;
+}
+.page-title .glow {
+  background: linear-gradient(135deg, #fff 0%, #39C6FF 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+.page-lead {
+  max-width: 720px; margin: 0 auto;
+  font-size: 17px; line-height: 1.75;
+  color: rgba(244,247,250,0.65);
+}
+
+/* ─── BILLING TOGGLE ─── */
+.billing-toggle {
+  display: inline-flex;
+  background: rgba(11, 42, 64, 0.6);
+  border: 1px solid rgba(57, 198, 255, 0.16);
+  border-radius: 999px;
+  padding: 5px;
+  margin: 32px auto 0;
+}
+.billing-toggle button {
+  background: transparent;
+  border: none;
+  color: rgba(244,247,250,0.62);
+  padding: 9px 22px;
+  border-radius: 999px;
+  font-weight: 600;
+  font-size: 13px;
+  cursor: pointer;
+  font-family: inherit;
+  transition: all 0.18s;
+}
+.billing-toggle button.active {
+  background: linear-gradient(135deg, #0A84FF, #0066D6);
+  color: #fff;
+  box-shadow: 0 4px 16px rgba(10,132,255,0.32);
+}
+.save-badge {
+  background: rgba(34, 197, 94, 0.18);
+  color: #4ade80;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 10px;
+  margin-right: 6px;
+  font-weight: 700;
+}
+
+/* ─── PACKAGES GRID ─── */
+.packages {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 24px;
+  padding: 48px 0 80px;
+}
+.pkg {
+  background: linear-gradient(180deg, rgba(11,42,64,0.7), rgba(7,28,44,0.55));
+  border: 1px solid rgba(57,198,255,0.18);
+  border-radius: 22px;
+  padding: 32px 28px 28px;
+  position: relative;
+  backdrop-filter: blur(16px) saturate(1.4);
+  -webkit-backdrop-filter: blur(16px) saturate(1.4);
+  box-shadow:
+    0 1px 0 rgba(255,255,255,0.05) inset,
+    0 16px 48px rgba(0,0,0,0.32);
+  transition: all 0.28s cubic-bezier(0.16, 1, 0.3, 1);
+  display: flex; flex-direction: column;
+}
+.pkg:hover {
+  transform: translateY(-4px);
+  border-color: rgba(57,198,255,0.45);
+  box-shadow:
+    0 1px 0 rgba(255,255,255,0.08) inset,
+    0 24px 60px rgba(10,132,255,0.22);
+}
+.pkg.featured {
+  border: 2px solid rgba(57,198,255,0.5);
+  box-shadow:
+    0 1px 0 rgba(57,198,255,0.18) inset,
+    0 24px 64px rgba(10,132,255,0.28),
+    0 0 80px rgba(10,132,255,0.12);
+}
+.pkg-ribbon {
+  position: absolute;
+  top: -14px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: linear-gradient(135deg, #0A84FF, #39C6FF);
+  color: #fff;
+  font-size: 11px;
+  font-weight: 800;
+  padding: 6px 16px;
+  border-radius: 999px;
+  letter-spacing: 0.05em;
+  white-space: nowrap;
+  box-shadow: 0 8px 24px rgba(10,132,255,0.5);
+}
+
+.pkg-icon {
+  width: 56px; height: 56px;
+  border-radius: 14px;
+  background: linear-gradient(135deg, rgba(10,132,255,0.18), rgba(57,198,255,0.08));
+  border: 1px solid rgba(57,198,255,0.28);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 28px;
+  margin-bottom: 18px;
+}
+.pkg-tier {
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--cyan, #39C6FF);
+  margin-bottom: 6px;
+}
+.pkg-name {
+  font-size: 26px;
+  font-weight: 800;
+  color: #fff;
+  letter-spacing: -0.02em;
+  margin-bottom: 8px;
+}
+.pkg-tagline {
+  color: rgba(244,247,250,0.62);
+  font-size: 14px;
+  line-height: 1.6;
+  margin-bottom: 24px;
+  min-height: 44px;
+}
+
+.pkg-price-block { margin: 0 0 22px; padding: 18px 0; border-top: 1px solid rgba(57,198,255,0.12); border-bottom: 1px solid rgba(57,198,255,0.12); }
+.pkg-price {
+  font-family: 'Inter', sans-serif;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  background: linear-gradient(135deg, #fff, var(--cyan, #39C6FF));
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  line-height: 1;
+}
+.pkg-price-amount { font-size: 42px; }
+.pkg-price-currency { font-size: 18px; color: rgba(244,247,250,0.5); -webkit-text-fill-color: rgba(244,247,250,0.55); margin-inline-start: 4px; }
+.pkg-price-period { font-size: 14px; color: rgba(244,247,250,0.55); -webkit-text-fill-color: rgba(244,247,250,0.55); margin-inline-start: 6px; font-weight: 500; }
+.pkg-price-note { font-size: 12px; color: rgba(244,247,250,0.5); margin-top: 8px; }
+
+.pkg-features {
+  list-style: none;
+  margin: 0 0 28px;
+  display: flex; flex-direction: column; gap: 12px;
+  flex: 1;
+}
+.pkg-features li {
+  display: flex; align-items: flex-start; gap: 12px;
+  font-size: 13px;
+  line-height: 1.6;
+  color: rgba(244,247,250,0.85);
+}
+.pkg-features .check {
+  width: 22px; height: 22px;
+  border-radius: 50%;
+  background: rgba(34,197,94,0.18);
+  color: #4ade80;
+  display: inline-flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+.pkg-features .check svg { width: 12px; height: 12px; }
+.pkg-features .feat-label { flex: 1; }
+.pkg-features .feat-label strong { color: #fff; font-weight: 700; }
+.pkg-features .feat-label .meta { display: block; font-size: 11px; color: rgba(244,247,250,0.5); margin-top: 2px; }
+
+.pkg-cta {
+  background: linear-gradient(135deg, #0A84FF, #0066D6);
+  color: #fff;
+  border: none;
+  border-radius: 12px;
+  padding: 14px 22px;
+  font-size: 15px;
+  font-weight: 700;
+  font-family: inherit;
+  cursor: pointer;
+  width: 100%;
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+  box-shadow: 0 8px 24px rgba(10,132,255,0.36);
+  transition: all 0.18s;
+}
+.pkg-cta:hover { transform: translateY(-2px); box-shadow: 0 12px 32px rgba(10,132,255,0.55); }
+.pkg-cta.outline {
+  background: rgba(11,42,64,0.6);
+  border: 1px solid rgba(57,198,255,0.32);
+  box-shadow: none;
+}
+.pkg-cta.outline:hover { background: rgba(10,132,255,0.16); border-color: rgba(57,198,255,0.5); }
+
+/* ─── COMPARISON TABLE ─── */
+.compare-section { padding: 60px 0 80px; }
+.compare-title {
+  font-size: 28px; font-weight: 800; color: #fff;
+  text-align: center; margin-bottom: 12px; letter-spacing: -0.02em;
+}
+.compare-sub { text-align: center; color: rgba(244,247,250,0.6); margin-bottom: 36px; font-size: 15px; }
+.compare-table-wrap {
+  background: rgba(11,42,64,0.5);
+  border: 1px solid rgba(57,198,255,0.16);
+  border-radius: 20px;
+  overflow: hidden;
+  backdrop-filter: blur(14px);
+}
+.compare-table { width: 100%; border-collapse: collapse; }
+.compare-table th, .compare-table td {
+  padding: 16px 20px; text-align: right;
+  border-bottom: 1px solid rgba(57,198,255,0.08);
+}
+.compare-table th {
+  background: rgba(10,132,255,0.08);
+  color: #fff;
+  font-weight: 700;
+  font-size: 14px;
+}
+.compare-table td {
+  color: rgba(244,247,250,0.78);
+  font-size: 13px;
+}
+.compare-table td:first-child { color: #fff; font-weight: 600; }
+.compare-table .yes { color: #4ade80; font-weight: 800; font-size: 18px; }
+.compare-table .no { color: rgba(244,247,250,0.25); font-weight: 800; font-size: 18px; }
+.compare-table .lim { color: #fbbf24; font-size: 12px; font-weight: 600; }
+
+/* ─── FAQ ─── */
+.faq-section { padding: 40px 0 80px; }
+.faq-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+.faq-item {
+  background: rgba(11,42,64,0.5);
+  border: 1px solid rgba(57,198,255,0.14);
+  border-radius: 14px;
+  padding: 22px 24px;
+  backdrop-filter: blur(12px);
+}
+.faq-q { font-weight: 700; color: #fff; margin-bottom: 8px; font-size: 15px; }
+.faq-a { color: rgba(244,247,250,0.7); font-size: 13.5px; line-height: 1.7; }
+
+/* ─── MOBILE ─── */
+@media (max-width: 980px) {
+  .packages { grid-template-columns: 1fr; gap: 20px; }
+  .faq-grid { grid-template-columns: 1fr; }
+  .nav a:not(.cta-fill) { display: none; }
+  .page-header { padding: 40px 0 24px; }
+}
+
+/* ─── BOOKING MODAL — inherits .flx-book-* from flx-dark-theme.css ─── */
+</style>
+</head>
+<body>
+
+<!-- ─── TOPBAR ─── -->
+<header class="topbar">
+  <div class="wrap topbar-row">
+    <a href="/" class="brand">
+      <img src="/assets/logo/white-logo.svg?v=2" alt="FREIGHTLX"
+           onerror="this.outerHTML='<span style=color:#fff;font-weight:800;font-size:20px;letter-spacing:.04em>FREIGHTLX</span>'">
+    </a>
+    <nav class="nav">
+      <a href="/">الرئيسية</a>
+      <a href="/rates.html">الأسعار</a>
+      <a href="/packages.html" class="active">الباقات</a>
+      <a href="/dashboard.html">لوحتي</a>
+      <a href="/rates.html" class="cta-fill">جرّب مجاناً ←</a>
+    </nav>
+  </div>
+</header>
+
+<!-- ─── HEADER ─── -->
+<section class="page-header">
+  <div class="wrap">
+    <div class="page-eyebrow"><span class="dot"></span> باقات استيراد متكاملة للسوق السعودي</div>
+    <h1 class="page-title">
+      اختر الباقة المناسبة<br>
+      <span class="glow">واترك الباقي علينا</span>
+    </h1>
+    <p class="page-lead">
+      من سابر إلى التخليص الجمركي إلى التسليم. نتولى كل خطوة باسمك حسب لوائح الجمارك السعودية وهيئة المواصفات (SASO).
+      التزامك الوحيد: اختيار الباقة.
+    </p>
+    <div class="billing-toggle" role="tablist">
+      <button class="active" data-period="single">شحنة واحدة</button>
+      <button data-period="monthly">اشتراك شهري <span class="save-badge">وفّر 18%</span></button>
+    </div>
+  </div>
+</section>
+
+<!-- ─── PACKAGES ─── -->
+<section>
+  <div class="wrap">
+    <div class="packages">
+
+      <!-- BASIC -->
+      <div class="pkg" data-tier="starter">
+        <div class="pkg-icon">📦</div>
+        <div class="pkg-tier">STARTER</div>
+        <div class="pkg-name">الأساسية</div>
+        <p class="pkg-tagline">للأفراد والمتاجر الصغيرة الذين يبدؤون الاستيراد للسعودية.</p>
+
+        <div class="pkg-price-block">
+          <span class="pkg-price"><span class="pkg-price-amount" data-single="1,650" data-monthly="1,350">1,650</span><span class="pkg-price-currency">ر.س</span></span>
+          <span class="pkg-price-period">/ شحنة</span>
+          <div class="pkg-price-note">+ ضريبة القيمة المضافة 15% · الرسوم الجمركية حسب نوع البضاعة</div>
+        </div>
+
+        <ul class="pkg-features">
+          <li><span class="check"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.5"><polyline points="20 6 9 17 4 12"/></svg></span><span class="feat-label"><strong>شهادة سابر (SABER)</strong><span class="meta">تسجيل المنتج + شهادة المطابقة الأساسية</span></span></li>
+          <li><span class="check"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.5"><polyline points="20 6 9 17 4 12"/></svg></span><span class="feat-label"><strong>التخليص الجمركي الأساسي</strong><span class="meta">منفذ واحد · إعداد بيان جمركي + فسح</span></span></li>
+          <li><span class="check"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.5"><polyline points="20 6 9 17 4 12"/></svg></span><span class="feat-label"><strong>شهادة المنشأ</strong><span class="meta">معتمدة من غرفة التجارة في بلد التصدير</span></span></li>
+          <li><span class="check"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.5"><polyline points="20 6 9 17 4 12"/></svg></span><span class="feat-label"><strong>تنسيق الشحن مع 12 خط ملاحي</strong><span class="meta">FCL أو LCL — أنت تختار</span></span></li>
+          <li><span class="check"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.5"><polyline points="20 6 9 17 4 12"/></svg></span><span class="feat-label"><strong>تتبع الشحنة لايف</strong><span class="meta">من الإقلاع إلى التسليم في لوحتك</span></span></li>
+          <li><span class="check"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.5"><polyline points="20 6 9 17 4 12"/></svg></span><span class="feat-label"><strong>دعم AI بالعربية</strong><span class="meta">إجابات فورية على HS codes والتعرفة</span></span></li>
+        </ul>
+
+        <button class="pkg-cta outline" data-pkg="starter" data-name="الباقة الأساسية" data-price="1650">
+          ابدأ بهذه الباقة
+        </button>
+      </div>
+
+      <!-- PROFESSIONAL (Featured) -->
+      <div class="pkg featured" data-tier="pro">
+        <div class="pkg-ribbon">★ الأكثر طلباً</div>
+        <div class="pkg-icon">🏢</div>
+        <div class="pkg-tier">PROFESSIONAL</div>
+        <div class="pkg-name">الاحترافية</div>
+        <p class="pkg-tagline">للشركات المتوسطة والمتاجر الإلكترونية التي تستورد بانتظام.</p>
+
+        <div class="pkg-price-block">
+          <span class="pkg-price"><span class="pkg-price-amount" data-single="3,850" data-monthly="3,150">3,850</span><span class="pkg-price-currency">ر.س</span></span>
+          <span class="pkg-price-period">/ شحنة</span>
+          <div class="pkg-price-note">شامل جميع الرسوم الحكومية المتغيرة من سابر وفسح</div>
+        </div>
+
+        <ul class="pkg-features">
+          <li><span class="check"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.5"><polyline points="20 6 9 17 4 12"/></svg></span><span class="feat-label"><strong>كل ما في الأساسية +</strong><span class="meta">شامل جميع خدمات الباقة السابقة</span></span></li>
+          <li><span class="check"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.5"><polyline points="20 6 9 17 4 12"/></svg></span><span class="feat-label"><strong>شهادة المطابقة IECEE</strong><span class="meta">للأجهزة الكهربائية والإلكترونية</span></span></li>
+          <li><span class="check"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.5"><polyline points="20 6 9 17 4 12"/></svg></span><span class="feat-label"><strong>شهادة GSO Conformity</strong><span class="meta">للسلع المعدنية والإنشائية والاستهلاكية</span></span></li>
+          <li><span class="check"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.5"><polyline points="20 6 9 17 4 12"/></svg></span><span class="feat-label"><strong>تأمين الشحنة CIF كامل</strong><span class="meta">حتى $50,000 ضد جميع المخاطر</span></span></li>
+          <li><span class="check"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.5"><polyline points="20 6 9 17 4 12"/></svg></span><span class="feat-label"><strong>تخزين مجاني 14 يوم</strong><span class="meta">في مستودعات جدة أو الدمام</span></span></li>
+          <li><span class="check"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.5"><polyline points="20 6 9 17 4 12"/></svg></span><span class="feat-label"><strong>توصيل آخر ميل لباب المستودع</strong><span class="meta">داخل المدن الرئيسية في السعودية</span></span></li>
+          <li><span class="check"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.5"><polyline points="20 6 9 17 4 12"/></svg></span><span class="feat-label"><strong>أولوية في التخليص</strong><span class="meta">معالجة في خلال 24-48 ساعة</span></span></li>
+        </ul>
+
+        <button class="pkg-cta" data-pkg="pro" data-name="الباقة الاحترافية" data-price="3850">
+          احجز الباقة الاحترافية →
+        </button>
+      </div>
+
+      <!-- ENTERPRISE -->
+      <div class="pkg" data-tier="enterprise">
+        <div class="pkg-icon">🌐</div>
+        <div class="pkg-tier">ENTERPRISE</div>
+        <div class="pkg-name">المؤسسية</div>
+        <p class="pkg-tagline">للموزعين الكبار، سلاسل التجزئة، ومستوردي الجملة المتعددة.</p>
+
+        <div class="pkg-price-block">
+          <span class="pkg-price"><span class="pkg-price-amount" data-single="9,500" data-monthly="7,800">9,500</span><span class="pkg-price-currency">ر.س</span></span>
+          <span class="pkg-price-period">/ شحنة</span>
+          <div class="pkg-price-note">أسعار مخصصة للحاويات المتعددة · تواصل مع المبيعات</div>
+        </div>
+
+        <ul class="pkg-features">
+          <li><span class="check"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.5"><polyline points="20 6 9 17 4 12"/></svg></span><span class="feat-label"><strong>كل ما في الاحترافية +</strong><span class="meta">شامل جميع خدمات الباقتين</span></span></li>
+          <li><span class="check"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.5"><polyline points="20 6 9 17 4 12"/></svg></span><span class="feat-label"><strong>مدير شحن مخصص (24/7)</strong><span class="meta">رقم مباشر + WhatsApp Business</span></span></li>
+          <li><span class="check"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.5"><polyline points="20 6 9 17 4 12"/></svg></span><span class="feat-label"><strong>المراجعة القانونية للوثائق</strong><span class="meta">من فريق قانوني معتمد قبل الشحن</span></span></li>
+          <li><span class="check"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.5"><polyline points="20 6 9 17 4 12"/></svg></span><span class="feat-label"><strong>تأمين CIF بدون حد أعلى</strong><span class="meta">شامل المخاطر الحربية والسياسية</span></span></li>
+          <li><span class="check"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.5"><polyline points="20 6 9 17 4 12"/></svg></span><span class="feat-label"><strong>تخزين مجاني 30 يوم</strong><span class="meta">في 6 مستودعات (جدة، الرياض، الدمام، ينبع، الجبيل، أبها)</span></span></li>
+          <li><span class="check"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.5"><polyline points="20 6 9 17 4 12"/></svg></span><span class="feat-label"><strong>SLA مكتوب + غرامات تأخر</strong><span class="meta">تعويضات تلقائية عند التجاوز</span></span></li>
+          <li><span class="check"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.5"><polyline points="20 6 9 17 4 12"/></svg></span><span class="feat-label"><strong>تكامل API مع نظامك</strong><span class="meta">ERP/WMS/Shopify webhooks</span></span></li>
+          <li><span class="check"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.5"><polyline points="20 6 9 17 4 12"/></svg></span><span class="feat-label"><strong>تقارير AI شهرية</strong><span class="meta">تحليل الإنفاق والتوصيات للتوفير</span></span></li>
+        </ul>
+
+        <button class="pkg-cta outline" data-pkg="enterprise" data-name="الباقة المؤسسية" data-price="9500">
+          تواصل مع المبيعات
+        </button>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<!-- ─── COMPARISON ─── -->
+<section class="compare-section">
+  <div class="wrap">
+    <h2 class="compare-title">قارن الباقات</h2>
+    <p class="compare-sub">كل ما تحتاج معرفته قبل اتخاذ القرار</p>
+    <div class="compare-table-wrap">
+      <table class="compare-table">
+        <thead>
+          <tr>
+            <th>الخدمة</th>
+            <th style="text-align:center">الأساسية</th>
+            <th style="text-align:center">الاحترافية</th>
+            <th style="text-align:center">المؤسسية</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><td>شهادة سابر (SABER)</td><td style="text-align:center" class="yes">✓</td><td style="text-align:center" class="yes">✓</td><td style="text-align:center" class="yes">✓</td></tr>
+          <tr><td>التخليص الجمركي</td><td style="text-align:center" class="lim">منفذ واحد</td><td style="text-align:center" class="yes">✓ أولوية</td><td style="text-align:center" class="yes">✓ كامل</td></tr>
+          <tr><td>شهادة المنشأ</td><td style="text-align:center" class="yes">✓</td><td style="text-align:center" class="yes">✓</td><td style="text-align:center" class="yes">✓</td></tr>
+          <tr><td>شهادة المطابقة IECEE</td><td style="text-align:center" class="no">—</td><td style="text-align:center" class="yes">✓</td><td style="text-align:center" class="yes">✓</td></tr>
+          <tr><td>شهادة GSO Conformity</td><td style="text-align:center" class="no">—</td><td style="text-align:center" class="yes">✓</td><td style="text-align:center" class="yes">✓</td></tr>
+          <tr><td>تأمين CIF</td><td style="text-align:center" class="no">—</td><td style="text-align:center" class="lim">حتى $50K</td><td style="text-align:center" class="yes">بدون حد</td></tr>
+          <tr><td>التخزين المجاني</td><td style="text-align:center" class="lim">3 أيام</td><td style="text-align:center" class="lim">14 يوم</td><td style="text-align:center" class="lim">30 يوم</td></tr>
+          <tr><td>التوصيل (آخر ميل)</td><td style="text-align:center" class="no">—</td><td style="text-align:center" class="yes">✓</td><td style="text-align:center" class="yes">✓</td></tr>
+          <tr><td>مدير شحن مخصص</td><td style="text-align:center" class="no">—</td><td style="text-align:center" class="no">—</td><td style="text-align:center" class="yes">✓ 24/7</td></tr>
+          <tr><td>المراجعة القانونية</td><td style="text-align:center" class="no">—</td><td style="text-align:center" class="no">—</td><td style="text-align:center" class="yes">✓</td></tr>
+          <tr><td>تكامل API/ERP</td><td style="text-align:center" class="no">—</td><td style="text-align:center" class="no">—</td><td style="text-align:center" class="yes">✓</td></tr>
+          <tr><td>SLA مكتوب + غرامات</td><td style="text-align:center" class="no">—</td><td style="text-align:center" class="no">—</td><td style="text-align:center" class="yes">✓</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<!-- ─── FAQ ─── -->
+<section class="faq-section">
+  <div class="wrap">
+    <h2 class="compare-title">أسئلة شائعة</h2>
+    <p class="compare-sub">إجابات سريعة على كل ما يخص باقات الاستيراد</p>
+    <div class="faq-grid">
+      <div class="faq-item">
+        <div class="faq-q">شو الفرق بين سابر وشهادة المطابقة GSO؟</div>
+        <div class="faq-a">سابر هي منصة سعودية إلزامية لكل المنتجات المستوردة، تربط بين المستورد والمصدر والشركة التابعة. شهادة المطابقة GSO هي اعتماد من الهيئة السعودية للمواصفات والمقاييس (SASO) تثبت توافق المنتج مع المواصفات الخليجية، وتُصدر عبر شركات مرخصة. الاحترافية والمؤسسية تشمل الاثنين.</div>
+      </div>
+      <div class="faq-item">
+        <div class="faq-q">هل الأسعار شاملة الرسوم الحكومية؟</div>
+        <div class="faq-a">الأساسية: الرسوم الحكومية المتغيرة (سابر، فسح) منفصلة. الاحترافية والمؤسسية: شاملة جميع الرسوم الحكومية المتغيرة. الرسوم الجمركية (5-20% حسب HS code) وضريبة القيمة المضافة 15% منفصلة في كل الباقات لأنها تعتمد على قيمة شحنتك.</div>
+      </div>
+      <div class="faq-item">
+        <div class="faq-q">كم تستغرق عملية التخليص الجمركي؟</div>
+        <div class="faq-a">الأساسية: 3-5 أيام عمل. الاحترافية: 24-48 ساعة (أولوية). المؤسسية: نفس اليوم إذا كل الوثائق جاهزة. الأوقات تعتمد على نوع البضاعة وضرورة الفحص من الجهات الرقابية (الغذاء والدواء، الاتصالات، الطاقة).</div>
+      </div>
+      <div class="faq-item">
+        <div class="faq-q">ماذا يحدث إذا فُحصت شحنتي يدوياً؟</div>
+        <div class="faq-a">الفحص اليدوي يقرره نظام المخاطر الجمركي (المسار الأحمر) عشوائياً أو بناءً على نوع البضاعة. في الباقتين الاحترافية والمؤسسية، فريقنا يحضر الفحص باسمك ويرفع الوثائق المطلوبة. الأساسية: نعطيك إرشادات لتحضر بنفسك.</div>
+      </div>
+      <div class="faq-item">
+        <div class="faq-q">هل يمكن ترقية الباقة لاحقاً؟</div>
+        <div class="faq-a">نعم — ادفع الفرق فقط. لو بدأت بالأساسية واحتجت تأمين أو تخزين أطول، نرقّيك للاحترافية وتدفع الفرق. الترقية فورية وتسري على الشحنة الحالية.</div>
+      </div>
+      <div class="faq-item">
+        <div class="faq-q">ما هي ضمانات SLA في المؤسسية؟</div>
+        <div class="faq-a">SLA مكتوب يشمل: الرد خلال 30 دقيقة (وقت العمل) / 2 ساعة (خارجه)، تخليص خلال 24 ساعة، إصدار سابر خلال 48 ساعة. أي تأخر بسببنا يُعوّض بخصم تلقائي على الفاتورة (5% لكل يوم تجاوز، حد أقصى 30%).</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ─── Logged-in user nav state -->
+<script src="/flx-api-client.js"></script>
+<script src="/flx-auth.js"></script>
+<script>
+// Booking workflow
+(function(){
+  const buttons = document.querySelectorAll('.pkg-cta');
+  buttons.forEach(btn => {
+    btn.addEventListener('click', () => bookPackage({
+      tier: btn.dataset.pkg,
+      name: btn.dataset.name,
+      price: parseInt(btn.dataset.price),
+    }));
+  });
+
+  // Period toggle
+  document.querySelectorAll('.billing-toggle button').forEach(b => {
+    b.addEventListener('click', () => {
+      document.querySelectorAll('.billing-toggle button').forEach(x => x.classList.remove('active'));
+      b.classList.add('active');
+      const period = b.dataset.period;
+      document.querySelectorAll('.pkg-price-amount').forEach(el => {
+        el.textContent = el.dataset[period] || el.dataset.single;
+      });
+      document.querySelectorAll('.pkg-price-period').forEach(el => {
+        el.textContent = period === 'monthly' ? '/ شهرياً' : '/ شحنة';
+      });
+    });
+  });
+})();
+
+async function bookPackage(pkg) {
+  // Check auth
+  if (!window.flxApi || !window.flxApi.isAuthenticated()) {
+    const goLogin = await flxBookingPrompt({
+      icon: '🔐',
+      title: 'سجّل دخول أولاً',
+      desc: 'لإتمام حجز الباقة يلزم إنشاء حساب أو تسجيل الدخول.',
+      confirmText: 'تسجيل الدخول',
+      cancelText: 'إلغاء',
+    });
+    if (goLogin) window.location.href = '/?login=1';
+    return;
+  }
+  const confirmed = await flxBookingPrompt({
+    icon: pkg.tier === 'enterprise' ? '🌐' : pkg.tier === 'pro' ? '🏢' : '📦',
+    title: `${pkg.name}`,
+    desc: pkg.tier === 'enterprise'
+      ? `سيتم تحويلك لفريق المبيعات لتخصيص الباقة بحسب احتياجاتك.`
+      : `سيتم إنشاء طلب بقيمة <strong>${pkg.price.toLocaleString()} ر.س</strong> وتفعيل الخدمات تلقائياً.`,
+    meta: [
+      ['الباقة', pkg.name],
+      ['الفئة', pkg.tier === 'starter' ? 'STARTER' : pkg.tier === 'pro' ? 'PROFESSIONAL' : 'ENTERPRISE'],
+      ['السعر', `${pkg.price.toLocaleString()} ر.س`],
+      ['الضريبة', 'تُحتسب على قيمة الشحنة 15%'],
+    ],
+    confirmText: pkg.tier === 'enterprise' ? 'تواصل مع المبيعات' : 'تأكيد الحجز',
+    cancelText: 'إلغاء',
+  });
+  if (!confirmed) return;
+  if (pkg.tier === 'enterprise') {
+    window.location.href = 'mailto:sales@freightlx.com?subject=' + encodeURIComponent('استفسار عن الباقة المؤسسية') + '&body=' + encodeURIComponent('السلام عليكم،\n\nأود الاستفسار عن الباقة المؤسسية لاحتياجات استيراد شركتي.');
+    return;
+  }
+  flxBookingLoader('جاري إنشاء طلب الباقة...');
+  try {
+    // Save package selection as a quote in the user's account
+    const quote = await flxApi.quotes.create({
+      origin: 'PKG', destination: pkg.tier.toUpperCase(),
+      carrier: 'FREIGHTLX SERVICES',
+      container: pkg.tier.toUpperCase(),
+      price: pkg.price,
+      valid_until: new Date(Date.now() + 30 * 86400000).toISOString().slice(0, 10),
+    });
+    flxBookingSuccess({ shipment: { id: 'PKG-' + pkg.tier.toUpperCase() }, invoice: { id: quote.id } });
+  } catch (e) {
+    flxBookingError(e.message);
+  }
+}
+
+// ─── Modal helpers (reused from rates.html style) ───
+function flxBookingModal(html) {
+  const old = document.getElementById('flxBookingOverlay');
+  if (old) old.remove();
+  const overlay = document.createElement('div');
+  overlay.id = 'flxBookingOverlay';
+  overlay.className = 'flx-book-overlay';
+  overlay.innerHTML = `<div class="flx-book-modal">${html}</div>`;
+  document.body.appendChild(overlay);
+  requestAnimationFrame(() => overlay.classList.add('open'));
+  return overlay;
+}
+
+function flxBookingPrompt({ icon, title, desc, meta, confirmText, cancelText }) {
+  return new Promise((resolve) => {
+    const metaHtml = meta ? `<div class="flx-book-meta">${meta.map(([k,v]) => `<div class="flx-book-meta-row"><span>${k}</span><strong>${v}</strong></div>`).join('')}</div>` : '';
+    const overlay = flxBookingModal(`
+      <div class="flx-book-icon">${icon || '🚢'}</div>
+      <h3 class="flx-book-title">${title}</h3>
+      <p class="flx-book-desc">${desc}</p>
+      ${metaHtml}
+      <div class="flx-book-actions">
+        <button class="flx-book-cancel" id="flxBookCancel">${cancelText || 'إلغاء'}</button>
+        <button class="flx-book-confirm" id="flxBookConfirm">${confirmText || 'تأكيد'}</button>
+      </div>
+    `);
+    overlay.querySelector('#flxBookConfirm').onclick = () => { overlay.remove(); resolve(true); };
+    overlay.querySelector('#flxBookCancel').onclick = () => { overlay.remove(); resolve(false); };
+    overlay.onclick = (e) => { if (e.target === overlay) { overlay.remove(); resolve(false); } };
+  });
+}
+
+function flxBookingLoader(msg) {
+  flxBookingModal(`<div class="flx-book-loader"><div class="flx-spinner"></div></div><h3 class="flx-book-title">${msg}</h3><p class="flx-book-desc">يتم تفعيل الخدمات وإنشاء فاتورتك.</p>`);
+}
+
+function flxBookingSuccess(booked) {
+  flxBookingModal(`
+    <div class="flx-book-icon flx-success-icon">✓</div>
+    <h3 class="flx-book-title" style="color:#4ade80">تم تفعيل الباقة!</h3>
+    <p class="flx-book-desc">يمكنك متابعة طلب الباقة وحالة الخدمات من لوحة التحكم.</p>
+    <div class="flx-book-meta">
+      <div class="flx-book-meta-row"><span>رقم الطلب</span><strong style="font-family:'JetBrains Mono',monospace;color:#39C6FF">${booked.shipment.id}</strong></div>
+      <div class="flx-book-meta-row"><span>رقم الفاتورة</span><strong style="font-family:'JetBrains Mono',monospace;color:#39C6FF">${booked.invoice.id}</strong></div>
+    </div>
+    <div class="flx-book-actions">
+      <button class="flx-book-cancel" onclick="document.getElementById('flxBookingOverlay').remove()">إغلاق</button>
+      <button class="flx-book-confirm" onclick="window.location.href='/dashboard.html'">عرض في لوحة التحكم →</button>
+    </div>
+  `);
+}
+
+function flxBookingError(msg) {
+  flxBookingModal(`
+    <div class="flx-book-icon flx-error-icon">!</div>
+    <h3 class="flx-book-title" style="color:#f87171">حدث خطأ</h3>
+    <p class="flx-book-desc">${msg}</p>
+    <div class="flx-book-actions">
+      <button class="flx-book-confirm" onclick="document.getElementById('flxBookingOverlay').remove()">حسناً</button>
+    </div>
+  `);
+}
+</script>
+
+</body>
+</html>
