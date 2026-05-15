@@ -933,23 +933,29 @@ function getCarrierLogoUrl(o) {
   return null;
 }
 
+// Global fallback handler — safer than embedding complex onerror strings
+window.flxCarrierLogoFallback = function(img) {
+  const parent = img.parentElement;
+  if (!parent) return;
+  const bg = parent.dataset.fallbackBg || 'linear-gradient(135deg, #0F2C4D, #1E5BA8)';
+  const initials = parent.dataset.initials || 'CR';
+  parent.style.background = bg;
+  parent.innerHTML = '<span style="color:white;font-weight:800;font-size:16px;letter-spacing:0.05em">' + initials + '</span>';
+};
+
 function carrierLogoHTML(o) {
-  const name = (o.carrier_name || 'Carrier').toUpperCase();
-  const bg = o.brand_color || 'linear-gradient(135deg, #0F2C4D, #1E5BA8)';
-  const initials = name.split(/\s+/).slice(0, 2).map(w => w[0] || '').join('').slice(0, 3) || 'CR';
+  const rawName = (o.carrier_name || 'Carrier');
+  const safeName = rawName.replace(/"/g, '&quot;').replace(/</g, '&lt;');
+  const initials = rawName.toUpperCase().split(/\s+/).slice(0, 2).map(w => w[0] || '').join('').slice(0, 3) || 'CR';
+  const bg = (o.brand_color || 'linear-gradient(135deg, #0F2C4D, #1E5BA8)').replace(/"/g, '&quot;');
   const logoUrl = getCarrierLogoUrl(o);
 
-  // SVG-encoded fallback (initials on brand-colored circle) — replaces broken img
-  const fallbackEscaped = `'<div style=\"display:flex;align-items:center;justify-content:center;width:100%;height:100%;color:white;font-weight:800;font-size:16px;letter-spacing:0.05em\">${initials}</div>'`;
-
   if (logoUrl) {
-    return `<div class="col-logo" style="background:#ffffff;border:1px solid rgba(57,198,255,0.18);padding:8px;">
-      <img src="${logoUrl}" alt="${name}"
-           style="max-width:100%;max-height:100%;object-fit:contain;display:block;"
-           onerror="this.parentElement.style.background='${bg.replace(/'/g, '')}';this.parentElement.innerHTML=${fallbackEscaped}">
+    return `<div class="col-logo" data-fallback-bg="${bg}" data-initials="${initials}">
+      <img src="${logoUrl}" alt="${safeName}" loading="lazy" onerror="flxCarrierLogoFallback(this)">
     </div>`;
   }
-  return `<div class="col-logo" style="background:${bg};">
+  return `<div class="col-logo" style="background:${o.brand_color || 'linear-gradient(135deg, #0F2C4D, #1E5BA8)'};">
     <span style="color:white;font-weight:800;font-size:16px;letter-spacing:0.05em">${initials}</span>
   </div>`;
 }
