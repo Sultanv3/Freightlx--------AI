@@ -156,6 +156,18 @@ const TOOLS = [
       },
     },
   },
+  {
+    name: 'lookup_hs_code',
+    description: 'يبحث في قاعدة بيانات الـ 9,862 HS code السعودية المعتمدة من SABER+ZATCA. يعطي رمز التعرفة الجمركية الدقيق، اللائحة الفنية، والشهادات المطلوبة (QM, COC, IECEE, إلخ). استخدمه عند سؤال المستخدم عن HS code أو متطلبات شهادة لمنتج معيّن.',
+    parameters: {
+      type: 'object',
+      properties: {
+        q: { type: 'string', description: 'كلمة بحث بالعربية أو الإنجليزية' },
+        hs: { type: 'string', description: 'بادئة HS code رقمية للبحث المباشر' },
+        limit: { type: 'number', description: 'عدد النتائج 1-20 (افتراضي 5)' },
+      },
+    },
+  },
 ];
 
 // Format tools for Gemini API
@@ -1201,6 +1213,29 @@ async function execTool(name, args, ctx) {
         id: i.id, amount_sar: i.amount, status: i.status, created: i.created_at,
       })),
     };
+  }
+
+  if (name === 'lookup_hs_code') {
+    try {
+      const qs = [];
+      if (args && args.q) qs.push('q=' + encodeURIComponent(args.q));
+      if (args && args.hs) qs.push('hs=' + encodeURIComponent(String(args.hs)));
+      qs.push('limit=' + Math.min((args && args.limit) || 5, 10));
+      const r = await fetch(`${base}/api/hs-codes?${qs.join('&')}`);
+      if (!r.ok) return { error: `HS lookup failed: ${r.status}` };
+      const j = await r.json();
+      const results = (j.results || []).map(x => ({
+        hs: x.hs,
+        category_ar: x.cat_ar,
+        category_en: x.cat_en,
+        regulation: x.reg_en,
+        regulated: x.reg_en !== 'Non Regulated',
+        required_certificates: x.certs,
+      }));
+      return { count: results.length, results };
+    } catch (e) {
+      return { error: `lookup_hs_code error: ${e.message}` };
+    }
   }
 
   return { error: `Unknown tool: ${name}` };
