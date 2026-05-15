@@ -11,6 +11,9 @@
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=IBM+Plex+Sans+Arabic:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
 /* ─── DESIGN TOKENS ─── */
+/* Hide flx-auth.js floating trigger — we have our own nav-integrated login button */
+.flx-auth-trigger { display: none !important; }
+.flx-user-menu { z-index: 9999; }
 :root {
   --navy-950: #050E18;
   --navy-900: #071C2C;
@@ -535,8 +538,9 @@ footer {
       <a href="#platform">المنصة</a>
       <a href="#network">الشبكة</a>
       <a href="#ai">الذكاء</a>
-      <a href="#pricing">الأسعار</a>
-      <a href="/login.html" class="cta-ghost">دخول</a>
+      <a href="/rates.html">الأسعار</a>
+      <a href="/dashboard.html" id="navDashboard" class="cta-ghost" style="display:none">لوحتي ←</a>
+      <a href="javascript:void(0)" id="navLogin" class="cta-ghost" onclick="flxOpenLoginModal()">دخول</a>
       <a href="/rates.html" class="cta-fill">جرّب مجاناً ←</a>
     </nav>
   </div>
@@ -990,7 +994,46 @@ function animateCount(el) {
   }, 30);
 }
 document.querySelectorAll('[data-count]').forEach(animateCount);
+
+// ─── Auth integration ───────────────────────────────────────
+// Hook the "دخول" nav link to the same Supabase modal the rest of the
+// platform uses (created by flx-auth.js). Show "لوحتي" link only when signed in.
+window.flxOpenLoginModal = function () {
+  const trigger = document.getElementById('flx-auth-trigger');
+  if (trigger) { trigger.click(); return; }
+  // flx-auth.js still booting — retry briefly
+  let tries = 0;
+  const t = setInterval(() => {
+    const el = document.getElementById('flx-auth-trigger');
+    if (el || ++tries > 20) { clearInterval(t); el?.click(); }
+  }, 150);
+};
+
+// Toggle "لوحتي" link visibility based on Supabase session in localStorage
+function flxRefreshNavAuth() {
+  let signedIn = false;
+  for (const k of Object.keys(localStorage)) {
+    if (k.startsWith('sb-') && k.endsWith('-auth-token')) {
+      try {
+        const d = JSON.parse(localStorage.getItem(k));
+        if (d?.access_token && d?.expires_at > (Date.now()/1000)) { signedIn = true; break; }
+      } catch {}
+    }
+  }
+  const dash = document.getElementById('navDashboard');
+  const login = document.getElementById('navLogin');
+  if (dash) dash.style.display = signedIn ? '' : 'none';
+  if (login) login.style.display = signedIn ? 'none' : '';
+}
+flxRefreshNavAuth();
+window.addEventListener('storage', flxRefreshNavAuth);
+setInterval(flxRefreshNavAuth, 4000);
 </script>
+
+<!-- ─── Platform integration ─── -->
+<script>window.FLX_API_BASE = '/api/v1';</script>
+<script src="/flx-api-client.js" defer></script>
+<script src="/flx-auth.js" defer></script>
 
 </body>
 </html>
