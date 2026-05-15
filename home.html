@@ -116,6 +116,79 @@
   border-top-left-radius: 4px;
   box-shadow: 0 6px 20px rgba(10, 132, 255, 0.32);
 }
+
+/* ─── HYPER ACTION CARDS inside bot bubbles ─── */
+.ai-action-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 10px;
+  margin-top: 14px;
+}
+.ai-action-card {
+  background: linear-gradient(135deg, rgba(10, 132, 255, 0.10), rgba(57, 198, 255, 0.04));
+  border: 1px solid rgba(57, 198, 255, 0.26);
+  border-radius: 14px;
+  padding: 14px 14px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  cursor: pointer;
+  transition: all 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+  text-decoration: none;
+  color: inherit;
+  position: relative;
+  overflow: hidden;
+}
+.ai-action-card::before {
+  content: '';
+  position: absolute;
+  top: 0; right: 0;
+  width: 60px; height: 60px;
+  background: radial-gradient(circle at top right, rgba(57, 198, 255, 0.18), transparent 70%);
+  pointer-events: none;
+}
+.ai-action-card:hover {
+  transform: translateY(-2px);
+  border-color: rgba(57, 198, 255, 0.55);
+  background: linear-gradient(135deg, rgba(10, 132, 255, 0.18), rgba(57, 198, 255, 0.08));
+  box-shadow: 0 10px 30px rgba(10, 132, 255, 0.28);
+}
+.ai-action-icon {
+  width: 36px; height: 36px;
+  border-radius: 10px;
+  background: linear-gradient(135deg, rgba(10, 132, 255, 0.22), rgba(57, 198, 255, 0.10));
+  border: 1px solid rgba(57, 198, 255, 0.24);
+  display: inline-flex; align-items: center; justify-content: center;
+  color: #39C6FF;
+  flex-shrink: 0;
+}
+.ai-action-title {
+  font-size: 13px;
+  font-weight: 700;
+  color: #fff;
+  letter-spacing: -0.01em;
+  line-height: 1.4;
+}
+.ai-action-desc {
+  font-size: 11px;
+  color: rgba(244, 247, 250, 0.62);
+  line-height: 1.5;
+}
+.ai-action-arrow {
+  position: absolute;
+  bottom: 12px; left: 12px;
+  width: 24px; height: 24px;
+  border-radius: 8px;
+  background: rgba(10, 132, 255, 0.18);
+  display: inline-flex; align-items: center; justify-content: center;
+  color: #39C6FF;
+  transition: all 0.22s;
+}
+.ai-action-card:hover .ai-action-arrow {
+  background: linear-gradient(135deg, #0A84FF, #39C6FF);
+  color: #fff;
+  transform: translateX(-3px);
+}
 .ai-typing { display: inline-flex; gap: 5px; align-items: center; padding: 4px 0; }
 .ai-typing span {
   width: 8px; height: 8px; border-radius: 50%;
@@ -1097,11 +1170,7 @@ footer {
         </div>
         <div class="ai-demo-badge"><span class="dot"></span> Gemini · Live</div>
       </div>
-      <div class="ai-demo-body" id="aiDemoBody">
-        <div class="ai-msg ai-msg-bot">
-          <div class="ai-bubble">👋 مرحباً! أنا FREIGHTLX AI. اسألني عن أي خط ملاحي، سعر شحن، إجراءات جمركية، HS codes، أو أي شي يخص الشحن الدولي.</div>
-        </div>
-      </div>
+      <div class="ai-demo-body" id="aiDemoBody"></div>
       <div class="ai-demo-suggest">
         <button class="ai-chip" data-q="كم سعر حاوية 40 قدم من شنغهاي إلى جدة؟">💰 سعر شحن من الصين</button>
         <button class="ai-chip" data-q="ايش الفرق بين FCL و LCL؟">📦 الفرق بين FCL و LCL</button>
@@ -1298,12 +1367,91 @@ if (new URLSearchParams(window.location.search).get('login') === '1') {
     return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   }
 
-  function addMsg(text, who) {
+  // ─── Action cards catalogue (hyper-cards rendered inside bot bubbles) ───
+  const ACTION_CARDS = {
+    rates: {
+      icon: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>',
+      title: 'احصل على عرض سعر فوري',
+      desc: '12 خط ملاحي · أسعار live في ثوان',
+      href: '/rates.html',
+    },
+    customs: {
+      icon: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>',
+      title: 'احسب التخليص الجمركي',
+      desc: 'رسوم + ضريبة + خدمات + شهادات',
+      ask: 'احسب لي رسوم التخليص الجمركي بالتفصيل لشحنة بقيمة $10,000 إلى ميناء جدة',
+    },
+    cert: {
+      icon: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L4 7v5c0 5.5 3.8 10.7 8 12 4.2-1.3 8-6.5 8-12V7l-8-5z"/></svg>',
+      title: 'الشهادات المطلوبة',
+      desc: 'سابر · IECEE · شهادة منشأ · سلامة',
+      ask: 'وش الشهادات المطلوبة لاستيراد منتج إلى السعودية؟',
+    },
+    fullcost: {
+      icon: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M16 8h-6a2 2 0 0 0 0 4h4a2 2 0 0 1 0 4H8M12 18V6"/></svg>',
+      title: 'احسب تكاليف الاستيراد كاملة',
+      desc: 'CIF + جمارك + ضريبة + نقل + تخليص',
+      ask: 'احسب تكاليف استيراد كاملة من الصين إلى السعودية',
+    },
+    track: {
+      icon: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="4"/></svg>',
+      title: 'تتبّع شحنة',
+      desc: 'حالة فورية من Maersk، MSC، COSCO...',
+      href: '/dashboard.html#section-shipments',
+    },
+    hscode: {
+      icon: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 3v18M3 9h18M3 15h18M15 3v18"/></svg>',
+      title: 'البحث عن HS Code',
+      desc: 'تصنيف جمركي دقيق لمنتجك',
+      ask: 'وش HS code للمنتج اللي عندي؟',
+    },
+  };
+
+  // Detect which action cards to surface based on bot reply content
+  function pickActionCards(text) {
+    const t = text.toLowerCase();
+    const picks = new Set();
+    if (/سعر|عرض|قائمة|أسعار|شحن|fcl|lcl|حاوي|من\s+\S+\s+إلى/i.test(text)) picks.add('rates');
+    if (/جمرك|تخليص|رسوم|ضريبة|دفع للجمارك/i.test(text)) picks.add('customs');
+    if (/شهاد|سابر|saber|iecee|سلامة|مطابقة|gso/i.test(text)) picks.add('cert');
+    if (/تكاليف|التكلفة|cif|cost|إجمالي|الكلفة|كلفة|الاستيراد/i.test(text)) picks.add('fullcost');
+    if (/تتبع|الشحنة وين|أين شحنتي|tracking|موقع/i.test(text)) picks.add('track');
+    if (/hs\s*code|تصنيف جمركي|تعريفة|كود المنتج/i.test(text)) picks.add('hscode');
+    return [...picks].slice(0, 4); // up to 4 cards per message
+  }
+
+  function buildActionCardsHTML(keys) {
+    if (!keys.length) return '';
+    const cards = keys.map(k => {
+      const c = ACTION_CARDS[k]; if (!c) return '';
+      const tag = c.href ? 'a' : 'button';
+      const attrs = c.href ? `href="${c.href}"` : `type="button" data-ask="${escapeHTML(c.ask)}"`;
+      return `<${tag} class="ai-action-card" ${attrs}>
+        <div style="display:flex;align-items:center;gap:10px">
+          <span class="ai-action-icon">${c.icon}</span>
+          <div class="ai-action-title">${c.title}</div>
+        </div>
+        <div class="ai-action-desc">${c.desc}</div>
+        <div class="ai-action-arrow"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M19 12H5M5 12l7 7M5 12l7-7"/></svg></div>
+      </${tag}>`;
+    }).join('');
+    return `<div class="ai-action-cards">${cards}</div>`;
+  }
+
+  function addMsg(text, who, opts) {
     const row = document.createElement('div');
     row.className = 'ai-msg ai-msg-' + who;
     const bubble = document.createElement('div');
     bubble.className = 'ai-bubble';
-    bubble.innerHTML = escapeHTML(text);
+    let html = escapeHTML(text);
+    // Convert markdown-style **bold** to <strong>
+    html = html.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+    bubble.innerHTML = html;
+    // Append action cards for bot messages
+    if (who === 'bot' && opts?.actionCards?.length) {
+      const cardsHtml = buildActionCardsHTML(opts.actionCards);
+      if (cardsHtml) bubble.insertAdjacentHTML('beforeend', cardsHtml);
+    }
     row.appendChild(bubble);
     body.appendChild(row);
     body.scrollTop = body.scrollHeight;
@@ -1338,7 +1486,10 @@ if (new URLSearchParams(window.location.search).get('login') === '1') {
       const j = await r.json();
       typing.remove();
       const reply = j.reply || j.error?.message || 'عذراً، حدث خطأ. حاول مرة ثانية.';
-      addMsg(reply, 'bot');
+      // Detect actionable topics in both the user question and bot reply
+      const combined = text + ' ' + reply;
+      const cards = pickActionCards(combined);
+      addMsg(reply, 'bot', { actionCards: cards });
       history.push({ role: 'assistant', content: reply });
     } catch (e) {
       typing.remove();
@@ -1349,6 +1500,22 @@ if (new URLSearchParams(window.location.search).get('login') === '1') {
       input.focus();
     }
   }
+
+  // Delegate clicks on action-card buttons (those with data-ask)
+  body.addEventListener('click', (e) => {
+    const card = e.target.closest('.ai-action-card[data-ask]');
+    if (card && card.dataset.ask) {
+      e.preventDefault();
+      sendMessage(card.dataset.ask);
+    }
+  });
+
+  // Initial welcome message with hyper-cards (shows on load)
+  addMsg(
+    '👋 مرحباً! أنا FREIGHTLX AI. اختر خدمة من البطاقات أو اسألني مباشرة عن أي شي يخص الشحن الدولي والاستيراد للسعودية:',
+    'bot',
+    { actionCards: ['rates', 'customs', 'cert', 'fullcost'] }
+  );
 
   // Form submit
   form.addEventListener('submit', (e) => {
