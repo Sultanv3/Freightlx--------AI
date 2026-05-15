@@ -721,12 +721,38 @@ code, .code, .mono, pre {
   background: transparent !important;
 }
 
-/* Generic dark-mode safety: any white background should turn glass */
-[style*="background: white" i],
-[style*="background:#fff" i],
-[style*="background-color: white" i],
-[style*="background-color:#fff" i] {
+/* Generic dark-mode safety: any white background should turn glass
+   EXCEPT: carrier logo containers — they need white to make brand colored logos legible */
+[style*="background: white" i]:not(.col-logo):not(.carrier-logo):not(.logo-box),
+[style*="background:#fff" i]:not(.col-logo):not(.carrier-logo):not(.logo-box),
+[style*="background-color: white" i]:not(.col-logo):not(.carrier-logo):not(.logo-box),
+[style*="background-color:#fff" i]:not(.col-logo):not(.carrier-logo):not(.logo-box) {
   background: var(--glass-bg) !important;
+}
+
+/* ═══ CARRIER LOGO BOXES — keep white for brand color logos ═══ */
+.col-logo {
+  background: #ffffff !important;
+  border: 1px solid rgba(57, 198, 255, 0.22) !important;
+  border-radius: 12px !important;
+  height: 64px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  padding: 8px !important;
+  overflow: hidden !important;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.18), 0 0 0 1px rgba(255, 255, 255, 0.04) inset;
+}
+.col-logo img {
+  max-width: 100% !important;
+  max-height: 48px !important;
+  object-fit: contain !important;
+  display: block !important;
+  filter: none !important;
+}
+/* When fallback initials are shown (no img), use brand color background */
+.col-logo:not(:has(img)) {
+  background: linear-gradient(135deg, #0F2C4D, #1E5BA8) !important;
 }
 
 /* Generic safety: navy text on dark should turn light */
