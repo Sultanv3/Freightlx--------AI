@@ -19,7 +19,7 @@
 export const config = { runtime: 'nodejs', maxDuration: 60 };
 
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY || '';
-const GEMINI_MODELS = ['gemini-2.5-flash-lite', 'gemini-2.5-flash', 'gemini-2.0-flash', 'gemini-1.5-flash-latest'];
+const GEMINI_MODELS = ['gemini-2.5-flash-lite', 'gemini-2.5-flash', 'gemini-2.0-flash', 'gemini-1.5-flash', 'gemini-2.0-flash-lite'];
 function geminiUrl(model) {
   return `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${GEMINI_API_KEY}`;
 }
@@ -909,7 +909,8 @@ async function runAgent(messages, ctx, maxSteps = 5) {
           }),
         });
         if (r.ok) break;
-        if (r.status !== 503 && r.status !== 429) {
+        // Walk the chain on overload (503/429) AND on model-not-found (404)
+        if (r.status !== 503 && r.status !== 429 && r.status !== 404) {
           const err = await r.text();
           lastError = `Gemini ${r.status}: ${err.slice(0, 300)}`;
           break;
