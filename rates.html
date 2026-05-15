@@ -570,14 +570,40 @@ const PORTS = [
 ];
 
 function getToken() {
-  const direct = localStorage.getItem('flx_access_token');
-  if (direct) return direct;
+  // Prefer Supabase session (always fresh after auto-refresh)
   for (const k of Object.keys(localStorage)) {
     if (k.startsWith('sb-') && k.endsWith('-auth-token')) {
       try { const d = JSON.parse(localStorage.getItem(k)); if (d?.access_token) return d.access_token; } catch {}
     }
   }
+  const direct = localStorage.getItem('flx_access_token');
+  if (direct) return direct;
   return '';
+}
+
+async function tryRefreshToken() {
+  for (const k of Object.keys(localStorage)) {
+    if (k.startsWith('sb-') && k.endsWith('-auth-token')) {
+      try {
+        const session = JSON.parse(localStorage.getItem(k));
+        if (!session?.refresh_token) continue;
+        const r = await fetch('/api/v1/auth/refresh', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ refresh_token: session.refresh_token }),
+        });
+        if (r.ok) {
+          const j = await r.json();
+          if (j.access_token) {
+            const next = { ...session, ...j };
+            localStorage.setItem(k, JSON.stringify(next));
+            return true;
+          }
+        }
+      } catch {}
+    }
+  }
+  return false;
 }
 
 function setupPortInput(inputId, suggestionsId) {
@@ -786,8 +812,14 @@ form.addEventListener('submit', async (e) => {
     });
     if (!r.ok) {
       if (r.status === 401) {
-        setStatus('⚠️ يجب تسجيل الدخول أولاً', 'error');
-        setTimeout(() => (location.href = '/login.html'), 1200);
+        // Try refresh once before redirecting
+        const refreshed = await tryRefreshToken();
+        if (refreshed) {
+          // Retry the search with new token
+          return searchRates();
+        }
+        setStatus('⚠️ انتهت جلستك. سيتم تحويلك لتسجيل الدخول...', 'error');
+        setTimeout(() => (location.href = '/?login=1'), 1500);
         return;
       }
       throw new Error('HTTP ' + r.status);
