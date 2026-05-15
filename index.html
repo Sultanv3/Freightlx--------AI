@@ -1030,6 +1030,14 @@ function flxRefreshNavAuth() {
 flxRefreshNavAuth();
 window.addEventListener('storage', flxRefreshNavAuth);
 setInterval(flxRefreshNavAuth, 4000);
+
+// Auto-open login modal if URL has ?login=1 (e.g. from /login redirect)
+if (new URLSearchParams(window.location.search).get('login') === '1') {
+  // Wait for flx-auth.js to mount the trigger
+  setTimeout(() => window.flxOpenLoginModal?.(), 800);
+  // Strip the param from the URL after opening
+  history.replaceState({}, '', window.location.pathname);
+}
 </script>
 
 <!-- ─── Platform integration ─── -->
