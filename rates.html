@@ -833,11 +833,11 @@ form.addEventListener('submit', async (e) => {
     // CASE A: No offers AND no reqId → genuinely no rates for this route
     if (allOffers.length === 0 && !reqId) {
       const reason = data.freightify_fallback_reason || {};
-      let msg = '⚠️ لم نتلقى أسعار من Freightify لهذا المسار';
+      let msg = '⚠️ لم نتلقى أسعار من الخطوط الملاحية لهذا المسار';
       if (reason.error && reason.error.includes('timeout')) {
-        msg = '⏱️ Freightify لم يرد خلال 50 ثانية — حاول مرة أخرى أو جرّب مساراً آخر';
+        msg = '⏱️ الخطوط الملاحية لم ترد خلال 50 ثانية — حاول مرة أخرى أو جرّب مساراً آخر';
       } else if (reason.error && reason.error.includes('no offers')) {
-        msg = '📭 لا توجد أسعار متاحة على Freightify لهذا المسار حالياً';
+        msg = '📭 لا توجد أسعار متاحة من 12 خط ملاحي لهذا المسار حالياً';
       }
       setStatus(msg, 'error');
       document.getElementById('skeleton').style.display = 'none';
@@ -851,11 +851,11 @@ form.addEventListener('submit', async (e) => {
     document.getElementById('resultsCard').style.display = 'block';
 
     if (allOffers.length > 0) {
-      setStatus(`✅ ${allOffers.length} عرض من Freightify (${ms}ms)${inProgress ? ' — جاري البحث عن المزيد...' : ''}`, 'success');
+      setStatus(`✅ ${allOffers.length} عرض من 12 خط ملاحي (${ms}ms)${inProgress ? ' — جاري البحث عن المزيد...' : ''}`, 'success');
       renderOffers();
       document.getElementById('resultsCard').scrollIntoView({ behavior: 'smooth' });
     } else {
-      setStatus(`⏳ Freightify يبحث في الخطوط الملاحية... قد يستغرق دقيقة`, 'info');
+      setStatus(`⏳ جاري البحث في 12 خط ملاحي... قد يستغرق دقيقة`, 'info');
     }
 
     // CASE B: We have a reqId AND status is INPROGRESS → keep polling for more offers
@@ -878,14 +878,14 @@ form.addEventListener('submit', async (e) => {
               document.getElementById('resultsCard').style.display = 'block';
               document.getElementById('resultsCard').scrollIntoView({ behavior: 'smooth' });
             }
-            setStatus(`✅ ${allOffers.length} عرض من Freightify${pd.completed ? ' (مكتمل)' : ' — يبحث عن المزيد...'}`, 'success');
+            setStatus(`✅ ${allOffers.length} عرض من 12 خط ملاحي${pd.completed ? ' (مكتمل)' : ' — يبحث عن المزيد...'}`, 'success');
           }
           if (pd.completed || pd.status === 'COMPLETED' || pollAttempts >= MAX_POLLS) {
             clearInterval(pollInterval);
             if (allOffers.length === 0) {
-              setStatus('📭 لم نجد أسعار من Freightify لهذا المسار بعد محاولات متعددة', 'error');
+              setStatus('📭 لم نجد أسعار من 12 خط ملاحي لهذا المسار بعد محاولات متعددة', 'error');
             } else {
-              setStatus(`✅ ${allOffers.length} عرض من Freightify (مكتمل)`, 'success');
+              setStatus(`✅ ${allOffers.length} عرض من 12 خط ملاحي (مكتمل)`, 'success');
             }
           }
         } catch (e) {

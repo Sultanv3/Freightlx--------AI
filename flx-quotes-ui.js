@@ -383,7 +383,7 @@
       if (data.mock) {
         noticeEl.style.display = 'block';
         noticeEl.className = 'flx-quotes-mock-notice';
-        noticeEl.innerHTML = '⚠️ هذه أسعار تقديرية · أضف Freightify API key في إعدادات Vercel للأسعار الحقيقية';
+        noticeEl.innerHTML = '⚠️ هذه أسعار تقديرية — جاري الاتصال بـ 12 خط ملاحي للحصول على الأسعار الحقيقية';
       } else {
         noticeEl.style.display = 'none';
       }
