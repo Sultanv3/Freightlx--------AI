@@ -166,7 +166,7 @@
     const tb = $('#admShipmentsTable'); if (!tb) return;
     tb.innerHTML = '<tr><td colspan="8" style="padding:20px;text-align:center;color:#94a3b8">جاري التحميل...</td></tr>';
     try {
-      const j = await api('/shipments?limit=50');
+      const j = await api('/shipments?limit=50&scope=all');
       const list = j.data || j.shipments || [];
       if (!list.length) {
         tb.innerHTML = '<tr><td colspan="8" style="padding:24px;text-align:center;color:#94a3b8">لا توجد شحنات</td></tr>';
@@ -195,7 +195,7 @@
     const tb = $('#admInvoicesTable'); if (!tb) return;
     tb.innerHTML = '<tr><td colspan="6" style="padding:20px;text-align:center;color:#94a3b8">جاري التحميل...</td></tr>';
     try {
-      const j = await api('/invoices?limit=50');
+      const j = await api('/invoices?limit=50&scope=all');
       const list = j.data || j.invoices || [];
       if (!list.length) {
         tb.innerHTML = '<tr><td colspan="6" style="padding:24px;text-align:center;color:#94a3b8">لا توجد فواتير</td></tr>';
@@ -222,7 +222,7 @@
     const tb = $('#admQuotesTable'); if (!tb) return;
     tb.innerHTML = '<tr><td colspan="6" style="padding:20px;text-align:center;color:#94a3b8">جاري التحميل...</td></tr>';
     try {
-      const j = await api('/quotes?limit=50');
+      const j = await api('/quotes?limit=50&scope=all');
       const list = j.data || j.quotes || [];
       if (!list.length) {
         tb.innerHTML = '<tr><td colspan="6" style="padding:24px;text-align:center;color:#94a3b8">لا توجد عروض</td></tr>';
