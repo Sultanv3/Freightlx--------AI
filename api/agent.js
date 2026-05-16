@@ -1717,8 +1717,11 @@ async function intentFallback(message, ctx, reason, history = []) {
   // 0️⃣ FULL IMPORT COST — chained: rates + customs (highest priority)
   //    "احسب التكلفة الكاملة" / "كم يكلفني" / "full cost" / "total cost"
   // ════════════════════════════════════════════════════════════
-  const fullCostIntent = /تكلف[هة]\s*كامل|اجمالي.*تكلف|كم\s*يكلف|كم\s*التكلف|full.*cost|total.*cost|complete.*import/i.test(norm)
-                      || (/تكلف/.test(norm) && /استيراد|import/i.test(norm));
+  // Match "تكلفة كاملة" / "التكلفة الكاملة" / "الإجمالية" / "كم يكلف" / "full cost" etc.
+  const fullCostIntent = /تكلف[هة].{0,6}كامل|اجمالي.*تكلف|كم\s*(?:ال)?يكلف|كم\s*التكلف|full.*cost|total.*cost|complete.*import/i.test(norm)
+                      || (/تكلف/.test(norm) && /استيراد|import/i.test(norm))
+                      // OR: explicit value + ports (= full landed cost intent)
+                      || (extractValue() >= 10000 && findCity().length >= 2 && /تكلف|كم/i.test(norm));
   if (fullCostIntent) {
     const cities = findCity();
     const value = extractValue();
