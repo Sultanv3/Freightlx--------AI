@@ -1924,11 +1924,18 @@ async function intentFallback(message, ctx, reason, history = []) {
   }
 
   // ════════════════════════════════════════════════════════════
-  // 7️⃣ GREETING — only when message is a simple greeting/capability
-  //    NOT if it contains specific request keywords
+  // 7️⃣ GREETING / CAPABILITIES — natural Saudi/Arabic variants
+  //    Match anywhere in short messages
   // ════════════════════════════════════════════════════════════
-  const isOnlyGreeting = norm.length < 30 && /^(مرحبا|اهلا|سلام|هلا|hi|hello|good\s+(morning|evening)|قدرات|تقدر|وش تسوي|what.*do)/i.test(norm.trim());
-  if (isOnlyGreeting) {
+  const isShort = norm.length < 60;
+  const isGreeting = /مرحبا|اهلا|سلام|هلا|صباح الخير|مساء الخير|كيف الحال/i.test(norm)
+                  || /^\s*(hi|hello|hey|good\s+(morning|evening|afternoon))/i.test(norm);
+  // "وش تقدر / وش تسوي / ايش تقدر / تقدر تساعدني / capabilities / what can you do"
+  const isCapabilityQ = /(وش|ايش|ايه|شو)\s*(تقدر|تسوي|يمكنك|تساعد|نسوي|تعرف)/i.test(norm)
+                     || /تقدر\s*(تساعد|تسوي)/i.test(norm)
+                     || /قدرات|capabilities|what\s+can\s+you|help\s*me|tell\s+me\s+about/i.test(norm)
+                     || /^وش$|^ايش$|^هلا$|^مرحبا$/i.test(norm.trim());
+  if ((isShort && isGreeting) || isCapabilityQ) {
     return {
       reply: '👋 أهلاً! أنا **FREIGHTLX AI** — المهندس التشغيلي للمنصة.\n\n**أقدر أساعدك في:**\n• 🚢 البحث عن أسعار شحن من 12 خط ملاحي\n• 🧮 حساب التخليص الجمركي وضريبة القيمة المضافة 15%\n• 📜 تحديد شهادات سابر المطلوبة\n• ⚓ معلومات الموانئ العالمية (323 ميناء)\n• 💵 حساب الديموراج للحاويات المتأخرة\n• 📊 تتبع شحناتك وفواتيرك\n\nاكتب سؤالك بالعربية أو الإنجليزية.',
       actions, steps: 0, fallback_used: 'intent_greeting',
