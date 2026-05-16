@@ -4,10 +4,10 @@
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
 <meta name="theme-color" content="#FFFFFF" />
-<title>FREIGHTLX — أول منصة شحن سعودية مدعومة بالذكاء الاصطناعي</title>
-<meta name="description" content="منصة الذكاء الاصطناعي للشحن — مصممة خصيصاً للسوق السعودي. أسعار حية من 12 خط ملاحي، تخليص جمركي ذكي، شهادات سابر مؤتمتة، متكامل مع زاتكا والجمارك السعودية." />
-<meta property="og:title" content="FREIGHTLX — منصة الشحن الذكية للمملكة" />
-<meta property="og:description" content="من القرار إلى التسليم في دقائق. أسعار حية، تخليص ذكي، AI مدعوم للمستوردين السعوديين." />
+<title>FREIGHTLX — اسأل الـ AI أي شي عن الشحن والاستيراد</title>
+<meta name="description" content="أول مهندس تشغيلي ذكي للشحن في السعودية. أسعار حية، تخليص جمركي، شهادات سابر — كل شي من خلال محادثة واحدة." />
+<meta property="og:title" content="FREIGHTLX — منصة الذكاء للشحن" />
+<meta property="og:description" content="اسأل المهندس التشغيلي AI. احصل على أسعار، احسب الجمارك، احجز شحنتك — بالعربية." />
 <meta property="og:type" content="website" />
 
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -16,26 +16,20 @@
 
 <style>
 /* ═══════════════════════════════════════════════════════════
-   FREIGHTLX v6.0 — Saudi-First Premium Identity
-   Built for: world-class clarity, Saudi market focus,
-   AI-native technology aesthetic
+   FREIGHTLX v7.0 — AI-First Identity
+   The AI is THE product. Everything else is proof.
    ═══════════════════════════════════════════════════════════ */
 
 :root {
-  /* SURFACES */
   --bg:           #FFFFFF;
   --bg-soft:      #F8FAFC;
   --bg-subtle:    #F1F5F9;
   --surface:      #FFFFFF;
-
-  /* TEXT — high contrast */
   --text:         #0A1628;
   --text-body:    #334155;
   --text-muted:   #64748B;
   --text-faint:   #94A3B8;
   --text-on-dark: #FFFFFF;
-
-  /* BRAND BLUE */
   --blue:         #0A84FF;
   --blue-deep:    #0066CC;
   --blue-darker:  #003478;
@@ -43,66 +37,35 @@
   --blue-tint:    rgba(10, 132, 255, 0.15);
   --cyan:         #39C6FF;
   --cyan-soft:    rgba(57, 198, 255, 0.10);
-
-  /* SAUDI ACCENTS */
-  --saudi-green:      #006C35;     /* National identity */
+  --saudi-green:      #006C35;
   --saudi-green-soft: #E6F4EC;
   --saudi-green-tint: rgba(0, 108, 53, 0.12);
-  --gold:             #C49B5C;     /* Vision 2030 / premium */
-  --gold-soft:        #FAF3E5;
-  --gold-tint:        rgba(196, 155, 92, 0.18);
-
-  /* SEMANTIC */
   --success:      #00875A;
   --warning:      #B97309;
   --danger:       #DE350B;
-
-  /* BORDERS */
   --border:       #E2E8F0;
   --border-mid:   #CBD5E1;
   --divider:      #F1F5F9;
-
-  /* SHADOWS — Stripe-grade soft & layered */
   --shadow-xs:    0 1px 2px rgba(15, 23, 42, 0.04);
   --shadow-sm:    0 1px 3px rgba(15, 23, 42, 0.06), 0 1px 2px rgba(15, 23, 42, 0.04);
   --shadow-md:    0 4px 6px rgba(15, 23, 42, 0.05), 0 10px 15px rgba(15, 23, 42, 0.04);
   --shadow-lg:    0 13px 27px -5px rgba(15, 23, 42, 0.10), 0 8px 16px -8px rgba(15, 23, 42, 0.06);
   --shadow-xl:    0 30px 60px -12px rgba(15, 23, 42, 0.14);
+  --shadow-2xl:   0 40px 100px -20px rgba(10, 132, 255, 0.25), 0 25px 50px -12px rgba(15, 23, 42, 0.12);
   --shadow-glow:  0 0 0 4px rgba(10, 132, 255, 0.10);
-
-  /* TYPE */
   --font-ar:      'IBM Plex Sans Arabic', system-ui, sans-serif;
   --font-en:      'Inter', system-ui, sans-serif;
   --font-mono:    'JetBrains Mono', 'SF Mono', monospace;
-
-  /* RADII */
   --r-sm: 6px;
   --r-md: 10px;
   --r-lg: 14px;
   --r-xl: 20px;
   --r-2xl: 28px;
   --r-pill: 999px;
-
-  /* SPACING SCALE */
-  --gap-1: 4px;
-  --gap-2: 8px;
-  --gap-3: 12px;
-  --gap-4: 16px;
-  --gap-5: 20px;
-  --gap-6: 24px;
-  --gap-8: 32px;
-  --gap-10: 40px;
-  --gap-12: 48px;
-  --gap-16: 64px;
-  --gap-20: 80px;
-  --gap-24: 96px;
 }
 
-/* ═══ RESET + BASE ═══ */
 * { box-sizing: border-box; margin: 0; padding: 0; }
-
 html { scroll-behavior: smooth; }
-
 body {
   font-family: var(--font-ar);
   background: var(--bg);
@@ -112,30 +75,27 @@ body {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   text-rendering: optimizeLegibility;
-  font-feature-settings: 'cv11', 'ss01', 'ss03';
   overflow-x: hidden;
 }
-
 img, svg { display: block; max-width: 100%; }
 button { font-family: inherit; cursor: pointer; border: none; background: none; }
 a { color: inherit; text-decoration: none; }
-
 ::selection { background: var(--blue-tint); color: var(--text); }
 
-/* ═══ AMBIENT BACKGROUND ═══ */
+/* ═══ AMBIENT ═══ */
 .ambient {
   position: fixed; inset: 0;
   pointer-events: none; z-index: 0;
   background:
-    radial-gradient(ellipse 70% 60% at 20% 0%, rgba(10, 132, 255, 0.05), transparent 60%),
-    radial-gradient(ellipse 50% 50% at 100% 80%, rgba(57, 198, 255, 0.06), transparent 60%),
-    radial-gradient(ellipse 40% 30% at 50% 100%, rgba(0, 108, 53, 0.04), transparent 70%);
+    radial-gradient(ellipse 70% 60% at 20% 0%, rgba(10, 132, 255, 0.08), transparent 60%),
+    radial-gradient(ellipse 50% 50% at 100% 80%, rgba(57, 198, 255, 0.08), transparent 60%),
+    radial-gradient(ellipse 40% 30% at 50% 100%, rgba(0, 108, 53, 0.05), transparent 70%);
 }
 
 .grid-bg {
   position: fixed; inset: 0;
   pointer-events: none; z-index: 0;
-  opacity: 0.4;
+  opacity: 0.5;
   background-image:
     linear-gradient(rgba(10, 132, 255, 0.030) 1px, transparent 1px),
     linear-gradient(90deg, rgba(10, 132, 255, 0.030) 1px, transparent 1px);
@@ -144,152 +104,86 @@ a { color: inherit; text-decoration: none; }
   -webkit-mask-image: radial-gradient(ellipse 80% 60% at 50% 30%, #000 30%, transparent 80%);
 }
 
-/* ═══ TYPOGRAPHY SCALE ═══ */
-h1, h2, h3, h4, h5, h6 {
-  color: var(--text);
-  font-weight: 800;
-  letter-spacing: -0.025em;
-  line-height: 1.1;
-}
-
-h1 { font-size: clamp(2.2rem, 5.5vw, 4.5rem); font-weight: 800; }
-h2 { font-size: clamp(1.7rem, 3.5vw, 2.8rem); font-weight: 800; }
-h3 { font-size: clamp(1.25rem, 2vw, 1.55rem); font-weight: 700; }
-
+/* ═══ TYPE ═══ */
+h1, h2, h3, h4, h5 { color: var(--text); font-weight: 800; letter-spacing: -0.025em; line-height: 1.1; }
+h1 { font-size: clamp(2.4rem, 6.5vw, 5rem); }
+h2 { font-size: clamp(1.7rem, 3.5vw, 2.8rem); }
+h3 { font-size: clamp(1.2rem, 2vw, 1.5rem); }
 p { color: var(--text-body); }
+.num { font-family: var(--font-en); font-feature-settings: 'tnum'; }
+.mono, code { font-family: var(--font-mono); font-size: 0.92em; background: var(--bg-subtle); padding: 2px 7px; border-radius: var(--r-sm); border: 1px solid var(--border); }
 
-.num, .mono {
-  font-family: var(--font-en);
-  font-feature-settings: 'tnum', 'cv11';
-}
-
-.code, code, kbd {
-  font-family: var(--font-mono);
-  font-size: 0.92em;
-  background: var(--bg-subtle);
-  color: var(--text);
-  padding: 2px 7px;
-  border-radius: var(--r-sm);
-  border: 1px solid var(--border);
-}
-
-/* ═══ LAYOUT ═══ */
-.wrap {
-  max-width: 1240px;
-  margin: 0 auto;
-  padding: 0 24px;
-  position: relative;
-  z-index: 1;
-}
-
+.wrap { max-width: 1240px; margin: 0 auto; padding: 0 24px; position: relative; z-index: 1; }
 section { position: relative; z-index: 1; }
 
 /* ═══ NAV ═══ */
 .nav {
   position: sticky; top: 0; z-index: 100;
-  background: rgba(255, 255, 255, 0.82);
+  background: rgba(255, 255, 255, 0.85);
   backdrop-filter: blur(24px) saturate(180%);
   -webkit-backdrop-filter: blur(24px) saturate(180%);
   border-bottom: 1px solid var(--border);
 }
 
 .nav-inner {
-  max-width: 1240px;
-  margin: 0 auto;
-  padding: 16px 24px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 24px;
+  max-width: 1240px; margin: 0 auto; padding: 16px 24px;
+  display: flex; align-items: center; justify-content: space-between; gap: 24px;
 }
 
-.nav-brand {
-  display: flex; align-items: center; gap: 10px;
-  text-decoration: none;
-}
-
+.nav-brand { display: flex; align-items: center; gap: 10px; }
 .nav-logo {
   width: 38px; height: 38px;
   background: linear-gradient(135deg, var(--blue) 0%, var(--cyan) 100%);
   border-radius: 10px;
   display: flex; align-items: center; justify-content: center;
   color: #fff; font-weight: 800; font-size: 18px;
-  box-shadow: 0 4px 12px rgba(10, 132, 255, 0.25);
+  box-shadow: 0 4px 12px rgba(10, 132, 255, 0.30);
   font-family: var(--font-en);
 }
-
-.nav-brand-text {
-  font-size: 18px; font-weight: 800;
-  color: var(--text);
-  letter-spacing: -0.02em;
-  font-family: var(--font-en);
-}
-
-.nav-brand-sub {
-  font-size: 11px;
-  color: var(--text-muted);
-  font-weight: 500;
-}
-
-.nav-links {
-  display: flex; align-items: center; gap: 6px;
-}
-
+.nav-brand-text { font-size: 18px; font-weight: 800; color: var(--text); letter-spacing: -0.02em; font-family: var(--font-en); }
+.nav-brand-sub { font-size: 11px; color: var(--text-muted); font-weight: 500; }
+.nav-links { display: flex; align-items: center; gap: 6px; }
 .nav-links a {
-  padding: 8px 14px;
-  font-size: 14px;
-  font-weight: 500;
-  color: var(--text-body);
-  border-radius: var(--r-md);
-  transition: all 0.15s;
+  padding: 8px 14px; font-size: 14px; font-weight: 500;
+  color: var(--text-body); border-radius: var(--r-md); transition: all 0.15s;
 }
-
 .nav-links a:hover { color: var(--blue-deep); background: var(--blue-soft); }
-
 .nav-cta {
   display: inline-flex; align-items: center; gap: 6px;
   padding: 10px 18px;
   background: linear-gradient(180deg, var(--blue) 0%, var(--blue-deep) 100%);
-  color: #fff !important;
-  border-radius: var(--r-md);
-  font-weight: 600;
-  font-size: 14px;
+  color: #fff !important; border-radius: var(--r-md);
+  font-weight: 600; font-size: 14px;
   box-shadow: 0 1px 2px rgba(10, 132, 255, 0.30), inset 0 1px 0 rgba(255, 255, 255, 0.18);
-  transition: transform 0.15s, box-shadow 0.15s;
 }
-
 .nav-cta:hover {
   background: linear-gradient(180deg, #1B95FF 0%, var(--blue) 100%) !important;
-  color: #fff !important;
   transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(10, 132, 255, 0.32), inset 0 1px 0 rgba(255, 255, 255, 0.20);
+  box-shadow: 0 4px 12px rgba(10, 132, 255, 0.32);
 }
 
 @media (max-width: 768px) {
   .nav-links a:not(.nav-cta) { display: none; }
 }
 
-/* ═══ HERO ═══ */
+/* ═══ HERO — AI-FIRST ═══ */
 .hero {
-  padding: 96px 0 80px;
+  padding: 64px 0 96px;
   position: relative;
 }
 
-.hero-inner { text-align: center; max-width: 920px; margin: 0 auto; }
-
-.eyebrow {
-  display: inline-flex; align-items: center; gap: 8px;
+.hero-eyebrow {
+  display: inline-flex; align-items: center; gap: 10px;
   padding: 8px 16px;
   background: var(--bg-soft);
   border: 1px solid var(--border);
   color: var(--text-body);
-  font-size: 13px;
-  font-weight: 600;
+  font-size: 13px; font-weight: 600;
   border-radius: var(--r-pill);
-  margin-bottom: 28px;
+  margin-bottom: 24px;
 }
 
-.eyebrow-dot {
+.hero-eyebrow-dot {
   width: 6px; height: 6px;
   border-radius: 50%;
   background: var(--saudi-green);
@@ -297,50 +191,615 @@ section { position: relative; z-index: 1; }
   animation: pulseDot 2s ease-in-out infinite;
 }
 
-@keyframes pulseDot {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.5; }
-}
+@keyframes pulseDot { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
 
 .hero h1 {
-  margin-bottom: 24px;
   font-family: var(--font-ar);
   font-weight: 800;
+  margin-bottom: 20px;
+  text-align: center;
 }
 
-.hero h1 .gradient-blue {
+.hero h1 .gradient {
   background: linear-gradient(135deg, var(--blue) 0%, var(--cyan) 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
 }
 
-.hero h1 .saudi-mark {
-  display: inline-flex; align-items: center; gap: 10px;
-  color: var(--saudi-green);
+.hero-sub {
+  font-size: clamp(1.05rem, 1.8vw, 1.3rem);
+  color: var(--text-body);
+  line-height: 1.6;
+  max-width: 720px;
+  margin: 0 auto 48px;
+  text-align: center;
 }
 
-.hero-sub {
-  font-size: clamp(1.05rem, 1.8vw, 1.25rem);
+.hero-inner-head {
+  text-align: center;
+  display: flex; flex-direction: column; align-items: center;
+}
+
+/* ═══ AI HERO CHAT — THE PRODUCT ═══ */
+.ai-hero {
+  max-width: 920px;
+  margin: 0 auto;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--r-2xl);
+  overflow: hidden;
+  box-shadow: var(--shadow-2xl);
+  position: relative;
+}
+
+.ai-hero::before {
+  content: '';
+  position: absolute; inset: -2px;
+  border-radius: var(--r-2xl);
+  background: linear-gradient(135deg, var(--blue), var(--cyan), var(--saudi-green));
+  filter: blur(40px);
+  opacity: 0.18;
+  z-index: -1;
+}
+
+.ai-hero-head {
+  padding: 20px 28px;
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 16px;
+  border-bottom: 1px solid var(--border);
+  background: linear-gradient(180deg, #FAFCFF 0%, var(--surface) 100%);
+  flex-wrap: wrap;
+}
+
+.ai-hero-title-wrap { display: flex; align-items: center; gap: 14px; }
+
+.ai-hero-orb {
+  width: 48px; height: 48px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 30% 30%, var(--cyan), var(--blue) 60%, var(--blue-darker));
+  position: relative;
+  flex-shrink: 0;
+  box-shadow: 0 6px 24px rgba(10, 132, 255, 0.40);
+}
+.ai-hero-orb span {
+  position: absolute; inset: -4px;
+  border: 1.5px solid rgba(10, 132, 255, 0.30);
+  border-radius: 50%;
+  animation: orbRing 3s linear infinite;
+}
+.ai-hero-orb span:nth-child(2) { inset: -9px; animation-delay: -1s; }
+.ai-hero-orb span:nth-child(3) { inset: -14px; animation-delay: -2s; }
+@keyframes orbRing {
+  0%   { opacity: 0.7; transform: scale(0.9); }
+  100% { opacity: 0; transform: scale(1.3); }
+}
+
+.ai-hero-title { font-size: 17px; font-weight: 700; color: var(--text); }
+.ai-hero-sub { font-size: 12.5px; color: var(--text-muted); margin-top: 2px; }
+
+.ai-hero-badge {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 6px 12px;
+  background: var(--saudi-green-soft);
+  border: 1px solid var(--saudi-green-tint);
+  color: var(--saudi-green);
+  border-radius: var(--r-pill);
+  font-size: 10.5px; font-weight: 700; font-family: var(--font-en);
+  letter-spacing: 0.05em; text-transform: uppercase;
+}
+
+.ai-hero-badge .dot {
+  width: 6px; height: 6px; border-radius: 50%;
+  background: var(--saudi-green);
+  box-shadow: 0 0 0 3px rgba(0, 108, 53, 0.25);
+  animation: pulseDot 1.8s ease-in-out infinite;
+}
+
+.ai-hero-body {
+  padding: 28px;
+  min-height: 320px;
+  max-height: 520px;
+  overflow-y: auto;
+  display: flex; flex-direction: column; gap: 14px;
+}
+
+.msg {
+  max-width: 88%;
+  padding: 12px 16px;
+  border-radius: var(--r-lg);
+  font-size: 14.5px;
+  line-height: 1.7;
+  white-space: pre-wrap;
+  word-wrap: break-word;
+}
+
+.msg-user {
+  align-self: flex-end;
+  background: linear-gradient(135deg, var(--blue) 0%, var(--blue-deep) 100%);
+  color: #fff;
+  border-radius: var(--r-lg) var(--r-sm) var(--r-lg) var(--r-lg);
+  box-shadow: 0 4px 16px rgba(10, 132, 255, 0.25);
+}
+
+.msg-bot {
+  align-self: flex-start;
+  background: var(--bg-soft);
+  border: 1px solid var(--border);
+  color: var(--text);
+  border-radius: var(--r-sm) var(--r-lg) var(--r-lg) var(--r-lg);
+}
+
+.msg-bot strong { color: var(--text); font-weight: 700; }
+.msg-bot code {
+  background: var(--surface);
+  padding: 1px 6px;
+  border-radius: 4px;
+  font-size: 0.88em;
+}
+
+.typing {
+  display: inline-flex; gap: 5px; padding: 2px 0;
+}
+.typing span {
+  width: 7px; height: 7px;
+  border-radius: 50%;
+  background: var(--text-muted);
+  animation: typingPulse 1.4s infinite;
+}
+.typing span:nth-child(2) { animation-delay: 0.2s; }
+.typing span:nth-child(3) { animation-delay: 0.4s; }
+@keyframes typingPulse {
+  0%, 60%, 100% { opacity: 0.3; transform: translateY(0); }
+  30% { opacity: 1; transform: translateY(-4px); }
+}
+
+.ai-hero-suggest {
+  padding: 14px 28px;
+  display: flex; flex-wrap: wrap; gap: 8px;
+  border-top: 1px solid var(--border);
+  background: var(--bg-soft);
+}
+
+.ai-chip {
+  padding: 8px 14px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--r-pill);
+  font-size: 13px; font-weight: 500;
+  color: var(--text-body);
+  transition: all 0.15s;
+  font-family: var(--font-ar);
+}
+.ai-chip:hover {
+  background: var(--blue-soft);
+  color: var(--blue-deep);
+  border-color: var(--blue-tint);
+  transform: translateY(-1px);
+}
+
+.ai-hero-input {
+  display: flex; gap: 12px;
+  padding: 18px 28px 24px;
+  background: var(--bg-soft);
+  border-top: 1px solid var(--border);
+}
+
+.ai-hero-input input {
+  flex: 1;
+  padding: 14px 18px;
+  background: var(--surface);
+  border: 1.5px solid var(--border);
+  border-radius: var(--r-md);
+  font-size: 15.5px;
+  font-family: var(--font-ar);
+  color: var(--text);
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+.ai-hero-input input::placeholder { color: var(--text-faint); }
+.ai-hero-input input:focus {
+  outline: none;
+  border-color: var(--blue);
+  box-shadow: var(--shadow-glow);
+}
+
+.ai-hero-input button {
+  width: 50px; height: 50px;
+  background: linear-gradient(135deg, var(--blue) 0%, var(--blue-deep) 100%);
+  color: #fff;
+  border-radius: var(--r-md);
+  display: flex; align-items: center; justify-content: center;
+  box-shadow: 0 4px 16px rgba(10, 132, 255, 0.30);
+  transition: transform 0.15s, box-shadow 0.15s;
+}
+.ai-hero-input button:hover {
+  transform: scale(1.05);
+  box-shadow: 0 8px 24px rgba(10, 132, 255, 0.40);
+}
+.ai-hero-input button:disabled { opacity: 0.5; cursor: not-allowed; }
+
+.ai-action-cards {
+  margin-top: 12px;
+  display: flex; flex-wrap: wrap; gap: 8px;
+}
+
+.ai-action-card {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 8px 12px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--r-md);
+  font-size: 12.5px; font-weight: 600;
+  color: var(--blue-deep);
+  transition: all 0.15s;
+}
+.ai-action-card:hover {
+  background: var(--blue-soft);
+  border-color: var(--blue-tint);
+}
+
+/* ═══ TRUST BAND ═══ */
+.trust {
+  padding: 48px 0 56px;
+  border-bottom: 1px solid var(--border);
+}
+
+.trust-title {
+  text-align: center;
+  font-size: 12px;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-weight: 600;
+  margin-bottom: 28px;
+  font-family: var(--font-en);
+}
+
+.trust-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 16px;
+  max-width: 1100px;
+  margin: 0 auto;
+}
+
+.trust-item {
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+  padding: 14px 12px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--r-lg);
+  color: var(--text);
+  font-weight: 600;
+  font-size: 13px;
+  transition: all 0.2s;
+}
+.trust-item:hover {
+  border-color: var(--blue-tint);
+  box-shadow: var(--shadow-sm);
+}
+
+/* ═══ HOW IT WORKS ═══ */
+.how {
+  padding: 96px 0;
+}
+
+.section-head { text-align: center; max-width: 720px; margin: 0 auto 56px; }
+.section-tag {
+  display: inline-block;
+  padding: 6px 14px;
+  background: var(--blue-soft);
+  color: var(--blue-deep);
+  font-size: 12px; font-weight: 700;
+  letter-spacing: 0.04em; text-transform: uppercase;
+  border-radius: var(--r-pill);
+  margin-bottom: 16px; font-family: var(--font-en);
+}
+.section-head h2 { margin-bottom: 16px; }
+.section-head p { color: var(--text-body); font-size: 1.05rem; line-height: 1.7; }
+
+.how-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 20px;
+}
+
+@media (max-width: 900px) { .how-grid { grid-template-columns: repeat(2, 1fr); } }
+@media (max-width: 540px) { .how-grid { grid-template-columns: 1fr; } }
+
+.how-card {
+  padding: 28px 22px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--r-xl);
+  transition: all 0.25s;
+  position: relative;
+}
+
+.how-card:hover {
+  border-color: var(--blue-tint);
+  transform: translateY(-3px);
+  box-shadow: var(--shadow-md);
+}
+
+.how-num {
+  font-family: var(--font-en);
+  font-size: 36px;
+  font-weight: 800;
+  background: linear-gradient(135deg, var(--blue) 0%, var(--cyan) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  letter-spacing: -0.05em;
+  margin-bottom: 12px;
+  line-height: 1;
+}
+
+.how-card h3 {
+  font-size: 17px;
+  margin-bottom: 10px;
+  font-weight: 700;
+}
+
+.how-card p {
+  font-size: 14px;
   color: var(--text-body);
   line-height: 1.65;
-  max-width: 720px;
-  margin: 0 auto 40px;
 }
 
-.hero-cta {
-  display: inline-flex; align-items: center; gap: 12px;
-  flex-wrap: wrap;
-  justify-content: center;
+/* ═══ EXAMPLES (real conversations) ═══ */
+.examples {
+  padding: 96px 0;
+  background: var(--bg-soft);
+  border-top: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+}
+
+.examples-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 24px;
+  max-width: 1100px;
+  margin: 0 auto;
+}
+
+@media (max-width: 768px) { .examples-grid { grid-template-columns: 1fr; } }
+
+.example-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--r-xl);
+  overflow: hidden;
+  transition: all 0.25s;
+}
+
+.example-card:hover {
+  border-color: var(--blue-tint);
+  box-shadow: var(--shadow-lg);
+  transform: translateY(-2px);
+}
+
+.example-q {
+  padding: 16px 20px;
+  background: linear-gradient(135deg, var(--blue) 0%, var(--blue-deep) 100%);
+  color: #fff;
+  font-size: 14.5px;
+  font-weight: 500;
+}
+
+.example-q::before {
+  content: '👤';
+  margin-left: 8px;
+}
+
+.example-a {
+  padding: 18px 20px;
+  font-size: 13.5px;
+  color: var(--text-body);
+  line-height: 1.7;
+}
+
+.example-a::before {
+  content: '🤖';
+  display: block;
+  font-size: 22px;
+  margin-bottom: 8px;
+}
+
+.example-a strong { color: var(--text); }
+.example-a code {
+  background: var(--bg-soft);
+  padding: 1px 6px;
+  border-radius: 4px;
+  font-size: 0.88em;
+  border: 1px solid var(--border);
+}
+
+/* ═══ ROUTES (visual + smaller) ═══ */
+.routes {
+  padding: 96px 0;
+}
+
+.routes-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+}
+
+@media (max-width: 900px) { .routes-grid { grid-template-columns: 1fr 1fr; } }
+@media (max-width: 540px) { .routes-grid { grid-template-columns: 1fr; } }
+
+.route-card {
+  padding: 20px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--r-lg);
+  transition: all 0.2s;
+}
+.route-card:hover {
+  border-color: var(--blue-tint);
+  box-shadow: var(--shadow-md);
+  transform: translateY(-2px);
+}
+
+.route-flow {
+  display: flex; align-items: center; gap: 10px;
+  margin-bottom: 12px;
+}
+
+.route-port { flex: 1; font-weight: 700; color: var(--text); font-size: 14px; }
+.route-port .flag { font-size: 18px; margin-left: 4px; }
+.route-arrow { color: var(--text-faint); font-family: var(--font-en); font-weight: 700; }
+
+.route-meta {
+  display: flex; gap: 14px; flex-wrap: wrap;
+  padding-top: 12px;
+  border-top: 1px solid var(--divider);
+}
+.route-meta strong {
+  display: block;
+  font-family: var(--font-en);
+  font-size: 15px;
+  color: var(--text);
+  margin-bottom: 2px;
+  font-weight: 700;
+}
+.route-meta span { color: var(--text-muted); font-size: 11.5px; }
+
+/* ═══ VISION 2030 ═══ */
+.vision {
+  padding: 96px 0;
+  background: linear-gradient(180deg, var(--bg-soft) 0%, var(--bg) 100%);
+  border-top: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+  position: relative; overflow: hidden;
+}
+
+.vision::before {
+  content: '';
+  position: absolute;
+  width: 600px; height: 600px;
+  border-radius: 50%;
+  background: radial-gradient(circle, var(--saudi-green-tint), transparent 60%);
+  filter: blur(60px);
+  top: -300px; right: -200px;
+  opacity: 0.6;
+}
+
+.vision-grid {
+  display: grid;
+  grid-template-columns: 1.2fr 1fr;
+  gap: 56px;
+  align-items: center;
+}
+
+@media (max-width: 900px) { .vision-grid { grid-template-columns: 1fr; gap: 40px; } }
+
+.vision-badge {
+  display: inline-flex; align-items: center; gap: 8px;
+  padding: 8px 16px;
+  background: var(--saudi-green-soft);
+  border: 1px solid var(--saudi-green-tint);
+  color: var(--saudi-green);
+  font-size: 13px; font-weight: 700;
+  border-radius: var(--r-pill);
+  margin-bottom: 20px;
+}
+
+.vision h2 { margin-bottom: 20px; }
+.vision h2 .saudi-grad {
+  background: linear-gradient(135deg, var(--saudi-green) 0%, #00A858 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.vision p { color: var(--text-body); font-size: 1.05rem; line-height: 1.75; margin-bottom: 16px; }
+
+.vision-list { list-style: none; margin-top: 24px; }
+.vision-list li {
+  display: flex; align-items: flex-start; gap: 12px;
+  padding: 10px 0;
+  color: var(--text);
+  font-weight: 500;
+  font-size: 14.5px;
+}
+.vision-list li::before {
+  content: '✓';
+  flex-shrink: 0;
+  width: 22px; height: 22px;
+  border-radius: 50%;
+  background: var(--saudi-green-soft);
+  color: var(--saudi-green);
+  display: flex; align-items: center; justify-content: center;
+  font-weight: 800; font-size: 13px;
+}
+
+.vision-art {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--r-2xl);
+  padding: 36px;
+  box-shadow: var(--shadow-lg);
+}
+
+.vision-art-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 18px;
+}
+
+.vision-stat {
+  padding: 22px 18px;
+  background: var(--bg-soft);
+  border: 1px solid var(--border);
+  border-radius: var(--r-lg);
+  text-align: center;
+}
+
+.vision-stat-value {
+  font-family: var(--font-en);
+  font-size: 2.2rem;
+  font-weight: 800;
+  background: linear-gradient(135deg, var(--saudi-green) 0%, var(--blue) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  letter-spacing: -0.025em;
+  margin-bottom: 4px;
+}
+
+.vision-stat-label { color: var(--text-muted); font-size: 12.5px; font-weight: 500; }
+
+/* ═══ FINAL CTA ═══ */
+.final-cta {
+  padding: 96px 0;
+  text-align: center;
+}
+
+.final-cta-inner { max-width: 720px; margin: 0 auto; }
+
+.final-cta h2 {
+  background: linear-gradient(135deg, var(--text) 0%, var(--blue) 50%, var(--cyan) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  margin-bottom: 20px;
+}
+
+.final-cta p {
+  font-size: clamp(1rem, 1.5vw, 1.2rem);
+  color: var(--text-body);
+  margin-bottom: 36px;
+  line-height: 1.7;
 }
 
 .btn {
   display: inline-flex; align-items: center; gap: 10px;
   padding: 14px 28px;
-  font-size: 15px;
-  font-weight: 600;
+  font-size: 15px; font-weight: 600;
   border-radius: var(--r-md);
-  transition: all 0.18s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: all 0.18s;
   white-space: nowrap;
 }
 
@@ -362,667 +821,25 @@ section { position: relative; z-index: 1; }
 }
 
 .btn-primary:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 8px 24px rgba(10, 132, 255, 0.40);
-}
-
-.btn-primary:hover::after { opacity: 0.55; }
-
-.btn-ghost {
-  background: var(--surface);
-  color: var(--text);
-  border: 1px solid var(--border);
-  box-shadow: var(--shadow-xs);
-}
-
-.btn-ghost:hover {
-  background: var(--bg-soft);
-  border-color: var(--border-mid);
-}
-
-/* ═══ HERO STATS ═══ */
-.hero-stats {
-  margin-top: 56px;
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 1px;
-  background: var(--border);
-  border: 1px solid var(--border);
-  border-radius: var(--r-xl);
-  overflow: hidden;
-  max-width: 920px;
-  margin-left: auto;
-  margin-right: auto;
-  box-shadow: var(--shadow-lg);
-}
-
-.hero-stat {
-  background: var(--surface);
-  padding: 28px 16px;
-  text-align: center;
-}
-
-.hero-stat-value {
-  font-family: var(--font-en);
-  font-size: clamp(1.5rem, 3.2vw, 2.2rem);
-  font-weight: 800;
-  letter-spacing: -0.025em;
-  background: linear-gradient(135deg, var(--text) 0%, var(--blue) 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
-  margin-bottom: 4px;
-}
-
-.hero-stat-label {
-  font-size: 12px;
-  color: var(--text-muted);
-  font-weight: 500;
-}
-
-@media (max-width: 640px) {
-  .hero-stats { grid-template-columns: repeat(2, 1fr); }
-}
-
-/* ═══ TRUST BAND ═══ */
-.trust {
-  padding: 56px 0;
-  border-top: 1px solid var(--border);
-  border-bottom: 1px solid var(--border);
-  background: var(--bg-soft);
-}
-
-.trust-title {
-  text-align: center;
-  font-size: 13px;
-  color: var(--text-muted);
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  font-weight: 600;
-  margin-bottom: 32px;
-  font-family: var(--font-en);
-}
-
-.trust-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
-  gap: 24px;
-  max-width: 1100px;
-  margin: 0 auto;
-}
-
-.trust-item {
-  display: flex; align-items: center; justify-content: center;
-  gap: 10px;
-  padding: 18px 16px;
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: var(--r-lg);
-  color: var(--text);
-  font-weight: 600;
-  font-size: 14px;
-  transition: all 0.2s;
-}
-
-.trust-item:hover {
-  border-color: var(--blue-tint);
-  box-shadow: var(--shadow-sm);
-  transform: translateY(-1px);
-}
-
-.trust-icon {
-  width: 24px; height: 24px;
-  display: flex; align-items: center; justify-content: center;
-  color: var(--saudi-green);
-}
-
-/* ═══ FEATURES (3 PILLARS) ═══ */
-.features {
-  padding: 96px 0;
-}
-
-.section-head {
-  text-align: center;
-  max-width: 720px;
-  margin: 0 auto 64px;
-}
-
-.section-tag {
-  display: inline-block;
-  padding: 6px 14px;
-  background: var(--blue-soft);
-  color: var(--blue-deep);
-  font-size: 12px;
-  font-weight: 700;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-  border-radius: var(--r-pill);
-  margin-bottom: 16px;
-  font-family: var(--font-en);
-}
-
-.section-head h2 { margin-bottom: 16px; }
-.section-head p {
-  color: var(--text-body);
-  font-size: clamp(1rem, 1.5vw, 1.15rem);
-  line-height: 1.7;
-}
-
-.features-grid {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 28px;
-}
-
-@media (max-width: 900px) { .features-grid { grid-template-columns: 1fr; } }
-
-.feature-card {
-  position: relative;
-  padding: 36px 28px;
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: var(--r-xl);
-  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
-  overflow: hidden;
-}
-
-.feature-card::before {
-  content: '';
-  position: absolute; top: 0; left: 0; right: 0;
-  height: 3px;
-  background: linear-gradient(90deg, var(--blue), var(--cyan));
-  opacity: 0;
-  transition: opacity 0.25s;
-}
-
-.feature-card:hover {
-  border-color: var(--blue-tint);
-  box-shadow: var(--shadow-lg);
-  transform: translateY(-4px);
-}
-
-.feature-card:hover::before { opacity: 1; }
-
-.feature-icon {
-  width: 56px; height: 56px;
-  border-radius: var(--r-lg);
-  background: linear-gradient(135deg, var(--blue-soft), var(--cyan-soft));
-  display: flex; align-items: center; justify-content: center;
-  margin-bottom: 24px;
-  color: var(--blue);
-  font-size: 28px;
-}
-
-.feature-card h3 {
-  margin-bottom: 12px;
-  color: var(--text);
-}
-
-.feature-card p {
-  color: var(--text-body);
-  line-height: 1.7;
-  font-size: 15px;
-}
-
-.feature-meta {
-  margin-top: 24px;
-  padding-top: 20px;
-  border-top: 1px solid var(--divider);
-  display: flex; flex-wrap: wrap; gap: 6px;
-}
-
-.feature-meta .pill {
-  padding: 4px 10px;
-  background: var(--bg-subtle);
-  color: var(--text-body);
-  font-size: 11px;
-  font-weight: 600;
-  border-radius: var(--r-pill);
-  font-family: var(--font-en);
-}
-
-.feature-meta .pill.green { background: var(--saudi-green-soft); color: var(--saudi-green); }
-.feature-meta .pill.gold  { background: var(--gold-soft); color: #8B6614; }
-
-/* ═══ AI DEMO SECTION ═══ */
-.ai-section {
-  padding: 96px 0;
-  background: var(--bg-soft);
-  border-top: 1px solid var(--border);
-  border-bottom: 1px solid var(--border);
-}
-
-.ai-demo {
-  max-width: 880px;
-  margin: 0 auto;
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: var(--r-2xl);
-  overflow: hidden;
-  box-shadow: var(--shadow-xl);
-}
-
-.ai-demo-head {
-  padding: 24px 28px;
-  display: flex; align-items: center; justify-content: space-between;
-  gap: 16px;
-  border-bottom: 1px solid var(--border);
-  background: linear-gradient(180deg, var(--bg) 0%, var(--bg-soft) 100%);
-  flex-wrap: wrap;
-}
-
-.ai-demo-title-wrap { display: flex; align-items: center; gap: 16px; }
-
-.ai-demo-orb {
-  width: 48px; height: 48px;
-  border-radius: 50%;
-  background: radial-gradient(circle at 30% 30%, var(--cyan), var(--blue) 60%, var(--blue-darker));
-  position: relative;
-  flex-shrink: 0;
-  box-shadow: 0 6px 20px rgba(10, 132, 255, 0.35);
-}
-.ai-demo-orb span {
-  position: absolute; inset: -4px;
-  border: 1.5px solid rgba(10, 132, 255, 0.3);
-  border-radius: 50%;
-  animation: orbRing 3s linear infinite;
-}
-.ai-demo-orb span:nth-child(2) { inset: -9px; animation-delay: -1s; }
-.ai-demo-orb span:nth-child(3) { inset: -14px; animation-delay: -2s; }
-@keyframes orbRing {
-  0%   { opacity: 0.7; transform: scale(0.9); }
-  100% { opacity: 0; transform: scale(1.3); }
-}
-
-.ai-demo-title { font-size: 17px; font-weight: 700; color: var(--text); }
-.ai-demo-sub { font-size: 13px; color: var(--text-muted); margin-top: 2px; }
-
-.ai-demo-badge {
-  display: inline-flex; align-items: center; gap: 6px;
-  padding: 6px 14px;
-  background: var(--saudi-green-soft);
-  border: 1px solid var(--saudi-green-tint);
-  color: var(--saudi-green);
-  border-radius: var(--r-pill);
-  font-size: 11px;
-  font-weight: 700;
-  font-family: var(--font-en);
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-}
-
-.ai-demo-badge .dot {
-  width: 6px; height: 6px;
-  border-radius: 50%;
-  background: var(--saudi-green);
-  box-shadow: 0 0 0 3px rgba(0, 108, 53, 0.20);
-  animation: pulseDot 1.8s ease-in-out infinite;
-}
-
-.ai-demo-body {
-  padding: 24px 28px;
-  min-height: 280px;
-  max-height: 480px;
-  overflow-y: auto;
-  display: flex; flex-direction: column; gap: 14px;
-}
-
-.msg {
-  max-width: 86%;
-  padding: 12px 16px;
-  border-radius: var(--r-lg);
-  font-size: 14.5px;
-  line-height: 1.7;
-  white-space: pre-wrap;
-  word-wrap: break-word;
-}
-
-.msg-user {
-  align-self: flex-end;
-  background: linear-gradient(135deg, var(--blue) 0%, var(--blue-deep) 100%);
-  color: #fff;
-  border-radius: var(--r-lg) var(--r-sm) var(--r-lg) var(--r-lg);
-  box-shadow: 0 4px 12px rgba(10, 132, 255, 0.20);
-}
-
-.msg-bot {
-  align-self: flex-start;
-  background: var(--bg-soft);
-  border: 1px solid var(--border);
-  color: var(--text);
-  border-radius: var(--r-sm) var(--r-lg) var(--r-lg) var(--r-lg);
-}
-
-.msg-bot .ai-action-cards {
-  margin-top: 12px;
-  display: flex; flex-wrap: wrap; gap: 8px;
-}
-
-.ai-action-card {
-  display: inline-flex; align-items: center; gap: 6px;
-  padding: 8px 12px;
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: var(--r-md);
-  font-size: 12.5px;
-  font-weight: 600;
-  color: var(--blue-deep);
-  text-decoration: none;
-  transition: all 0.15s;
-}
-.ai-action-card:hover {
-  background: var(--blue-soft);
-  border-color: var(--blue-tint);
-  color: var(--blue-deep);
-}
-
-.ai-demo-suggest {
-  padding: 16px 28px;
-  display: flex; flex-wrap: wrap; gap: 8px;
-  border-top: 1px solid var(--border);
-  background: var(--bg-soft);
-}
-
-.ai-chip {
-  padding: 8px 14px;
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: var(--r-pill);
-  font-size: 13px;
-  font-weight: 500;
-  color: var(--text-body);
-  transition: all 0.15s;
-  font-family: var(--font-ar);
-}
-
-.ai-chip:hover {
-  background: var(--blue-soft);
-  color: var(--blue-deep);
-  border-color: var(--blue-tint);
-}
-
-.ai-demo-input {
-  display: flex; gap: 10px;
-  padding: 16px 28px 24px;
-  background: var(--bg-soft);
-}
-
-.ai-demo-input input {
-  flex: 1;
-  padding: 12px 16px;
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: var(--r-md);
-  font-size: 15px;
-  font-family: var(--font-ar);
-  color: var(--text);
-  transition: border-color 0.15s, box-shadow 0.15s;
-}
-
-.ai-demo-input input::placeholder { color: var(--text-faint); }
-
-.ai-demo-input input:focus {
-  outline: none;
-  border-color: var(--blue);
-  box-shadow: var(--shadow-glow);
-}
-
-.ai-demo-input button {
-  width: 44px; height: 44px;
-  background: linear-gradient(135deg, var(--blue) 0%, var(--blue-deep) 100%);
-  color: #fff;
-  border-radius: var(--r-md);
-  display: flex; align-items: center; justify-content: center;
-  box-shadow: 0 4px 12px rgba(10, 132, 255, 0.25);
-  transition: transform 0.15s;
-}
-
-.ai-demo-input button:hover { transform: scale(1.05); }
-.ai-demo-input button:disabled { opacity: 0.5; cursor: not-allowed; }
-
-.typing {
-  display: inline-flex; gap: 4px; padding: 4px 0;
-}
-
-.typing span {
-  width: 7px; height: 7px;
-  border-radius: 50%;
-  background: var(--text-muted);
-  animation: typingPulse 1.4s infinite;
-}
-
-.typing span:nth-child(2) { animation-delay: 0.2s; }
-.typing span:nth-child(3) { animation-delay: 0.4s; }
-
-@keyframes typingPulse {
-  0%, 60%, 100% { opacity: 0.3; transform: translateY(0); }
-  30% { opacity: 1; transform: translateY(-4px); }
-}
-
-/* ═══ ROUTES SECTION ═══ */
-.routes {
-  padding: 96px 0;
-}
-
-.routes-grid {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 20px;
-}
-
-@media (max-width: 900px) { .routes-grid { grid-template-columns: 1fr 1fr; } }
-@media (max-width: 600px) { .routes-grid { grid-template-columns: 1fr; } }
-
-.route-card {
-  padding: 24px;
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: var(--r-lg);
-  transition: all 0.2s;
-}
-
-.route-card:hover {
-  border-color: var(--blue-tint);
-  box-shadow: var(--shadow-md);
   transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(10, 132, 255, 0.45);
 }
-
-.route-flow {
-  display: flex; align-items: center; gap: 12px;
-  margin-bottom: 16px;
-}
-
-.route-port {
-  flex: 1;
-  font-weight: 700;
-  color: var(--text);
-  font-size: 15px;
-}
-
-.route-port .flag { font-size: 22px; margin-left: 6px; }
-
-.route-arrow {
-  color: var(--text-faint);
-  font-family: var(--font-en);
-}
-
-.route-meta {
-  display: flex; gap: 16px; flex-wrap: wrap;
-  padding-top: 16px;
-  border-top: 1px solid var(--divider);
-}
-
-.route-meta div {
-  font-size: 13px;
-}
-
-.route-meta strong {
-  display: block;
-  font-family: var(--font-en);
-  font-size: 17px;
-  color: var(--text);
-  margin-bottom: 2px;
-  font-weight: 700;
-}
-
-.route-meta span { color: var(--text-muted); font-size: 12px; }
-
-/* ═══ VISION 2030 SECTION ═══ */
-.vision {
-  padding: 96px 0;
-  background: linear-gradient(180deg, var(--bg-soft) 0%, var(--bg) 100%);
-  border-top: 1px solid var(--border);
-  border-bottom: 1px solid var(--border);
-  position: relative;
-  overflow: hidden;
-}
-
-.vision::before {
-  content: '';
-  position: absolute;
-  width: 600px; height: 600px;
-  border-radius: 50%;
-  background: radial-gradient(circle, var(--saudi-green-tint), transparent 60%);
-  filter: blur(60px);
-  top: -300px; right: -200px;
-  opacity: 0.5;
-}
-
-.vision-grid {
-  display: grid;
-  grid-template-columns: 1.2fr 1fr;
-  gap: 64px;
-  align-items: center;
-}
-
-@media (max-width: 900px) { .vision-grid { grid-template-columns: 1fr; gap: 40px; } }
-
-.vision-badge {
-  display: inline-flex; align-items: center; gap: 8px;
-  padding: 8px 16px;
-  background: var(--saudi-green-soft);
-  border: 1px solid var(--saudi-green-tint);
-  color: var(--saudi-green);
-  font-size: 13px;
-  font-weight: 700;
-  border-radius: var(--r-pill);
-  margin-bottom: 20px;
-}
-
-.vision h2 { margin-bottom: 20px; }
-
-.vision p {
-  color: var(--text-body);
-  font-size: 1.05rem;
-  line-height: 1.75;
-  margin-bottom: 16px;
-}
-
-.vision-list {
-  list-style: none;
-  margin-top: 24px;
-}
-
-.vision-list li {
-  display: flex; align-items: flex-start; gap: 12px;
-  padding: 10px 0;
-  color: var(--text);
-  font-weight: 500;
-}
-
-.vision-list li::before {
-  content: '✓';
-  flex-shrink: 0;
-  width: 22px; height: 22px;
-  border-radius: 50%;
-  background: var(--saudi-green-soft);
-  color: var(--saudi-green);
-  display: flex; align-items: center; justify-content: center;
-  font-weight: 800;
-  font-size: 13px;
-}
-
-.vision-art {
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: var(--r-2xl);
-  padding: 40px;
-  box-shadow: var(--shadow-lg);
-  position: relative;
-}
-
-.vision-art-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 20px;
-}
-
-.vision-stat {
-  padding: 24px 20px;
-  background: var(--bg-soft);
-  border: 1px solid var(--border);
-  border-radius: var(--r-lg);
-  text-align: center;
-}
-
-.vision-stat-value {
-  font-family: var(--font-en);
-  font-size: 2.2rem;
-  font-weight: 800;
-  background: linear-gradient(135deg, var(--saudi-green) 0%, var(--blue) 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
-  letter-spacing: -0.025em;
-  margin-bottom: 4px;
-}
-
-.vision-stat-label {
-  color: var(--text-muted);
-  font-size: 13px;
-  font-weight: 500;
-}
-
-/* ═══ FINAL CTA ═══ */
-.final-cta {
-  padding: 120px 0;
-  text-align: center;
-}
-
-.final-cta-inner {
-  max-width: 720px;
-  margin: 0 auto;
-}
-
-.final-cta h2 {
-  background: linear-gradient(135deg, var(--text) 0%, var(--blue) 50%, var(--cyan) 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
-  margin-bottom: 20px;
-}
-
-.final-cta p {
-  font-size: clamp(1rem, 1.5vw, 1.2rem);
-  color: var(--text-body);
-  margin-bottom: 40px;
-  line-height: 1.7;
-}
+.btn-primary:hover::after { opacity: 0.6; }
 
 /* ═══ FOOTER ═══ */
 .footer {
   background: var(--bg-soft);
   border-top: 1px solid var(--border);
-  padding: 64px 0 32px;
+  padding: 56px 0 28px;
 }
 
 .footer-grid {
   display: grid;
   grid-template-columns: 2fr 1fr 1fr 1fr;
-  gap: 48px;
-  padding-bottom: 48px;
+  gap: 40px;
+  padding-bottom: 36px;
   border-bottom: 1px solid var(--border);
-  margin-bottom: 32px;
+  margin-bottom: 24px;
 }
 
 @media (max-width: 768px) { .footer-grid { grid-template-columns: 1fr 1fr; } }
@@ -1030,40 +847,31 @@ section { position: relative; z-index: 1; }
 
 .footer-brand p {
   color: var(--text-muted);
-  font-size: 14px;
+  font-size: 13.5px;
   line-height: 1.7;
   max-width: 320px;
-  margin-top: 16px;
+  margin-top: 14px;
 }
 
 .footer-col h4 {
-  font-size: 12px;
+  font-size: 11.5px;
   color: var(--text-muted);
   text-transform: uppercase;
   letter-spacing: 0.06em;
-  margin-bottom: 16px;
+  margin-bottom: 14px;
   font-family: var(--font-en);
 }
 
 .footer-col ul { list-style: none; }
-.footer-col li { margin-bottom: 10px; }
-.footer-col a {
-  color: var(--text-body);
-  font-size: 14px;
-  transition: color 0.15s;
-}
+.footer-col li { margin-bottom: 9px; }
+.footer-col a { color: var(--text-body); font-size: 13.5px; transition: color 0.15s; }
 .footer-col a:hover { color: var(--blue); }
 
 .footer-bottom {
   display: flex; justify-content: space-between; align-items: center;
-  flex-wrap: wrap;
-  gap: 16px;
+  flex-wrap: wrap; gap: 14px;
 }
-
-.footer-bottom p {
-  color: var(--text-muted);
-  font-size: 13px;
-}
+.footer-bottom p { color: var(--text-muted); font-size: 12.5px; }
 
 .footer-flag {
   display: inline-flex; align-items: center; gap: 8px;
@@ -1072,54 +880,15 @@ section { position: relative; z-index: 1; }
   border: 1px solid var(--saudi-green-tint);
   color: var(--saudi-green);
   border-radius: var(--r-pill);
-  font-size: 12.5px;
-  font-weight: 700;
+  font-size: 12px; font-weight: 700;
 }
 
-/* ═══ FLOATING FAB ═══ */
-#flxChatFab {
-  position: fixed;
-  bottom: 28px; left: 28px;
-  width: 60px; height: 60px;
-  background: linear-gradient(135deg, var(--blue) 0%, var(--cyan) 100%);
-  color: #fff;
-  border-radius: 50%;
-  display: flex; align-items: center; justify-content: center;
-  box-shadow: 0 8px 24px rgba(10, 132, 255, 0.30), 0 4px 8px rgba(10, 132, 255, 0.15);
-  z-index: 999;
-  transition: transform 0.2s;
-}
-
-#flxChatFab:hover { transform: scale(1.06) rotate(-4deg); }
-
-.flx-fab-pulse {
-  position: absolute; inset: 0;
-  border-radius: 50%;
-  background: rgba(10, 132, 255, 0.30);
-  animation: fabPulse 2s infinite;
-  z-index: -1;
-}
-
-@keyframes fabPulse {
-  0%   { transform: scale(1); opacity: 0.6; }
-  100% { transform: scale(1.5); opacity: 0; }
-}
-
-/* ═══ REVEAL ANIMATIONS ═══ */
-.reveal {
-  opacity: 0;
-  transform: translateY(20px);
-  transition: opacity 0.7s cubic-bezier(0.4, 0, 0.2, 1), transform 0.7s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-.reveal.visible { opacity: 1; transform: translateY(0); }
-
-/* ═══ HIDE FLX-AUTH FLOATING TRIGGER (use nav button instead) ═══ */
+/* ═══ Hide flx-auth.js floating trigger ═══ */
 .flx-auth-trigger { display: none !important; }
 .flx-user-menu { z-index: 9999; }
 
-/* ═══ SCROLLBAR ═══ */
-*::-webkit-scrollbar { width: 10px; height: 10px; }
+/* ═══ Scrollbar ═══ */
+*::-webkit-scrollbar { width: 8px; height: 8px; }
 *::-webkit-scrollbar-track { background: transparent; }
 *::-webkit-scrollbar-thumb {
   background: var(--border-mid);
@@ -1129,27 +898,20 @@ section { position: relative; z-index: 1; }
 }
 *::-webkit-scrollbar-thumb:hover { background: var(--text-muted); }
 
-/* ═══ FOCUS ═══ */
+/* ═══ Focus ═══ */
 :focus-visible {
   outline: 2px solid var(--blue);
   outline-offset: 3px;
   border-radius: var(--r-sm);
 }
 
-/* ═══ UTILITY ═══ */
-.text-gradient {
-  background: linear-gradient(135deg, var(--blue) 0%, var(--cyan) 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
+/* ═══ Reveal ═══ */
+.reveal {
+  opacity: 0;
+  transform: translateY(20px);
+  transition: opacity 0.7s cubic-bezier(0.4, 0, 0.2, 1), transform 0.7s cubic-bezier(0.4, 0, 0.2, 1);
 }
-
-.saudi-gradient {
-  background: linear-gradient(135deg, var(--saudi-green) 0%, #00A858 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
-}
+.reveal.visible { opacity: 1; transform: translateY(0); }
 </style>
 </head>
 <body>
@@ -1168,7 +930,7 @@ section { position: relative; z-index: 1; }
       </div>
     </a>
     <div class="nav-links">
-      <a href="#features">الذكاء</a>
+      <a href="#examples">أمثلة</a>
       <a href="#routes">المسارات</a>
       <a href="/packages">الباقات</a>
       <a href="/rates">الأسعار</a>
@@ -1178,50 +940,55 @@ section { position: relative; z-index: 1; }
   </div>
 </nav>
 
-<!-- ─── HERO ─── -->
+<!-- ─── HERO — AI FIRST ─── -->
 <section class="hero">
-  <div class="wrap hero-inner">
-    <div class="eyebrow">
-      <span class="eyebrow-dot"></span>
-      <span>أول منصة شحن سعودية مدعومة بـ AI · رؤية المملكة 2030</span>
+  <div class="wrap">
+    <div class="hero-inner-head">
+      <div class="hero-eyebrow">
+        <span class="hero-eyebrow-dot"></span>
+        <span>أول منصة شحن AI-Native في المملكة · رؤية 2030</span>
+      </div>
+
+      <h1>
+        اسأل <span class="gradient">FREIGHTLX AI</span><br>
+        أي شي عن الشحن.
+      </h1>
+
+      <p class="hero-sub">
+        المهندس التشغيلي الذكي يحسب لك الأسعار من 12 خط ملاحي، يحسب الجمارك والضريبة،
+        يحدد شهادات سابر، ويبدأ الحجز — كل ذلك بمحادثة واحدة بالعربية.
+      </p>
     </div>
 
-    <h1>
-      من القرار إلى التسليم<br>
-      في <span class="gradient-blue">دقائق</span>
-    </h1>
+    <!-- THE PRODUCT — AI HERO CHAT -->
+    <div class="ai-hero reveal" id="aiDemo">
+      <div class="ai-hero-head">
+        <div class="ai-hero-title-wrap">
+          <div class="ai-hero-orb"><span></span><span></span><span></span></div>
+          <div>
+            <div class="ai-hero-title">FREIGHTLX AI</div>
+            <div class="ai-hero-sub">المهندس التشغيلي · يفهم العربية والإنجليزية · مدرّب على السوق السعودي</div>
+          </div>
+        </div>
+        <div class="ai-hero-badge"><span class="dot"></span> LIVE</div>
+      </div>
 
-    <p class="hero-sub">
-      منصة <strong>FREIGHTLX</strong> تربطك بأكبر ١٢ خط ملاحي عالمي، تحسب التخليص الجمركي والضريبة تلقائياً،
-      وتؤتمت شهادات سابر — كل ذلك مصمم خصيصاً للسوق السعودي ومتكامل مع زاتكا والجمارك.
-    </p>
+      <div class="ai-hero-body" id="aiDemoBody"></div>
 
-    <div class="hero-cta">
-      <a href="/?login=1" class="btn btn-primary">
-        ابدأ مجاناً
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M5 12H19M19 12L12 5M19 12L12 19" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
-      </a>
-      <a href="#aiDemo" class="btn btn-ghost">شاهد العرض الحي</a>
-    </div>
+      <div class="ai-hero-suggest">
+        <button class="ai-chip" data-q="كم سعر حاوية 40HC من شنغهاي إلى جدة؟">💰 سعر شحن من الصين</button>
+        <button class="ai-chip" data-q="احسب جمارك على 50000 ريال HS 851830">🧮 حساب الجمارك</button>
+        <button class="ai-chip" data-q="ما الشهادات المطلوبة لاستيراد سماعات بلوتوث؟">📜 شهادات سابر</button>
+        <button class="ai-chip" data-q="وش رمز ميناء الدمام؟">⚓ موانئ المملكة</button>
+        <button class="ai-chip" data-q="احسب التكلفة الكاملة لاستيراد 40HC من شنغهاي قيمتها 80000 ريال">💼 التكلفة الكاملة</button>
+      </div>
 
-    <!-- LIVE STATS BAR -->
-    <div class="hero-stats">
-      <div class="hero-stat">
-        <div class="hero-stat-value num">12</div>
-        <div class="hero-stat-label">خط ملاحي عالمي</div>
-      </div>
-      <div class="hero-stat">
-        <div class="hero-stat-value num">5s</div>
-        <div class="hero-stat-label">متوسط زمن الاستجابة</div>
-      </div>
-      <div class="hero-stat">
-        <div class="hero-stat-value num">99.9%</div>
-        <div class="hero-stat-label">دقة التسعير</div>
-      </div>
-      <div class="hero-stat">
-        <div class="hero-stat-value num">24/7</div>
-        <div class="hero-stat-label">دعم بالعربية</div>
-      </div>
+      <form class="ai-hero-input" id="aiDemoForm" autocomplete="off">
+        <input type="text" id="aiDemoInput" placeholder="اكتب سؤالك بالعربية أو الإنجليزية..." maxlength="500" autofocus>
+        <button type="submit" id="aiDemoSend" aria-label="إرسال">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M5 12H19M19 12L12 5M19 12L12 19" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </button>
+      </form>
     </div>
   </div>
 </section>
@@ -1229,111 +996,103 @@ section { position: relative; z-index: 1; }
 <!-- ─── TRUST BAND ─── -->
 <section class="trust">
   <div class="wrap">
-    <div class="trust-title">متكامل مع الجهات السعودية الرسمية</div>
+    <div class="trust-title">مدعوم بتكامل مع الجهات السعودية الرسمية</div>
     <div class="trust-grid">
-      <div class="trust-item">
-        <span class="trust-icon">📋</span>
-        <span>هيئة الزكاة والضريبة (زاتكا)</span>
+      <div class="trust-item">📋 زاتكا</div>
+      <div class="trust-item">✅ سابر</div>
+      <div class="trust-item">🛃 الجمارك السعودية</div>
+      <div class="trust-item">📦 هيئة الموانئ</div>
+      <div class="trust-item">🏛️ المياه والبيئة</div>
+    </div>
+  </div>
+</section>
+
+<!-- ─── HOW IT WORKS ─── -->
+<section class="how">
+  <div class="wrap">
+    <div class="section-head">
+      <div class="section-tag">CONVERSATIONAL LOGISTICS</div>
+      <h2>كل عملياتك تتم بمحادثة واحدة</h2>
+      <p>لا فورمات معقّدة، لا قوائم منسدلة. تكتب باللهجة السعودية، يفهم، ينفّذ، يعطيك النتائج.</p>
+    </div>
+
+    <div class="how-grid">
+      <div class="how-card">
+        <div class="how-num num">01</div>
+        <h3>اسأل</h3>
+        <p>اكتب سؤالك أو طلبك بأي صياغة. الـ AI يفهم العامية السعودية والإنجليزية.</p>
       </div>
-      <div class="trust-item">
-        <span class="trust-icon">✅</span>
-        <span>برنامج سابر للمطابقة</span>
+      <div class="how-card">
+        <div class="how-num num">02</div>
+        <h3>افهم</h3>
+        <p>الـ AI يحلّل النية، يستخرج البيانات، ويختار الأداة المناسبة من 14 أداة ذكية.</p>
       </div>
-      <div class="trust-item">
-        <span class="trust-icon">🛃</span>
-        <span>الجمارك السعودية</span>
+      <div class="how-card">
+        <div class="how-num num">03</div>
+        <h3>نفّذ</h3>
+        <p>يستدعي الأنظمة الحية: 12 خط ملاحي، 323 ميناء، 9,862 HS code، حسابات ZATCA.</p>
       </div>
-      <div class="trust-item">
-        <span class="trust-icon">🏛️</span>
-        <span>هيئة المياه والبيئة</span>
-      </div>
-      <div class="trust-item">
-        <span class="trust-icon">📦</span>
-        <span>هيئة الموانئ السعودية</span>
+      <div class="how-card">
+        <div class="how-num num">04</div>
+        <h3>سلّم</h3>
+        <p>تستلم نتائج مدقّقة بالعربية: أسعار، جمارك، شهادات، مسارات — جاهزة للحجز.</p>
       </div>
     </div>
   </div>
 </section>
 
-<!-- ─── FEATURES (3 PILLARS) ─── -->
-<section class="features" id="features">
+<!-- ─── REAL CONVERSATIONS ─── -->
+<section class="examples" id="examples">
   <div class="wrap">
     <div class="section-head">
-      <div class="section-tag">AI-NATIVE PLATFORM</div>
-      <h2>ثلاث قدرات ذكية، تختصر أسابيع من العمل</h2>
-      <p>كل طلب استيراد يحتاج 3 خطوات حرجة. FREIGHTLX تؤتمت الثلاث بالذكاء الاصطناعي.</p>
+      <div class="section-tag">REAL CONVERSATIONS</div>
+      <h2>أمثلة حية من المستخدمين</h2>
+      <p>هذي الأسئلة شغّالة دلوقتي — جرّب أي وحدة فوق في الـ chat.</p>
     </div>
 
-    <div class="features-grid">
-      <div class="feature-card reveal">
-        <div class="feature-icon">🚢</div>
-        <h3>أسعار حية من 12 خط ملاحي</h3>
-        <p>قارن أسعار <strong>Maersk · MSC · CMA CGM · Hapag-Lloyd · ONE · Evergreen · OOCL · COSCO</strong> وغيرهم في 5 ثواني، مع ETA حقيقي وتفاصيل الترانزيت والـ free days.</p>
-        <div class="feature-meta">
-          <span class="pill">FCL / LCL</span>
-          <span class="pill">20GP · 40HC · 40RF</span>
-          <span class="pill green">Live API</span>
+    <div class="examples-grid">
+      <div class="example-card">
+        <div class="example-q">كم سعر شحن 40HC من شنغهاي لجدة؟</div>
+        <div class="example-a">
+          📊 <strong>تقدير أسعار الشحن (CNSHA → SAJED, 40HC):</strong><br><br>
+          • <strong>MSC</strong> — $2,650 · 26 يوم<br>
+          • <strong>CMA CGM</strong> — $2,669 · 29 يوم<br>
+          • <strong>Maersk</strong> — $2,723 · 27 يوم<br>
+          • <strong>COSCO</strong> — $2,604 · 25 يوم
         </div>
       </div>
 
-      <div class="feature-card reveal">
-        <div class="feature-icon">🧮</div>
-        <h3>تخليص جمركي ذكي</h3>
-        <p>أدخل قيمة البضاعة + الـ HS code، نحسب لك <strong>الرسوم الجمركية</strong> الفعلية (5%، 12%، أو 20% حسب التعرفة) + <strong>ضريبة القيمة المضافة 15%</strong> + رسوم الميناء بدقة 99.9%.</p>
-        <div class="feature-meta">
-          <span class="pill">9,862 HS code</span>
-          <span class="pill">CIF / FOB</span>
-          <span class="pill green">ZATCA متكامل</span>
+      <div class="example-card">
+        <div class="example-q">احسب جمارك على 50,000 ريال HS 851830</div>
+        <div class="example-a">
+          🧮 <strong>تم احتساب التكاليف:</strong><br><br>
+          • التعرفة الجمركية: <code>5.0%</code><br>
+          • الرسوم الجمركية: <strong>2,500 ﷼</strong><br>
+          • ضريبة القيمة المضافة (15%): <strong>7,875 ﷼</strong><br>
+          • <strong>الإجمالي المدفوع: 10,375 ﷼</strong>
         </div>
       </div>
 
-      <div class="feature-card reveal">
-        <div class="feature-icon">📜</div>
-        <h3>شهادات سابر مؤتمتة</h3>
-        <p>المنتجات الإلكترونية، اللعب، الكهربائيات، الإطارات، والبلاستيك تحتاج شهادات مطابقة. الـ AI يحدد الشهادات المطلوبة (QM · IECEE · IECEX · COC) ويبدأ الطلب تلقائياً.</p>
-        <div class="feature-meta">
-          <span class="pill">QM · COC</span>
-          <span class="pill">IECEE · IECEX</span>
-          <span class="pill gold">SABER معتمد</span>
+      <div class="example-card">
+        <div class="example-q">ما الشهادات المطلوبة لاستيراد سماعات بلوتوث؟</div>
+        <div class="example-a">
+          📜 <strong>HS 851830 — منظَّم في سابر:</strong><br><br>
+          • <strong>QM</strong> — Quality Mark<br>
+          • <strong>COC</strong> — Certificate of Conformity<br><br>
+          اللائحة: Technical Regulation for Telecommunications Devices
         </div>
       </div>
-    </div>
-  </div>
-</section>
 
-<!-- ─── AI DEMO ─── -->
-<section class="ai-section">
-  <div class="wrap">
-    <div class="section-head">
-      <div class="section-tag">جرّب الآن</div>
-      <h2>تحدّث مع <span class="text-gradient">FREIGHTLX AI</span></h2>
-      <p>المهندس التشغيلي الذكي للمنصة — لا يجيب فقط، بل ينفّذ الإجراءات نيابة عنك.</p>
-    </div>
-
-    <div class="ai-demo reveal" id="aiDemo">
-      <div class="ai-demo-head">
-        <div class="ai-demo-title-wrap">
-          <div class="ai-demo-orb"><span></span><span></span><span></span></div>
-          <div>
-            <div class="ai-demo-title">FREIGHTLX AI</div>
-            <div class="ai-demo-sub">المهندس التشغيلي · يفهم العربية والإنجليزية</div>
-          </div>
+      <div class="example-card">
+        <div class="example-q">احسب التكلفة الكاملة لاستيراد 40HC قيمتها 80,000 ريال</div>
+        <div class="example-a">
+          📦 <strong>التكلفة الكاملة (شنغهاي→جدة):</strong><br><br>
+          • قيمة البضاعة: <strong>80,000 ﷼</strong><br>
+          • الشحن (MSC): <strong>9,938 ﷼</strong><br>
+          • الجمارك + VAT: <strong>14,375 ﷼</strong><br>
+          • <strong>الإجمالي: 104,313 ﷼</strong>
         </div>
-        <div class="ai-demo-badge"><span class="dot"></span> ACTIVE</div>
       </div>
-      <div class="ai-demo-body" id="aiDemoBody"></div>
-      <div class="ai-demo-suggest">
-        <button class="ai-chip" data-q="كم سعر حاوية 40 قدم من شنغهاي إلى جدة؟">💰 سعر من الصين</button>
-        <button class="ai-chip" data-q="احسب جمارك شحنة بقيمة 50,000 ريال HS 851830">🧮 حساب الجمارك</button>
-        <button class="ai-chip" data-q="ما الشهادات المطلوبة لاستيراد سماعات بلوتوث؟">📜 شهادات سابر</button>
-        <button class="ai-chip" data-q="وش كود ميناء الدمام؟">⚓ موانئ المملكة</button>
-      </div>
-      <form class="ai-demo-input" id="aiDemoForm" autocomplete="off">
-        <input type="text" id="aiDemoInput" placeholder="اكتب سؤالك بالعربية..." maxlength="500">
-        <button type="submit" id="aiDemoSend">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M5 12H19M19 12L12 5M19 12L12 19" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
-        </button>
-      </form>
     </div>
   </div>
 </section>
@@ -1343,86 +1102,80 @@ section { position: relative; z-index: 1; }
   <div class="wrap">
     <div class="section-head">
       <div class="section-tag">المسارات الأكثر طلباً</div>
-      <h2>أكثر ٦ مسارات يستخدمها المستوردون السعوديون</h2>
-      <p>بيانات حية، ETA دقيق، وأسعار مُحدّثة على مدار الساعة.</p>
+      <h2>المسارات الشائعة للمستوردين السعوديين</h2>
+      <p>بيانات حية، ETA دقيق، أسعار مُحدّثة على مدار الساعة من 12 خط ملاحي.</p>
     </div>
 
     <div class="routes-grid">
-      <!-- Route 1 -->
       <div class="route-card">
         <div class="route-flow">
-          <div class="route-port"><span class="flag">🇨🇳</span> شنغهاي <span class="code">CNSHA</span></div>
+          <div class="route-port"><span class="flag">🇨🇳</span> شنغهاي</div>
           <div class="route-arrow">←</div>
-          <div class="route-port"><span class="flag">🇸🇦</span> جدة <span class="code">SAJED</span></div>
+          <div class="route-port"><span class="flag">🇸🇦</span> جدة</div>
         </div>
         <div class="route-meta">
-          <div><strong>$2,450</strong><span>40 HC · 28 يوم</span></div>
-          <div><strong>14</strong><span>عرض متاح</span></div>
+          <div><strong>$2,650</strong><span>40HC · 26 يوم</span></div>
+          <div><strong>14</strong><span>عرض</span></div>
         </div>
       </div>
 
-      <!-- Route 2 -->
       <div class="route-card">
         <div class="route-flow">
-          <div class="route-port"><span class="flag">🇮🇳</span> مومباي <span class="code">INBOM</span></div>
+          <div class="route-port"><span class="flag">🇮🇳</span> مومباي</div>
           <div class="route-arrow">←</div>
-          <div class="route-port"><span class="flag">🇸🇦</span> الدمام <span class="code">SADMM</span></div>
+          <div class="route-port"><span class="flag">🇸🇦</span> الدمام</div>
         </div>
         <div class="route-meta">
-          <div><strong>$1,180</strong><span>40 HC · 14 يوم</span></div>
-          <div><strong>11</strong><span>عرض متاح</span></div>
+          <div><strong>$1,180</strong><span>40HC · 14 يوم</span></div>
+          <div><strong>11</strong><span>عرض</span></div>
         </div>
       </div>
 
-      <!-- Route 3 -->
       <div class="route-card">
         <div class="route-flow">
-          <div class="route-port"><span class="flag">🇦🇪</span> جبل علي <span class="code">AEJEA</span></div>
+          <div class="route-port"><span class="flag">🇦🇪</span> جبل علي</div>
           <div class="route-arrow">←</div>
-          <div class="route-port"><span class="flag">🇸🇦</span> الدمام <span class="code">SADMM</span></div>
+          <div class="route-port"><span class="flag">🇸🇦</span> الدمام</div>
         </div>
         <div class="route-meta">
-          <div><strong>$420</strong><span>40 HC · 4 أيام</span></div>
-          <div><strong>9</strong><span>عرض متاح</span></div>
+          <div><strong>$420</strong><span>40HC · 4 أيام</span></div>
+          <div><strong>9</strong><span>عرض</span></div>
         </div>
       </div>
 
-      <!-- Route 4 -->
       <div class="route-card">
         <div class="route-flow">
-          <div class="route-port"><span class="flag">🇹🇷</span> إسطنبول <span class="code">TRAMB</span></div>
+          <div class="route-port"><span class="flag">🇹🇷</span> إسطنبول</div>
           <div class="route-arrow">←</div>
-          <div class="route-port"><span class="flag">🇸🇦</span> جدة <span class="code">SAJED</span></div>
+          <div class="route-port"><span class="flag">🇸🇦</span> جدة</div>
         </div>
         <div class="route-meta">
-          <div><strong>$1,920</strong><span>40 HC · 16 يوم</span></div>
-          <div><strong>8</strong><span>عرض متاح</span></div>
+          <div><strong>$1,920</strong><span>40HC · 16 يوم</span></div>
+          <div><strong>8</strong><span>عرض</span></div>
         </div>
       </div>
 
-      <!-- Route 5 -->
       <div class="route-card">
         <div class="route-flow">
-          <div class="route-port"><span class="flag">🇩🇪</span> هامبورغ <span class="code">DEHAM</span></div>
+          <div class="route-port"><span class="flag">🇩🇪</span> هامبورغ</div>
           <div class="route-arrow">←</div>
-          <div class="route-port"><span class="flag">🇸🇦</span> جدة <span class="code">SAJED</span></div>
+          <div class="route-port"><span class="flag">🇸🇦</span> جدة</div>
         </div>
         <div class="route-meta">
-          <div><strong>$3,150</strong><span>40 HC · 23 يوم</span></div>
-          <div><strong>10</strong><span>عرض متاح</span></div>
+          <div><strong>$3,150</strong><span>40HC · 23 يوم</span></div>
+          <div><strong>10</strong><span>عرض</span></div>
         </div>
       </div>
 
-      <!-- Route 6 -->
       <div class="route-card">
         <div class="route-flow">
-          <div class="route-port"><span class="flag">🇰🇷</span> بوسان <span class="code">KRPUS</span></div>
+          <div class="route-port"><span class="flag">🇰🇷</span> بوسان</div>
           <div class="route-arrow">←</div>
-          <div class="route-port"><span class="flag">🇸🇦</span> جدة <span class="code">SAJED</span></div>
+          <div class="route-port"><span class="flag">🇸🇦</span> جدة</div>
         </div>
         <div class="route-meta">
-          <div><strong>$2,890</strong><span>40 HC · 32 يوم</span></div>
-          <div><strong>7</strong><span>عرض متاح</span></div>
+          <div><strong>$2,890</strong><span>40HC · 32 يوم</span></div>
+          <div><strong>7</strong><span>عرض</span></div>
         </div>
       </div>
     </div>
@@ -1438,8 +1191,8 @@ section { position: relative; z-index: 1; }
           <span>🇸🇦</span>
           <span>متوافق مع رؤية المملكة 2030</span>
         </div>
-        <h2>نبني <span class="saudi-gradient">البنية الرقمية</span><br>للتجارة السعودية</h2>
-        <p>المملكة العربية السعودية تستضيف <strong>13% من التجارة العالمية</strong> عبر موانئها. FREIGHTLX تُؤتمت طبقة الذكاء فوق هذه البنية — لتدعم رؤية 2030 في رقمنة سلاسل الإمداد وتمكين المستورد السعودي.</p>
+        <h2>نبني <span class="saudi-grad">البنية الرقمية</span><br>للتجارة السعودية</h2>
+        <p>المملكة تستضيف <strong>13% من التجارة العالمية</strong> عبر موانئها. FREIGHTLX تُؤتمت طبقة الذكاء فوق هذه البنية — مدفوعة بـ AI، مصممة للمستورد السعودي خصيصاً.</p>
         <ul class="vision-list">
           <li>متكامل مع أنظمة الجمارك السعودية والـ EDI</li>
           <li>فوترة إلكترونية متوافقة مع زاتكا (Phase 2)</li>
@@ -1452,20 +1205,20 @@ section { position: relative; z-index: 1; }
       <div class="vision-art">
         <div class="vision-art-grid">
           <div class="vision-stat">
-            <div class="vision-stat-value num">10</div>
-            <div class="vision-stat-label">موانئ سعودية</div>
+            <div class="vision-stat-value num">14</div>
+            <div class="vision-stat-label">أداة AI ذكية</div>
           </div>
           <div class="vision-stat">
-            <div class="vision-stat-value num">13%</div>
-            <div class="vision-stat-label">من التجارة العالمية</div>
+            <div class="vision-stat-value num">323</div>
+            <div class="vision-stat-label">ميناء عالمي</div>
           </div>
           <div class="vision-stat">
-            <div class="vision-stat-value num">100%</div>
-            <div class="vision-stat-label">واجهة عربية أصلية</div>
+            <div class="vision-stat-value num">9,862</div>
+            <div class="vision-stat-label">HS code محدّث</div>
           </div>
           <div class="vision-stat">
-            <div class="vision-stat-value num">SA</div>
-            <div class="vision-stat-label">استضافة داخل المملكة</div>
+            <div class="vision-stat-value num">12</div>
+            <div class="vision-stat-label">خط ملاحي عالمي</div>
           </div>
         </div>
       </div>
@@ -1477,10 +1230,10 @@ section { position: relative; z-index: 1; }
 <section class="final-cta">
   <div class="wrap">
     <div class="final-cta-inner">
-      <h2>ابدأ شحناتك بذكاء.<br>الآن.</h2>
-      <p>انضم لـ مئات المستوردين السعوديين الذين يستخدمون FREIGHTLX يومياً.</p>
+      <h2>المهندس التشغيلي<br>تحت أمرك — مجاناً.</h2>
+      <p>سجّل الحين واستخدم FREIGHTLX AI لكل عمليات الشحن والاستيراد.</p>
       <a href="/?login=1" class="btn btn-primary">
-        ابدأ مجاناً — لا يحتاج بطاقة ائتمان
+        ابدأ المحادثة الآن
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M5 12H19M19 12L12 5M19 12L12 19" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
       </a>
     </div>
@@ -1499,40 +1252,36 @@ section { position: relative; z-index: 1; }
             <div class="nav-brand-sub">منصة الذكاء للشحن</div>
           </div>
         </a>
-        <p>أول منصة شحن سعودية مدعومة بالذكاء الاصطناعي. مصممة للسوق السعودي خصيصاً، ومتوافقة مع رؤية المملكة 2030.</p>
+        <p>منصة AI-Native للشحن في المملكة العربية السعودية. الـ AI هو الواجهة، وكل عملياتك تتم بمحادثة واحدة.</p>
       </div>
-
       <div class="footer-col">
         <h4>المنتج</h4>
         <ul>
-          <li><a href="/rates">الأسعار الحيّة</a></li>
+          <li><a href="#aiDemo">جرّب الـ AI</a></li>
+          <li><a href="/rates">الأسعار</a></li>
           <li><a href="/packages">الباقات</a></li>
           <li><a href="/dashboard">لوحة التحكم</a></li>
-          <li><a href="#aiDemo">FREIGHTLX AI</a></li>
         </ul>
       </div>
-
       <div class="footer-col">
-        <h4>الحلول</h4>
+        <h4>القدرات</h4>
         <ul>
-          <li><a href="#features">تخليص جمركي</a></li>
-          <li><a href="#features">شهادات سابر</a></li>
-          <li><a href="#routes">المسارات الشائعة</a></li>
-          <li><a href="#features">تكامل ZATCA</a></li>
+          <li><a href="#examples">أسعار حية</a></li>
+          <li><a href="#examples">جمارك ذكية</a></li>
+          <li><a href="#examples">شهادات سابر</a></li>
+          <li><a href="#routes">مسارات</a></li>
         </ul>
       </div>
-
       <div class="footer-col">
         <h4>الشركة</h4>
         <ul>
           <li><a href="/?login=1">تسجيل الدخول</a></li>
           <li><a href="/?login=1">إنشاء حساب</a></li>
           <li><a href="mailto:support@freightlx.ai">الدعم</a></li>
-          <li><a href="#">السياسة والخصوصية</a></li>
+          <li><a href="#">الخصوصية</a></li>
         </ul>
       </div>
     </div>
-
     <div class="footer-bottom">
       <p>© 2026 FREIGHTLX. جميع الحقوق محفوظة.</p>
       <div class="footer-flag">
@@ -1543,57 +1292,35 @@ section { position: relative; z-index: 1; }
   </div>
 </footer>
 
-<!-- ─── FLOATING CHAT FAB ─── -->
-<button id="flxChatFab" aria-label="افتح FREIGHTLX AI">
-  <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
-    <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-  </svg>
-  <span class="flx-fab-pulse"></span>
-</button>
-
 <!-- ─── AI DEMO LOGIC ─── -->
 <script>
 (function () {
-  const body  = document.getElementById('aiDemoBody');
-  const form  = document.getElementById('aiDemoForm');
+  const body = document.getElementById('aiDemoBody');
+  const form = document.getElementById('aiDemoForm');
   const input = document.getElementById('aiDemoInput');
   const sendBtn = document.getElementById('aiDemoSend');
-  const fab   = document.getElementById('flxChatFab');
   if (!body || !form) return;
 
   const history = [];
 
   function escapeHtml(s) {
-    return String(s ?? '').replace(/[&<>"']/g, m => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[m]));
+    return String(s ?? '').replace(/[&<>"']/g, m => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[m]));
   }
 
   function renderMarkdown(text) {
     let t = escapeHtml(text);
+    t = t.replace(/```json\n([\s\S]*?)```/g, '<pre style="background:var(--bg-soft);border:1px solid var(--border);border-radius:6px;padding:10px;font-size:11.5px;overflow-x:auto;font-family:var(--font-mono)">$1</pre>');
+    t = t.replace(/```([\s\S]*?)```/g, '<pre style="background:var(--bg-soft);border:1px solid var(--border);border-radius:6px;padding:10px;font-size:11.5px;overflow-x:auto;font-family:var(--font-mono)">$1</pre>');
     t = t.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
-    t = t.replace(/\*(.+?)\*/g, '<em>$1</em>');
     t = t.replace(/`(.+?)`/g, '<code>$1</code>');
+    t = t.replace(/^•\s/gm, '• ');
     return t;
   }
 
-  function addMsg(text, who = 'bot', opts = {}) {
+  function addMsg(text, who = 'bot') {
     const div = document.createElement('div');
     div.className = 'msg msg-' + (who === 'user' ? 'user' : 'bot');
     div.innerHTML = renderMarkdown(text);
-
-    if (opts.actionCards && opts.actionCards.length) {
-      const cardsHtml = opts.actionCards.map(key => {
-        const cards = {
-          rates: { icon: '🚢', label: 'أسعار الشحن', ask: 'كم سعر حاوية 40 قدم من شنغهاي إلى جدة؟' },
-          customs: { icon: '🧮', label: 'حساب الجمارك', ask: 'احسب جمارك شحنة بقيمة 50,000 ريال HS 851830' },
-          cert: { icon: '📜', label: 'شهادات سابر', ask: 'ما الشهادات المطلوبة لاستيراد سماعات بلوتوث؟' },
-          fullcost: { icon: '💰', label: 'التكلفة الكاملة', ask: 'احسب التكلفة الكاملة لاستيراد 40HC إلكترونيات من الصين بقيمة 80,000 ريال' },
-        };
-        const c = cards[key];
-        return c ? `<a class="ai-action-card" data-ask="${escapeHtml(c.ask)}">${c.icon} ${c.label}</a>` : '';
-      }).join('');
-      div.insertAdjacentHTML('beforeend', `<div class="ai-action-cards">${cardsHtml}</div>`);
-    }
-
     body.appendChild(div);
     body.scrollTop = body.scrollHeight;
     return div;
@@ -1646,18 +1373,9 @@ section { position: relative; z-index: 1; }
     }
   }
 
-  body.addEventListener('click', (e) => {
-    const card = e.target.closest('.ai-action-card[data-ask]');
-    if (card && card.dataset.ask) {
-      e.preventDefault();
-      sendMessage(card.dataset.ask);
-    }
-  });
-
   addMsg(
-    '👋 أهلاً! أنا FREIGHTLX AI — المهندس التشغيلي للمنصة.\n\nأنفّذ مهامك فعلياً (مش بس أجيب):\n• أبحث عن أسعار شحن من 12 خط ملاحي\n• أحسب التخليص الجمركي والضريبة 15%\n• أبدأ طلبات شهادات سابر\n• أتتبع شحناتك وأدير فواتيرك\n\nاكتب سؤالك، أو اختر بطاقة:',
-    'bot',
-    { actionCards: ['rates', 'customs', 'cert', 'fullcost'] }
+    '👋 أهلاً! أنا **FREIGHTLX AI** — المهندس التشغيلي للمنصة.\n\nأنا لا أجيب فقط — أنفّذ مهامك فعلياً:\n• 🚢 أبحث عن أسعار شحن من 12 خط ملاحي عالمي\n• 🧮 أحسب التخليص الجمركي وضريبة 15%\n• 📜 أحدد شهادات سابر المطلوبة\n• ⚓ أبحث في 323 ميناء عالمي\n• 💼 أحسب التكلفة الكاملة للاستيراد\n\nاكتب سؤالك تحت، أو جرّب أحد الأمثلة 👇',
+    'bot'
   );
 
   form.addEventListener('submit', (e) => { e.preventDefault(); sendMessage(input.value); });
@@ -1666,18 +1384,14 @@ section { position: relative; z-index: 1; }
     chip.addEventListener('click', () => sendMessage(chip.dataset.q || chip.textContent));
   });
 
-  if (fab) {
-    fab.addEventListener('click', () => {
-      document.getElementById('aiDemo')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
-      setTimeout(() => input?.focus(), 700);
-    });
-  }
-
   // Reveal animations
   const io = new IntersectionObserver((entries) => {
     entries.forEach(en => { if (en.isIntersecting) en.target.classList.add('visible'); });
   }, { threshold: 0.15 });
   document.querySelectorAll('.reveal').forEach(el => io.observe(el));
+
+  // Auto-focus input on page load
+  setTimeout(() => input?.focus(), 800);
 })();
 </script>
 
@@ -1685,7 +1399,7 @@ section { position: relative; z-index: 1; }
 <script>window.FLX_API_BASE = '/api/v1';</script>
 <script src="/flx-api-client.js" defer></script>
 <script src="/flx-auth.js" defer></script>
-<script src="/flx-toast.js?v=6.0" defer></script>
-<script src="/flx-cmdk.js?v=6.0" defer></script>
+<script src="/flx-toast.js?v=7.0" defer></script>
+<script src="/flx-cmdk.js?v=7.0" defer></script>
 </body>
 </html>
