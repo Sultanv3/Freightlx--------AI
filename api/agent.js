@@ -1578,6 +1578,15 @@ const AR_PORT_ALIASES = {
   'السعودية': 'Jeddah', 'سعودية': 'Jeddah',
   'المملكة': 'Jeddah', 'مملكة': 'Jeddah',
   'KSA': 'Jeddah', 'ksa': 'Jeddah',
+  // GCC neighbors
+  'قطر': 'Doha', 'الدوحة': 'Doha',
+  'البحرين': 'Manama', 'الكويت': 'Kuwait',
+  // Other major
+  'فيتنام': 'Ho Chi Minh', 'هوشي': 'Ho Chi Minh',
+  'تايلاند': 'Bangkok', 'بانكوك': 'Bangkok',
+  'اندونيسيا': 'Jakarta', 'جاكرتا': 'Jakarta',
+  'البرازيل': 'Santos', 'سانتوس': 'Santos',
+  'مصر': 'Suez', 'الاسكندرية': 'Alexandria',
 };
 
 // ─── Quick rate estimate (works without auth) ───────────────────────────
@@ -1713,6 +1722,78 @@ const PRODUCT_HS_MAP = {
   'مكينة': { hs: '847989', sector: 'industrial', saber: ['QM', 'COC'], duty: 0 },
   'مولد': { hs: '850240', sector: 'industrial', saber: ['QM', 'COC', 'IECEE'], duty: 5 },
   'كابل': { hs: '854442', sector: 'industrial', saber: ['QM', 'COC', 'IECEE'], duty: 5 },
+  // Medical / Pharma
+  'ادوية': { hs: '300490', sector: 'medical', saber: ['SFDA-Drug', 'COC'], duty: 0, restricted: true },
+  'دواء': { hs: '300490', sector: 'medical', saber: ['SFDA-Drug', 'COC'], duty: 0, restricted: true },
+  'مكملات': { hs: '210690', sector: 'medical', saber: ['SFDA', 'QM'], duty: 5 },
+  'فيتامينات': { hs: '210690', sector: 'medical', saber: ['SFDA', 'QM'], duty: 5 },
+  'اجهزة طبية': { hs: '901890', sector: 'medical', saber: ['SFDA-Med', 'COC'], duty: 0 },
+  'كمامات': { hs: '630790', sector: 'medical', saber: ['SFDA-Med'], duty: 0 },
+  // Sports
+  'دراجة': { hs: '871200', sector: 'sports', saber: ['QM', 'COC'], duty: 5 },
+  'دراجات': { hs: '871200', sector: 'sports', saber: ['QM', 'COC'], duty: 5 },
+  'معدات رياضية': { hs: '950699', sector: 'sports', saber: ['QM', 'COC'], duty: 5 },
+  // Building Materials
+  'حديد': { hs: '720839', sector: 'construction', saber: ['QM', 'COC'], duty: 5 },
+  'اسمنت': { hs: '252329', sector: 'construction', saber: ['QM', 'COC'], duty: 5 },
+  'بلاط': { hs: '690810', sector: 'construction', saber: ['QM', 'COC'], duty: 5 },
+  'دهانات': { hs: '320820', sector: 'construction', saber: ['QM', 'COC'], duty: 5 },
+  // Petrochemicals
+  'بلاستيك': { hs: '390110', sector: 'petrochemicals', saber: ['QM', 'COC', 'GCTS'], duty: 5 },
+  'بولي اثيلين': { hs: '390110', sector: 'petrochemicals', saber: ['QM', 'COC', 'GCTS'], duty: 5 },
+  // Stationery
+  'ورق': { hs: '480255', sector: 'stationery', saber: ['QM'], duty: 5 },
+  'قرطاسية': { hs: '482010', sector: 'stationery', saber: ['QM'], duty: 5 },
+};
+
+// COMMON SHIPPING DOCUMENTS — مستندات الشحن المطلوبة
+const SHIPPING_DOCUMENTS = {
+  required: [
+    { name: 'Bill of Lading (B/L)', ar: 'بوليصة الشحن', critical: true, who: 'الخط الملاحي', when: 'عند التحميل' },
+    { name: 'Commercial Invoice', ar: 'الفاتورة التجارية', critical: true, who: 'البائع', when: 'مع الشحنة' },
+    { name: 'Packing List', ar: 'قائمة التعبئة', critical: true, who: 'البائع', when: 'مع الشحنة' },
+    { name: 'Certificate of Origin', ar: 'شهادة المنشأ', critical: true, who: 'غرفة تجارة بلد التصدير', when: 'قبل الشحن' },
+    { name: 'SABER Certificate', ar: 'شهادة سابر', critical: 'للمنظَّم', who: 'منصة سابر', when: 'قبل الوصول' },
+    { name: 'Customs Declaration', ar: 'البيان الجمركي', critical: true, who: 'وكيل التخليص', when: 'بعد الوصول' },
+    { name: 'Insurance Certificate', ar: 'شهادة التأمين', critical: 'لـ CIF', who: 'شركة التأمين', when: 'قبل الشحن' },
+  ],
+  conditional: [
+    { name: 'Halal Certificate', ar: 'شهادة حلال', when: 'للحوم/الدواجن/الأغذية' },
+    { name: 'Phytosanitary Certificate', ar: 'شهادة صحة نباتية', when: 'للنباتات والبذور' },
+    { name: 'Fumigation Certificate', ar: 'شهادة تبخير', when: 'للأخشاب والمنتجات النباتية' },
+    { name: 'MSDS', ar: 'صحيفة سلامة المواد', when: 'للمواد الكيميائية' },
+    { name: 'COC (Certificate of Conformity)', ar: 'شهادة المطابقة', when: 'لكل منتج منظَّم في سابر' },
+  ],
+};
+
+// TRACKING INFO — معلومات التتبع
+const TRACKING_GUIDE = {
+  required: 'رقم B/L (Bill of Lading) أو رقم الحاوية (Container Number)',
+  format: {
+    bl: 'مثل: MAEU123456789 (Maersk)',
+    container: 'مثل: MSCU1234567 (4 أحرف + 7 أرقام)',
+  },
+  channels: [
+    'موقع الخط الملاحي مباشرة (Maersk.com / MSC.com)',
+    'منصة FREIGHTLX (لو حجزت معنا)',
+    'موقع الجمارك السعودية لـ التخليص',
+  ],
+};
+
+// CUSTOMS CLEARANCE SERVICE FEES — رسوم خدمة التخليص (مو الجمارك)
+const CLEARANCE_FEES = {
+  agent_fee: {
+    fcl: 'متوسط 500-1,200 ﷼ للحاوية',
+    lcl: 'متوسط 300-700 ﷼ للشحنة',
+    air: 'متوسط 250-500 ﷼ للطيران',
+  },
+  port_fees: {
+    sajed: 'حوالي 200-400 ﷼/حاوية',
+    sadmm: 'حوالي 250-450 ﷼/حاوية',
+  },
+  inspection: '0 إذا green channel · 200-500 ﷼ إذا red channel (فحص)',
+  storage: 'مجاني أول 5 أيام، ثم 30-50 ﷼/يوم',
+  vat_on_services: '15% على رسوم وكيل التخليص',
 };
 
 // KSA IMPORT REGULATIONS — لائحة الاستيراد السعودية
@@ -1995,6 +2076,51 @@ async function intentFallback(message, ctx, reason, history = []) {
     return {
       reply: '**حساب التكلفة الكاملة** يحتاج:\n\n• ميناء المصدر (مثلاً: شنغهاي)\n• ميناء الوجهة (مثلاً: جدة)\n• قيمة البضاعة بالريال\n• نوع الحاوية (40HC افتراضياً)\n• HS code (اختياري للدقة)\n\nمثال: `احسب التكلفة الكاملة 40HC من شنغهاي لجدة قيمتها 80,000 ريال HS 851830`',
       actions, steps: 0, fallback_used: 'intent_full_cost_incomplete',
+    };
+  }
+
+  // ════════════════════════════════════════════════════════════
+  // 0.5️⃣ DOCUMENTS — "وش مستندات الشحن"
+  // ════════════════════════════════════════════════════════════
+  if (/(مستندات|وثائق|اوراق|documents|paperwork)\s*(الشحن|الاستيراد|المطلوب|المطلوبة)?/i.test(norm)
+      || /\b(b\/l|bill of lading|invoice|packing list|certificate of origin)\b/i.test(msg)) {
+    const req = SHIPPING_DOCUMENTS.required.map(d => `• **${d.name}** (${d.ar}) — من ${d.who}${d.critical === true ? ' ⚠️ إلزامي' : ''}`).join('\n');
+    const cond = SHIPPING_DOCUMENTS.conditional.map(d => `• **${d.name}** (${d.ar}) — ${d.when}`).join('\n');
+    return {
+      reply: `📄 **مستندات الشحن المطلوبة للسعودية:**\n\n**أساسية لكل شحنة:**\n${req}\n\n**حسب نوع البضاعة:**\n${cond}\n\n💡 لما تحجز معنا، ننسّق كل المستندات تلقائياً.`,
+      actions, steps: 0, fallback_used: 'intent_documents',
+    };
+  }
+
+  // ════════════════════════════════════════════════════════════
+  // 0.6️⃣ TRACKING — "تتبع شحنة" / "وين شحنتي"
+  // ════════════════════════════════════════════════════════════
+  if (/(تتبع|tracking|track|اين\s+شحن|وين\s+شحن|متي.*وصلت|كيف\s+اعرف.*وصل|status.*shipment)/i.test(norm)) {
+    return {
+      reply: `📍 **تتبع الشحنات:**\n\nتحتاج: ${TRACKING_GUIDE.required}\n\n**صيغة الرقم:**\n• B/L: \`${TRACKING_GUIDE.format.bl}\`\n• Container: \`${TRACKING_GUIDE.format.container}\`\n\n**أين تتتبع:**\n${TRACKING_GUIDE.channels.map(c => `• ${c}`).join('\n')}\n\n💡 لو حجزت معنا، اكتب رقم الشحنة (مثلاً \`SH-12345\`) وأعطيك آخر تحديث فوراً.`,
+      actions, steps: 0, fallback_used: 'intent_tracking',
+    };
+  }
+
+  // ════════════════════════════════════════════════════════════
+  // 0.7️⃣ CLEARANCE SERVICE FEES — "كم رسوم التخليص"
+  // ════════════════════════════════════════════════════════════
+  if (/(رسوم|سعر|تكلفة).*(تخليص|خدمة\s+التخليص|وكيل\s+تخليص|clearance)/i.test(norm)
+      || /(تخليص).*(كم|بكم|سعر|رسوم)/i.test(norm)) {
+    return {
+      reply: `📋 **رسوم خدمة التخليص الجمركي:**\n\n**أجرة وكيل التخليص:**\n• FCL: ${CLEARANCE_FEES.agent_fee.fcl}\n• LCL: ${CLEARANCE_FEES.agent_fee.lcl}\n• شحن جوي: ${CLEARANCE_FEES.agent_fee.air}\n\n**رسوم الميناء:**\n• جدة: ${CLEARANCE_FEES.port_fees.sajed}\n• الدمام: ${CLEARANCE_FEES.port_fees.sadmm}\n\n**رسوم إضافية:**\n• الفحص: ${CLEARANCE_FEES.inspection}\n• التخزين: ${CLEARANCE_FEES.storage}\n• ضريبة 15%: ${CLEARANCE_FEES.vat_on_services}\n\n⚠️ **مهم**: هذي رسوم خدمة التخليص فقط — مو الرسوم الجمركية على البضاعة نفسها (تختلف حسب HS code).`,
+      actions, steps: 0, fallback_used: 'intent_clearance_fees',
+    };
+  }
+
+  // ════════════════════════════════════════════════════════════
+  // 0.8️⃣ DELAY / DELAY ISSUE — "الجمارك تأخرت X يوم"
+  // ════════════════════════════════════════════════════════════
+  if (/(تاخر|تاخرت|تأخر|delay).*(جمارك|تخليص|شحن|customs)/i.test(norm)
+      || /(جمارك|تخليص).*(تاخر|تأخر|delay|stuck)/i.test(norm)) {
+    return {
+      reply: `⏰ **تأخر التخليص الجمركي — الأسباب الشائعة:**\n\n1. **نقص مستندات** — أرسلت B/L أو الفاتورة أصلية؟\n2. **شهادات سابر** — للمنتجات المنظَّمة، شهادة COC إلزامية\n3. **فحص جمركي** — الـ red channel يأخذ 5-15 يوم إضافية\n4. **خطأ HS code** — تصنيف غلط يسبب مراجعة يدوية\n5. **رسوم غير مدفوعة** — تأكد دفع الجمارك + VAT\n\n**خطوات الحل:**\n✅ تواصل مع وكيل التخليص — اطلب status update\n✅ تأكد من جميع المستندات في نظام فاسح\n✅ لو سابر مطلوبة، تابع الطلب في منصة سابر\n✅ ادفع أي رسوم معلّقة\n\n⚠️ **تنبيه**: كل يوم تأخر = $50-55 ديموراج إضافي.`,
+      actions, steps: 0, fallback_used: 'intent_delay',
     };
   }
 
