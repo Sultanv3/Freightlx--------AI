@@ -1531,7 +1531,12 @@ function renderToolResult(tool, result) {
 
   if (tool === 'calculate_demurrage') {
     if (result.error) return 'خطأ في الحساب: ' + result.error;
-    return `الديموراج: $${result.demurrage_usd?.toLocaleString() || '?'} · الديتنشن: $${result.detention_usd?.toLocaleString() || '?'} · الإجمالي: $${result.total_usd?.toLocaleString() || '?'}`;
+    const demur = result.total_demurrage_usd ?? result.demurrage_usd ?? 0;
+    const deten = result.total_detention_usd ?? result.detention_usd ?? 0;
+    const total = result.total_usd ?? (demur + deten);
+    const days = result.days_late ?? '?';
+    const ct = result.container_type ?? '?';
+    return `**حساب الديموراج والديتنشن:**\n\n• الحاوية: \`${ct}\` · أيام التأخر: ${days}\n• الديموراج (الميناء): **$${Number(demur).toLocaleString()}**\n• الديتنشن (الخط الملاحي): **$${Number(deten).toLocaleString()}**\n• **الإجمالي: $${Number(total).toLocaleString()}**`;
   }
 
   return 'تم التنفيذ. النتائج:\n```json\n' + JSON.stringify(result, null, 2).slice(0, 800) + '\n```';
@@ -1554,6 +1559,15 @@ const AR_PORT_ALIASES = {
   'هونغ كونغ': 'Hong Kong', 'بوسان': 'Busan',
   'روتردام': 'Rotterdam', 'هامبورغ': 'Hamburg', 'انتويرب': 'Antwerp',
   'لوس انجلوس': 'Los Angeles', 'نيويورك': 'New York',
+  // Country names → default major port (heuristic for casual queries)
+  'الصين': 'Shanghai', 'صين': 'Shanghai',
+  'الهند': 'Mumbai', 'هند': 'Mumbai',
+  'تركيا': 'Istanbul',
+  'الامارات': 'Jebel Ali', 'الإمارات': 'Jebel Ali',
+  'عمان': 'Salalah', 'سلطنة عمان': 'Salalah',
+  'كوريا': 'Busan', 'كوريا الجنوبية': 'Busan',
+  'المانيا': 'Hamburg', 'ألمانيا': 'Hamburg',
+  'هولندا': 'Rotterdam',
 };
 
 // ─── Intent-based fallback (works without Gemini) ───────────────────────
@@ -1571,11 +1585,16 @@ async function intentFallback(message, ctx, reason) {
     .trim();
 
   // Helpers ────────
+  // Find Arabic cities IN MESSAGE ORDER (origin → destination matters for rates).
   const findCity = () => {
     const cities = Object.keys(AR_PORT_ALIASES);
     const found = [];
-    for (const c of cities) if (norm.includes(c)) found.push(c);
-    return found;
+    for (const c of cities) {
+      const idx = norm.indexOf(c);
+      if (idx >= 0) found.push({ city: c, idx });
+    }
+    found.sort((a, b) => a.idx - b.idx);
+    return found.map(f => f.city);
   };
   const extractValue = () => {
     // Match standalone numbers (not HS codes which are usually 6+ digits attached to "hs")
@@ -1598,8 +1617,8 @@ async function intentFallback(message, ctx, reason) {
   // 1️⃣ CUSTOMS CALCULATION — highest priority when intent is clear
   //    Triggered by explicit "احسب" + "جمرك/ضريبة"
   // ════════════════════════════════════════════════════════════
-  const customsExplicit = /(?:احسب|حساب|calculate)\s.*(?:جمرك|ضريبة|customs|vat|تخليص)/i.test(norm)
-                       || /(?:جمرك|ضريبة|vat).*(?:احسب|حساب|calculate)/i.test(norm);
+  const customsExplicit = /(?:احسب|حساب|calculate)\s.*(?:جمرك|جمارك|ضريبة|ضرايب|customs|vat|تخليص)/i.test(norm)
+                       || /(?:جمرك|جمارك|ضريبة|ضرايب|vat).*(?:احسب|حساب|calculate)/i.test(norm);
   if (customsExplicit) {
     const value = extractValue();
     if (value && value >= 100) {
@@ -1679,8 +1698,9 @@ async function intentFallback(message, ctx, reason) {
 
   // ════════════════════════════════════════════════════════════
   // 4️⃣ PORT LOOKUP — when ميناء/port keyword + city
+  // (Don't use \b — it doesn't work for Arabic word boundaries)
   // ════════════════════════════════════════════════════════════
-  if (/\b(ميناء|port)\b/i.test(norm)) {
+  if (/ميناء|port/i.test(norm)) {
     let loc = null;
     // Strategy A: known Arabic city in message
     const cities = findCity();
