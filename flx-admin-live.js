@@ -280,6 +280,107 @@
     }
   }
 
+  // ───── Carriers (Logos & Settings) ──────────────────────
+  async function loadCarriers() {
+    const grid = $('#admCarriersGrid'); if (!grid) return;
+    grid.innerHTML = '<div style="grid-column:1/-1;padding:30px;text-align:center;color:#94a3b8">جاري التحميل...</div>';
+    try {
+      const j = await api('/admin/carriers');
+      const list = j.data || j.carriers || [];
+      if (!list.length) {
+        grid.innerHTML = '<div style="grid-column:1/-1;padding:30px;text-align:center;color:#94a3b8">لا توجد خطوط ملاحية مضافة بعد. اضغط <strong>+ إضافة خط شحن</strong></div>';
+        return;
+      }
+      grid.innerHTML = list.map(c => `
+        <div class="admin-card" data-code="${escapeHtml(c.code)}" style="display:flex;flex-direction:column;gap:10px">
+          <div style="display:flex;align-items:center;gap:12px">
+            <div style="width:56px;height:56px;background:#fff;border-radius:10px;display:flex;align-items:center;justify-content:center;padding:6px;flex-shrink:0">
+              ${c.logo
+                ? `<img src="${escapeHtml(c.logo)}" alt="${escapeHtml(c.name)}" style="max-width:100%;max-height:100%;object-fit:contain" onerror="this.outerHTML='<div style=&quot;font-weight:700;color:#0f1f3f&quot;>'+'${escapeHtml(c.code)}'+'</div>'">`
+                : `<div style="font-weight:700;color:#0f1f3f">${escapeHtml(c.code)}</div>`}
+            </div>
+            <div style="flex:1;min-width:0">
+              <div style="font-weight:700;font-size:14px;color:#fff">${escapeHtml(c.name)}</div>
+              <div style="font-size:11px;color:#94a3b8;font-family:'JetBrains Mono'">${escapeHtml(c.code)}</div>
+            </div>
+            <span style="padding:2px 8px;border-radius:99px;background:rgba(${c.active ? '52,211,153' : '148,163,184'},.15);color:${c.active ? '#34d399' : '#94a3b8'};font-size:10px;font-weight:600">${c.active ? 'نشط' : 'معطّل'}</span>
+          </div>
+          <div style="display:flex;gap:6px;margin-top:4px">
+            <button class="admin-btn admin-btn-ghost" data-act="edit-carrier" data-id="${escapeHtml(c.code)}" style="flex:1;padding:6px;font-size:11px">تعديل</button>
+            <button class="admin-btn admin-btn-ghost" data-act="toggle-carrier" data-id="${escapeHtml(c.code)}" style="flex:1;padding:6px;font-size:11px">${c.active ? 'تعطيل' : 'تفعيل'}</button>
+          </div>
+        </div>`).join('');
+    } catch (e) {
+      grid.innerHTML = `<div style="grid-column:1/-1;padding:30px;text-align:center;color:#ef4444">خطأ: ${e.message}</div>`;
+    }
+  }
+
+  async function actEditCarrier(code, existing) {
+    let c = existing;
+    if (!c) {
+      const j = await api('/admin/carriers').catch(() => ({}));
+      c = (j.data || []).find(x => x.code === code) || {};
+    }
+    openModal({
+      title: c.code ? 'تعديل خط ملاحي' : 'إضافة خط ملاحي',
+      sub: c.code || 'جديد',
+      body: `
+        <div style="display:flex;flex-direction:column;gap:12px">
+          <label>كود الخط (مثل MAEU, MSCU)<input type="text" id="fCCode" value="${escapeHtml(c.code || '')}" ${c.code ? 'readonly' : ''} maxlength="4" style="width:100%;padding:10px;border-radius:8px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);color:#fff;text-transform:uppercase;margin-top:4px;font-family:'JetBrains Mono'"></label>
+          <label>الاسم التجاري<input type="text" id="fCName" value="${escapeHtml(c.name || '')}" placeholder="Maersk Line" style="width:100%;padding:10px;border-radius:8px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);color:#fff;margin-top:4px"></label>
+          <label>رابط الشعار (Logo URL)
+            <input type="url" id="fCLogo" value="${escapeHtml(c.logo || '')}" placeholder="https://… أو /assets/carriers/maersk.svg" style="width:100%;padding:10px;border-radius:8px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);color:#fff;margin-top:4px">
+            <div style="display:flex;align-items:center;gap:10px;margin-top:8px;font-size:12px;color:#94a3b8">
+              <div id="fCPreview" style="width:48px;height:48px;background:#fff;border-radius:8px;display:flex;align-items:center;justify-content:center;padding:4px">${c.logo ? `<img src="${escapeHtml(c.logo)}" style="max-width:100%;max-height:100%;object-fit:contain">` : 'preview'}</div>
+              <span>المعاينة (يُنعكس على بطاقات الأسعار فوراً)</span>
+            </div>
+          </label>
+          <label>الأولوية (1 = الأعلى)<input type="number" id="fCPriority" value="${c.priority || 50}" min="1" max="100" style="width:100%;padding:10px;border-radius:8px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);color:#fff;margin-top:4px"></label>
+          <label style="display:flex;align-items:center;gap:8px"><input type="checkbox" id="fCActive" ${c.active !== false ? 'checked' : ''} style="width:18px;height:18px;accent-color:#34d399"> نشط (يظهر في بطاقات الأسعار)</label>
+        </div>`,
+      confirmText: c.code ? 'حفظ التعديلات' : 'إضافة',
+      onConfirm: async (body) => {
+        const data = {
+          code: body.querySelector('#fCCode').value.toUpperCase().trim(),
+          name: body.querySelector('#fCName').value.trim(),
+          logo: body.querySelector('#fCLogo').value.trim(),
+          priority: parseInt(body.querySelector('#fCPriority').value) || 50,
+          active: body.querySelector('#fCActive').checked,
+        };
+        if (!data.code || !data.name) throw new Error('الكود والاسم إلزاميان');
+        if (c.code) {
+          await api(`/admin/carriers/${c.code}`, { method: 'PATCH', body: JSON.stringify(data) });
+        } else {
+          await api('/admin/carriers', { method: 'POST', body: JSON.stringify(data) });
+        }
+        toast('تم الحفظ', 'success');
+        loadCarriers();
+      },
+    });
+    // Wire logo preview
+    setTimeout(() => {
+      const logoInput = document.getElementById('fCLogo');
+      const preview = document.getElementById('fCPreview');
+      if (logoInput && preview) {
+        logoInput.addEventListener('input', () => {
+          const url = logoInput.value.trim();
+          preview.innerHTML = url ? `<img src="${url}" style="max-width:100%;max-height:100%;object-fit:contain" onerror="this.outerHTML='⚠️'">` : 'preview';
+        });
+      }
+    }, 100);
+  }
+
+  async function actToggleCarrier(code) {
+    try {
+      const j = await api('/admin/carriers');
+      const c = (j.data || []).find(x => x.code === code);
+      if (!c) throw new Error('غير موجود');
+      await api(`/admin/carriers/${code}`, { method: 'PATCH', body: JSON.stringify({ active: !c.active }) });
+      toast(`${c.active ? 'تم التعطيل' : 'تم التفعيل'}`, 'success');
+      loadCarriers();
+    } catch (e) { toast(e.message, 'error'); }
+  }
+
   // ───── Actions ───────────────────────────────────────────
   async function actEditUser(id) {
     const j = await api('/admin/users').catch(() => ({ data: [] }));
@@ -319,30 +420,69 @@
   }
 
   async function actEditShipment(id) {
+    // Fetch shipment + user details for context
+    let shipment = null, userLabel = '';
+    try {
+      const j = await api('/shipments?scope=all');
+      shipment = (j.data || []).find(s => s.id === id);
+      if (shipment) {
+        const userMap = _userCache || await loadUserMap();
+        const u = userMap[shipment.user_id] || {};
+        userLabel = u.email || u.full_name || shipment.user_id?.slice(0, 8) || '';
+      }
+    } catch {}
+
+    const currentStatus = shipment?.status || 'pending';
+    const statusOpts = [
+      ['pending',   'قيد الموافقة',    '⏳'],
+      ['active',    'في التخليص',      '📋'],
+      ['transit',   'في عرض البحر',    '🚢'],
+      ['delivered', 'تم التسليم',      '✅'],
+      ['cancelled', 'ملغاة',           '❌'],
+    ];
+
     openModal({
-      title: 'تحديث حالة الشحنة',
-      sub: id?.slice(0, 8),
+      title: '📦 تحديث حالة الشحنة',
+      sub: shipment ? `${id} · ${userLabel} · ${shipment.origin} → ${shipment.destination}` : id,
       body: `
-        <div style="display:flex;flex-direction:column;gap:12px">
-          <label>الحالة الجديدة
-            <select id="fStatus" style="width:100%;padding:10px;border-radius:8px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);color:#fff;margin-top:4px">
-              <option value="pending">قيد المعالجة</option>
-              <option value="active">نشطة</option>
-              <option value="transit">في الترانزيت</option>
-              <option value="delivered">تم التسليم</option>
-              <option value="cancelled">ملغاة</option>
-            </select>
+        <div style="display:flex;flex-direction:column;gap:14px">
+          <div style="background:rgba(57,198,255,.06);border:1px solid rgba(57,198,255,.15);padding:10px 12px;border-radius:10px;font-size:12.5px;color:#cfe2f9">
+            ℹ️ سيُرسل إشعار فوري للعميل بأي تغيير في الحالة + ملاحظتك.
+          </div>
+          <div>
+            <label style="font-size:12.5px;color:#cfe2f9;font-weight:500;margin-bottom:8px;display:block">الحالة الجديدة</label>
+            <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:8px" id="fStatusGrid">
+              ${statusOpts.map(([v, l, e]) => `
+                <label style="display:flex;align-items:center;gap:10px;padding:10px;border-radius:10px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);cursor:pointer">
+                  <input type="radio" name="fStatus" value="${v}" ${currentStatus === v ? 'checked' : ''} style="accent-color:#39C6FF">
+                  <span style="font-size:18px">${e}</span>
+                  <span style="font-size:13px">${l}</span>
+                </label>`).join('')}
+            </div>
+          </div>
+          <label style="font-size:12.5px;color:#cfe2f9;font-weight:500">ملاحظة للعميل (تظهر في الإشعار)
+            <textarea id="fNote" rows="2" placeholder="مثال: وصلت الشحنة ميناء جدة وفي مرحلة التخليص. الوصول للمستودع متوقع خلال 3-5 أيام." style="width:100%;padding:10px;border-radius:8px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);color:#fff;margin-top:6px;font-family:inherit;font-size:13px;resize:vertical"></textarea>
           </label>
-          <label>ملاحظة للعميل (اختيارية)
-            <input type="text" id="fNote" placeholder="مثال: الشحنة وصلت ميناء جدة" style="width:100%;padding:10px;border-radius:8px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);color:#fff;margin-top:4px">
+          <label style="display:flex;align-items:center;gap:8px;font-size:12.5px;color:#cfe2f9">
+            <input type="checkbox" id="fSendEmail" checked style="width:16px;height:16px;accent-color:#39C6FF">
+            إرسال إيميل للعميل أيضاً
           </label>
         </div>`,
-      confirmText: 'تحديث',
+      confirmText: '🔔 تحديث وإرسال إشعار',
       onConfirm: async (body) => {
-        const status = body.querySelector('#fStatus').value;
-        const note = body.querySelector('#fNote').value;
-        await api(`/shipments/${id}/status`, { method: 'POST', body: JSON.stringify({ status, note }) });
-        toast('تم تحديث الحالة', 'success');
+        const status = body.querySelector('input[name="fStatus"]:checked')?.value;
+        const note = body.querySelector('#fNote').value.trim();
+        const sendEmail = body.querySelector('#fSendEmail').checked;
+        if (!status) throw new Error('اختر حالة');
+        await api(`/shipments/${id}/status`, {
+          method: 'POST',
+          body: JSON.stringify({ status, note, send_email: sendEmail }),
+        });
+        toast({
+          title: '✅ تم التحديث',
+          msg: `الشحنة ${id} → ${status}. أُرسل إشعار للعميل.`,
+          type: 'success',
+        });
         loadShipments();
       },
     });
@@ -397,9 +537,13 @@
           else if (sec === 'shipments') loadShipments();
           else if (sec === 'invoices') loadInvoices();
           else if (sec === 'quotes') loadQuotes();
+          else if (sec === 'carriers') loadCarriers();
         }, 50);
       });
     });
+
+    // Add Carrier button
+    $('#admAddCarrierBtn')?.addEventListener('click', () => actEditCarrier(null, null));
 
     // Table click delegation
     document.body.addEventListener('click', (ev) => {
@@ -413,6 +557,8 @@
       else if (act === 'mark-paid') actMarkPaid(id);
       else if (act === 'view-invoice') window.open(`/invoice.html?id=${id}`, '_blank');
       else if (act === 'track') window.open(`/track.html?id=${id}`, '_blank');
+      else if (act === 'edit-carrier') actEditCarrier(id);
+      else if (act === 'toggle-carrier') actToggleCarrier(id);
     });
 
     // Refresh + add buttons

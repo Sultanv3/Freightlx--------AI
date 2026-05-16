@@ -1067,6 +1067,9 @@ function renderOffers() {
             ${directTag}
             ${o.country ? `<span class="tag country">${o.country}</span>` : ''}
             ${o.service_type ? `<span class="tag transit">${o.service_type}</span>` : ''}
+            ${o.container_type ? `<span class="tag" style="background:#F0F9FF;color:#0369A1;font-weight:700">📦 ${o.container_type}</span>` : ''}
+            <span class="tag" style="background:#FEF3C7;color:#92400E;font-weight:600">⏱ ${o.transit_days} يوم</span>
+            ${o.validity_until ? `<span class="tag" style="background:#FEE2E2;color:#991B1B;font-weight:600">⏳ صالح حتى ${fmtDate(o.validity_until)}</span>` : ''}
           </div>
         </div>
         <div class="col-route">
