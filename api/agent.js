@@ -1667,7 +1667,7 @@ async function intentFallback(message, ctx, reason, history = []) {
   const lastUser = [...history].reverse().find(m => m.role === 'user')?.content || '';
   const wantsValue   = /قيمة|كم.*ريال|عطني.*قيم|value/i.test(lastAssistant);
   const wantsPort    = /ميناء.*مصدر|وجهة|origin|destination/i.test(lastAssistant);
-  const inCustomsCtx = /جمرك|ضريبة|customs|vat/i.test(lastAssistant) || /جمرك|ضريبة/i.test(lastUser);
+  const inCustomsCtx = /جمرك|جمارك|ضريبة|ضرايب|customs|vat/i.test(lastAssistant) || /جمرك|جمارك|ضريبة|ضرايب/i.test(lastUser);
   const inRatesCtx   = /سعر|شحن|rate|freight/i.test(lastAssistant) || /سعر|شحن/i.test(lastUser);
 
   // Helpers ────────
@@ -1936,11 +1936,13 @@ async function intentFallback(message, ctx, reason, history = []) {
   // 8️⃣ SMART DEFAULT — analyze what we DID parse, ask clarifying question
   // ════════════════════════════════════════════════════════════
   // Detect partial intents and respond contextually
+  const wordCount = norm.split(/\s+/).filter(Boolean).length;
   const hasCities = findCity().length;
   const hasValue = !!extractValue();
   const hasHs = /\bhs\s*[:\s]*[\d.]+/i.test(msg);
-  const mentionsImport = /استيراد|import|شحنه|شحنة|بضاع|cargo|goods|تجار/.test(norm);
-  const mentionsCompany = /شركه|شركة|company|business|تجار/.test(norm);
+  // Only consider it a "general scenario" if there's enough context (≥3 words)
+  const mentionsImport = wordCount >= 3 && /استيراد|import|بضاع|cargo|goods|تجار/.test(norm);
+  const mentionsCompany = /شركه|شركة|company|business/.test(norm);
   const mentionsBig = /\d{2,}\s*حاوي|\d{2,}\s*container/.test(norm);
 
   if (mentionsImport || mentionsCompany || mentionsBig) {
