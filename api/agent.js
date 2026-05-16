@@ -1556,6 +1556,129 @@ const AR_PORT_ALIASES = {
   'لوس انجلوس': 'Los Angeles', 'نيويورك': 'New York',
 };
 
+// ─── Intent-based fallback (works without Gemini) ───────────────────────
+// Routes the user message to the right tool via keyword detection, so the
+// platform keeps working during Gemini outages (quota, 503, network errors).
+async function intentFallback(message, ctx, reason) {
+  const msg = String(message || '').toLowerCase();
+  const actions = [];
+
+  // Strip Arabic diacritics + normalize
+  const norm = msg.replace(/[ًٌٍَُِّْ]/g, '').replace(/[إأآا]/g, 'ا').trim();
+
+  // ─── Intent: port lookup ───
+  const portMatch = norm.match(/(?:ميناء|كود ميناء|رمز ميناء|port)\s*([؀-ۿa-z]{3,20})/);
+  if (portMatch || /port|ميناء/.test(norm)) {
+    try {
+      // Extract location word — try to find anything after ميناء/port
+      let loc = portMatch?.[1] || norm.replace(/.*?(ميناء|port|كود|رمز)/g, '').trim().split(/\s+/)[0];
+      if (loc && loc.length >= 3) {
+        const result = await execTool('lookup_port', { q: loc }, ctx);
+        actions.push({ tool: 'lookup_port', args: { q: loc }, result });
+        if (!result.error && result.count > 0) {
+          return { reply: renderToolResult('lookup_port', result), actions, steps: 0, fallback_used: 'intent_port' };
+        }
+      }
+    } catch {}
+  }
+
+  // ─── Intent: HS code lookup ───
+  if (/hs\s*code|رمز.*منتج|تصنيف.*جمرك/.test(norm) || /hs\s*\d+/i.test(msg)) {
+    try {
+      const hsMatch = msg.match(/hs\s*[:\s]*([\d.]+)/i) || msg.match(/([0-9]{4,12})/);
+      const args = hsMatch ? { hs: hsMatch[1].replace(/\D/g, '') } : { q: norm.replace(/hs\s*code|رمز/g, '').trim() };
+      const result = await execTool('lookup_hs_code', args, ctx);
+      actions.push({ tool: 'lookup_hs_code', args, result });
+      if (!result.error) {
+        return { reply: renderToolResult('lookup_hs_code', result), actions, steps: 0, fallback_used: 'intent_hs' };
+      }
+    } catch {}
+  }
+
+  // ─── Intent: rate search (origin → destination) ───
+  if (/سعر.*شحن|كم سعر|rate|شحن.*من|شحن.*الى|freight/.test(norm)) {
+    // Very rough extraction — look for known city pairs
+    const cityMap = AR_PORT_ALIASES;
+    const cities = Object.keys(cityMap);
+    let origin = null, dest = null;
+    for (const c of cities) {
+      if (norm.includes(c)) {
+        if (!origin) origin = c;
+        else if (!dest) { dest = c; break; }
+      }
+    }
+    if (origin && dest) {
+      try {
+        // Translate to port codes via the ports endpoint (best-effort)
+        const o = await execTool('lookup_port', { q: cityMap[origin] }, ctx);
+        const d = await execTool('lookup_port', { q: cityMap[dest] }, ctx);
+        const oCode = o.results?.[0]?.code;
+        const dCode = d.results?.[0]?.code;
+        if (oCode && dCode) {
+          const containerMatch = msg.match(/(\d{2})\s*(?:gp|hc|hq|قدم|ft)/i);
+          const ct = containerMatch ? `${containerMatch[1]}HC` : '40HC';
+          const result = await execTool('search_freight_rates', {
+            originPort: oCode, destinationPort: dCode, containerType: ct,
+          }, ctx);
+          actions.push({ tool: 'search_freight_rates', args: { originPort: oCode, destinationPort: dCode, containerType: ct }, result });
+          if (!result.error) {
+            return { reply: renderToolResult('search_freight_rates', result), actions, steps: 0, fallback_used: 'intent_rates' };
+          }
+        }
+      } catch {}
+    }
+    return {
+      reply: 'لتحديد سعر الشحن، أحتاج: ميناء المصدر (مثل CNSHA) + ميناء الوجهة (مثل SAJED) + نوع الحاوية. جرّب الصياغة: "سعر 40HC من شنغهاي إلى جدة"',
+      actions, steps: 0, fallback_used: 'intent_rates_incomplete',
+    };
+  }
+
+  // ─── Intent: customs calculation ───
+  if (/جمرك|جمارك|customs|ضريبة|قيمة مضافة|vat/.test(norm)) {
+    const valueMatch = msg.match(/(\d{4,}(?:[,.]?\d{3})*)\s*(?:ريال|sar|usd|دولار|\$)?/);
+    if (valueMatch) {
+      const value = parseFloat(valueMatch[1].replace(/[,.]/g, ''));
+      try {
+        const result = await execTool('calculate_customs_clearance', {
+          cif_value_sar: value, hs_code: msg.match(/hs\s*[:\s]*([\d.]+)/i)?.[1] || null,
+        }, ctx);
+        actions.push({ tool: 'calculate_customs_clearance', args: { cif_value_sar: value }, result });
+        if (!result.error) {
+          return { reply: renderToolResult('calculate_customs_clearance', result), actions, steps: 0, fallback_used: 'intent_customs' };
+        }
+      } catch {}
+    }
+    // Without value: explain the formula
+    return {
+      reply: '**حساب الجمارك السعودية:**\n\n1. **الرسوم الجمركية** = قيمة CIF × نسبة التعرفة (5% / 12% / 20% حسب HS code)\n2. **ضريبة القيمة المضافة (VAT)** = (CIF + الرسوم) × 15%\n3. **رسوم الميناء** = ~$50-100 لكل حاوية\n\nأعطني قيمة الشحنة + HS code لحساب دقيق.',
+      actions, steps: 0, fallback_used: 'intent_customs_formula',
+    };
+  }
+
+  // ─── Intent: SABER certification ───
+  if (/سابر|saber|شهادة|مطابقة|قياس/.test(norm)) {
+    return {
+      reply: '**شهادات سابر السعودية المطلوبة:**\n\n• **QM** — Quality Mark للمنتجات الصناعية\n• **COC** — Certificate of Conformity للمطابقة\n• **IECEE** — للأجهزة الكهربائية والإلكترونيات\n• **IECEX** — للمنتجات في البيئات المتفجرة\n• **GCTS** — للبلاستيك والأكياس\n• **Tires** — للإطارات\n\nأخبرني عن المنتج لتحديد الشهادات بدقة، أو استخدم HS code للبحث في قاعدة 9,862 منتج منظَّم.',
+      actions, steps: 0, fallback_used: 'intent_saber',
+    };
+  }
+
+  // ─── Intent: greeting / capabilities ───
+  if (/مرحبا|اهلا|سلام|hello|hi|capabilities|قدرات|تقدر|وش/.test(norm)) {
+    return {
+      reply: '👋 أهلاً! أنا **FREIGHTLX AI** — المهندس التشغيلي للمنصة.\n\n**أقدر أساعدك في:**\n• 🚢 البحث عن أسعار شحن من 12 خط ملاحي\n• 🧮 حساب التخليص الجمركي وضريبة القيمة المضافة 15%\n• 📜 تحديد شهادات سابر المطلوبة\n• ⚓ معلومات الموانئ العالمية (323 ميناء)\n• 📊 تتبع شحناتك وفواتيرك\n• 💵 حساب الديموراج للحاويات المتأخرة\n\nاكتب سؤالك بالعربية أو الإنجليزية.',
+      actions, steps: 0, fallback_used: 'intent_greeting',
+    };
+  }
+
+  // ─── Default fallback ───
+  return {
+    reply: 'أنا هنا لمساعدتك في:\n\n• **أسعار الشحن** — اكتب "سعر 40HC من شنغهاي إلى جدة"\n• **الجمارك** — اكتب "احسب جمارك على 50,000 ريال HS 851830"\n• **شهادات سابر** — اكتب "ما الشهادات لاستيراد سماعات؟"\n• **الموانئ** — اكتب "كود ميناء الدمام"\n\nالخدمة الذكية تواجه ضغط مؤقت — لكن الأدوات الأساسية شغّالة.',
+    actions, steps: 0, fallback_used: 'intent_default',
+    gemini_error: reason,
+  };
+}
+
 // ─── Gemini call with function calling loop ─────────────────────────────
 async function runAgent(messages, ctx, maxSteps = 5) {
   const contents = [];
@@ -1593,10 +1716,34 @@ async function runAgent(messages, ctx, maxSteps = 5) {
         lastError = e.message;
       }
     }
-    if (!r || !r.ok) throw new Error(lastError || 'All Gemini models unavailable');
+    if (!r || !r.ok) {
+      // All Gemini models failed (quota / 503 / network). Fall back to deterministic
+      // intent routing so the AI still gives useful answers without the LLM.
+      if (step === 0) {
+        const userMsg = messages[messages.length - 1]?.content || '';
+        return await intentFallback(userMsg, ctx, lastError);
+      }
+      // Mid-conversation failure: use the last tool result if any
+      const lastAction = actions[actions.length - 1];
+      if (lastAction && lastAction.result && !lastAction.result.error) {
+        return { reply: renderToolResult(lastAction.tool, lastAction.result), actions, steps: step };
+      }
+      return {
+        reply: 'الخدمة الذكية تواجه ضغط عالٍ حالياً. حاول مرة ثانية بعد دقيقة، أو استخدم الأدوات مباشرة من القائمة الرئيسية.',
+        actions, steps: step,
+        gemini_error: lastError,
+      };
+    }
     const data = await r.json();
     const cand = data.candidates?.[0];
-    if (!cand) throw new Error('Empty Gemini response');
+    if (!cand) {
+      // Empty candidate — route to intent fallback for first step too
+      if (step === 0) {
+        const userMsg = messages[messages.length - 1]?.content || '';
+        return await intentFallback(userMsg, ctx, 'empty_candidate');
+      }
+      return { reply: 'لم أتمكن من توليد رد. حاول إعادة الصياغة.', actions, steps: step };
+    }
     const parts = cand.content?.parts || [];
 
     // Check for function calls
