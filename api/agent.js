@@ -1781,7 +1781,7 @@ const TRACKING_GUIDE = {
 };
 
 // CUSTOMS CLEARANCE SERVICE FEES — رسوم خدمة التخليص (مو الجمارك)
-const CLEARANCE_FEES = {
+const CLEARANCE_SERVICE_FEES = {
   agent_fee: {
     fcl: 'متوسط 500-1,200 ﷼ للحاوية',
     lcl: 'متوسط 300-700 ﷼ للشحنة',
@@ -2108,7 +2108,7 @@ async function intentFallback(message, ctx, reason, history = []) {
   if (/(رسوم|سعر|تكلفة).*(تخليص|خدمة\s+التخليص|وكيل\s+تخليص|clearance)/i.test(norm)
       || /(تخليص).*(كم|بكم|سعر|رسوم)/i.test(norm)) {
     return {
-      reply: `📋 **رسوم خدمة التخليص الجمركي:**\n\n**أجرة وكيل التخليص:**\n• FCL: ${CLEARANCE_FEES.agent_fee.fcl}\n• LCL: ${CLEARANCE_FEES.agent_fee.lcl}\n• شحن جوي: ${CLEARANCE_FEES.agent_fee.air}\n\n**رسوم الميناء:**\n• جدة: ${CLEARANCE_FEES.port_fees.sajed}\n• الدمام: ${CLEARANCE_FEES.port_fees.sadmm}\n\n**رسوم إضافية:**\n• الفحص: ${CLEARANCE_FEES.inspection}\n• التخزين: ${CLEARANCE_FEES.storage}\n• ضريبة 15%: ${CLEARANCE_FEES.vat_on_services}\n\n⚠️ **مهم**: هذي رسوم خدمة التخليص فقط — مو الرسوم الجمركية على البضاعة نفسها (تختلف حسب HS code).`,
+      reply: `📋 **رسوم خدمة التخليص الجمركي:**\n\n**أجرة وكيل التخليص:**\n• FCL: ${CLEARANCE_SERVICE_FEES.agent_fee.fcl}\n• LCL: ${CLEARANCE_SERVICE_FEES.agent_fee.lcl}\n• شحن جوي: ${CLEARANCE_SERVICE_FEES.agent_fee.air}\n\n**رسوم الميناء:**\n• جدة: ${CLEARANCE_SERVICE_FEES.port_fees.sajed}\n• الدمام: ${CLEARANCE_SERVICE_FEES.port_fees.sadmm}\n\n**رسوم إضافية:**\n• الفحص: ${CLEARANCE_SERVICE_FEES.inspection}\n• التخزين: ${CLEARANCE_FEES.storage}\n• ضريبة 15%: ${CLEARANCE_FEES.vat_on_services}\n\n⚠️ **مهم**: هذي رسوم خدمة التخليص فقط — مو الرسوم الجمركية على البضاعة نفسها (تختلف حسب HS code).`,
       actions, steps: 0, fallback_used: 'intent_clearance_fees',
     };
   }
