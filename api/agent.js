@@ -1644,15 +1644,25 @@ async function intentFallback(message, ctx, reason) {
 
   // Helpers ────────
   // Find Arabic cities IN MESSAGE ORDER (origin → destination matters for rates).
+  // Dedupe by english-port-name so "الصين"+"صين" don't both yield Shanghai.
+  // Also prefer longer match (e.g. "السعودية" over "سعودية") to avoid substring overlap.
   const findCity = () => {
     const cities = Object.keys(AR_PORT_ALIASES);
-    const found = [];
+    const matches = [];
     for (const c of cities) {
       const idx = norm.indexOf(c);
-      if (idx >= 0) found.push({ city: c, idx });
+      if (idx >= 0) matches.push({ city: c, idx, len: c.length, en: AR_PORT_ALIASES[c] });
     }
-    found.sort((a, b) => a.idx - b.idx);
-    return found.map(f => f.city);
+    // Sort by position. When two matches overlap at same idx (longer first wins).
+    matches.sort((a, b) => a.idx - b.idx || b.len - a.len);
+    // Dedupe: skip a match if any earlier KEPT match overlaps its range OR maps to same English port.
+    const kept = [];
+    for (const m of matches) {
+      const overlaps = kept.some(k => m.idx >= k.idx && m.idx < k.idx + k.len);
+      const duplicate = kept.some(k => k.en === m.en);
+      if (!overlaps && !duplicate) kept.push(m);
+    }
+    return kept.map(f => f.city);
   };
   const extractValue = () => {
     // Match standalone numbers (not HS codes which are usually 6+ digits attached to "hs")
