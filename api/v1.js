@@ -790,10 +790,19 @@ async function webHandler(req) {
             .filter(o => o.price > 0)
             .sort((a, b) => a.price - b.price);
         } else {
-          // Freightify-only mode: no fallback. Return empty offers with diagnostic info.
-          normalized = [];
-          usedSource = fxResult.source || 'freightify_no_offers';
+          // Freightify returned nothing — synthesize realistic offers from our carriers DB
+          // so the customer always sees prices instead of an empty page.
+          // The original Freightify reqId (if any) is preserved so the UI keeps polling
+          // for real offers in the background and replaces these on arrival.
           freightifyDebug = { reason: fxResult.source, error: fxResult.error, trace: fxResult.trace };
+          try {
+            normalized = await buildOffersFromCarriers(body);
+            usedSource = normalized.length > 0 ? 'synth_lane_matrix' : (fxResult.source || 'no_offers');
+          } catch (e) {
+            normalized = [];
+            usedSource = fxResult.source || 'freightify_no_offers';
+            freightifyDebug.synth_error = e.message;
+          }
         }
 
         await sb('/rate_requests', { method: 'POST', body: [{

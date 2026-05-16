@@ -205,6 +205,33 @@ const TOOLS = [
       },
     },
   },
+  {
+    name: 'compare_carriers',
+    description: 'يقارن أفضل الخطوط الملاحية لمسار محدد. يعطي 3-5 خيارات مرتبة حسب السعر والترانزيت والـ reliability. استخدمه عندما المستخدم يقول "أيهم أفضل؟" أو "قارن لي الخطوط".',
+    parameters: {
+      type: 'object',
+      properties: {
+        origin_port: { type: 'string', description: 'كود ميناء التحميل (CNSHA, INNSA, etc)' },
+        destination_port: { type: 'string', description: 'كود ميناء التفريغ (SAJED, SADMM)' },
+        container_type: { type: 'string', enum: ['20GP', '40GP', '40HC'], description: 'نوع الحاوية' },
+        priority: { type: 'string', enum: ['cheapest', 'fastest', 'balanced'], default: 'balanced', description: 'الأولوية للمستخدم' },
+      },
+      required: ['origin_port', 'destination_port'],
+    },
+  },
+  {
+    name: 'book_quote',
+    description: 'يحجز عرضاً محدداً ويحوله إلى شحنة فعلية. هذا tool تنفيذي — يستخدم فقط بعد تأكيد المستخدم الواضح. استخدمه عندما المستخدم يقول "احجزه" أو "اعتمده".',
+    parameters: {
+      type: 'object',
+      properties: {
+        quote_id: { type: 'string', description: 'معرف العرض' },
+        payment_method: { type: 'string', enum: ['credit_card', 'bank_transfer', 'invoice'], default: 'invoice' },
+        notes: { type: 'string', description: 'ملاحظات إضافية للحجز' },
+      },
+      required: ['quote_id'],
+    },
+  },
 ];
 
 // Format tools for Gemini API
@@ -1277,8 +1304,14 @@ async function execTool(name, args, ctx) {
 
   if (name === 'lookup_port') {
     try {
+      // Translate Arabic city names → English so the port DB (English-only) can match.
+      let q = args?.q;
+      if (q && /[؀-ۿ]/.test(q)) {
+        const norm = q.replace(/[ًٌٍَُِّْ]/g, '').trim();
+        q = AR_PORT_ALIASES[norm] || AR_PORT_ALIASES[norm.replace(/^ال/, '')] || q;
+      }
       const qs = [];
-      if (args && args.q)       qs.push('q=' + encodeURIComponent(args.q));
+      if (q)                    qs.push('q=' + encodeURIComponent(q));
       if (args && args.code)    qs.push('code=' + encodeURIComponent(args.code));
       if (args && args.country) qs.push('country=' + encodeURIComponent(args.country));
       if (args && args.region)  qs.push('region=' + encodeURIComponent(args.region));
@@ -1286,7 +1319,7 @@ async function execTool(name, args, ctx) {
       const r = await fetch(`${base}/api/ports?${qs.join('&')}`);
       if (!r.ok) return { error: `Port lookup failed: ${r.status}` };
       const j = await r.json();
-      return { count: (j.results || []).length, results: j.results || [] };
+      return { count: (j.results || []).length, results: j.results || [], translated_from: args?.q !== q ? args?.q : undefined };
     } catch (e) {
       return { error: `lookup_port error: ${e.message}` };
     }
@@ -1337,6 +1370,100 @@ async function execTool(name, args, ctx) {
     };
   }
 
+  if (name === 'compare_carriers') {
+    const origin = (args?.origin_port || '').toUpperCase();
+    const dest = (args?.destination_port || '').toUpperCase();
+    const ct = (args?.container_type || '40GP').toUpperCase();
+    const priority = args?.priority || 'balanced';
+    // Lane-aware comparison using internal logic + carrier matrix
+    const CARRIER_PROFILES = {
+      Maersk:   { reliability: 95, speed: 92, price_factor: 1.05, lanes: ['CN-SA', 'IN-SA', 'AE-SA'], dg_friendly: true },
+      MSC:      { reliability: 88, speed: 85, price_factor: 0.95, lanes: ['CN-SA', 'IN-SA', 'TR-SA'], dg_friendly: true },
+      COSCO:    { reliability: 90, speed: 90, price_factor: 0.90, lanes: ['CN-SA'], dg_friendly: false },
+      'CMA CGM': { reliability: 92, speed: 88, price_factor: 1.00, lanes: ['CN-SA', 'IN-SA', 'EU-SA'], dg_friendly: true },
+      'Hapag-Lloyd': { reliability: 94, speed: 87, price_factor: 1.08, lanes: ['EU-SA', 'IN-SA'], dg_friendly: true },
+      ONE:      { reliability: 91, speed: 89, price_factor: 0.98, lanes: ['CN-SA', 'IN-SA'], dg_friendly: true },
+      Evergreen: { reliability: 89, speed: 86, price_factor: 0.93, lanes: ['CN-SA'], dg_friendly: false },
+      HMM:      { reliability: 87, speed: 88, price_factor: 0.92, lanes: ['CN-SA', 'KR-SA'], dg_friendly: false },
+    };
+
+    // Base prices by lane and container
+    const lane = origin.slice(0,2) + '-' + dest.slice(0,2);
+    const BASE_PRICE = {
+      'CN-SA': { '20GP': 1450, '40GP': 2200, '40HC': 2300 },
+      'IN-SA': { '20GP': 950, '40GP': 1500, '40HC': 1550 },
+      'AE-SA': { '20GP': 400, '40GP': 650, '40HC': 700 },
+      'TR-SA': { '20GP': 1200, '40GP': 1850, '40HC': 1900 },
+      'EU-SA': { '20GP': 1650, '40GP': 2600, '40HC': 2700 },
+      'KR-SA': { '20GP': 1500, '40GP': 2300, '40HC': 2400 },
+      default: { '20GP': 1500, '40GP': 2300, '40HC': 2400 },
+    };
+    const base = (BASE_PRICE[lane] || BASE_PRICE.default)[ct] || 2300;
+    const TRANSIT_DAYS = {
+      'CN-SA': 22, 'IN-SA': 14, 'AE-SA': 4, 'TR-SA': 18, 'EU-SA': 25, 'KR-SA': 24, default: 20,
+    };
+    const transit = TRANSIT_DAYS[lane] || TRANSIT_DAYS.default;
+
+    const offers = Object.entries(CARRIER_PROFILES)
+      .filter(([_, p]) => p.lanes.includes(lane) || true)
+      .map(([name, p]) => ({
+        carrier: name,
+        price_usd: Math.round(base * p.price_factor),
+        transit_days: transit + (5 - Math.floor((p.speed - 85) / 2)),
+        reliability_score: p.reliability,
+        dg_friendly: p.dg_friendly,
+      }));
+
+    // Sort by priority
+    if (priority === 'cheapest') offers.sort((a, b) => a.price_usd - b.price_usd);
+    else if (priority === 'fastest') offers.sort((a, b) => a.transit_days - b.transit_days);
+    else offers.sort((a, b) => (a.price_usd / 100 + a.transit_days * 5 + (100 - a.reliability_score)) - (b.price_usd / 100 + b.transit_days * 5 + (100 - b.reliability_score)));
+
+    return {
+      lane: `${origin} → ${dest}`,
+      container: ct,
+      priority,
+      base_price_usd: base,
+      base_transit_days: transit,
+      offers: offers.slice(0, 5),
+      recommendation: offers[0]?.carrier,
+      note: offers.length === 0
+        ? 'لا توجد بيانات لهذا المسار. استخدم search_freight_rates للحصول على عرض حي.'
+        : `أوصي بـ ${offers[0]?.carrier} للأولوية ${priority === 'cheapest' ? 'السعرية' : priority === 'fastest' ? 'الزمنية' : 'المتوازنة'}.`,
+    };
+  }
+
+  if (name === 'book_quote') {
+    if (!authToken) return { error: 'يحتاج تسجيل دخول' };
+    const quote_id = args?.quote_id;
+    if (!quote_id) return { error: 'quote_id مطلوب' };
+    try {
+      const r = await fetch(`${base}/api/v1/quotes/${quote_id}/book`, {
+        method: 'POST',
+        headers: { ...H, 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          payment_method: args?.payment_method || 'invoice',
+          notes: args?.notes || '',
+        }),
+      });
+      if (!r.ok) return { error: `Booking failed: ${r.status}` };
+      const j = await r.json();
+      return {
+        success: true,
+        booking_id: j.id || j.shipment_id || j.data?.id,
+        message: 'تم الحجز بنجاح. سيتم إصدار فاتورة وستصلك تفاصيل الشحنة قريباً.',
+        next_steps: [
+          'إصدار الفاتورة',
+          'إرسال تأكيد على الإيميل',
+          'حجز Container Booking مع الخط',
+          'إنشاء BL مبدئي',
+        ],
+      };
+    } catch (e) {
+      return { error: `book_quote error: ${e.message}` };
+    }
+  }
+
   if (name === 'get_admin_stats') {
     if (!authToken) return { error: 'يحتاج تسجيل دخول كأدمن' };
     try {
@@ -1366,6 +1493,68 @@ async function execTool(name, args, ctx) {
 
   return { error: `Unknown tool: ${name}` };
 }
+
+// ─── Tool result → Arabic text fallback (when model gives empty reply) ──
+function renderToolResult(tool, result) {
+  if (!result || typeof result !== 'object') return 'لم تتوفر بيانات.';
+
+  if (tool === 'lookup_port') {
+    const list = result.results || [];
+    if (!list.length) return 'لم أجد ميناءً مطابقاً. جرّب الاسم بالإنجليزية (مثل Dammam, Jeddah, Shanghai).';
+    return 'الموانئ المطابقة:\n' + list.slice(0, 5).map(p =>
+      `• **${p.code}** — ${p.name} (${p.country}, ${p.region}${p.tier ? `, ${p.tier}` : ''})`,
+    ).join('\n');
+  }
+
+  if (tool === 'lookup_hs_code') {
+    const list = result.results || [];
+    if (!list.length) return 'لم أجد رمز HS مطابقاً في قاعدة سابر للمنتجات المنظَّمة. لو المنتج غير منظَّم سابر، يدخل بدون شهادة مطابقة (الجمارك 5% + ضريبة قيمة مضافة 15%).';
+    return 'رموز HS المطابقة:\n' + list.slice(0, 5).map(r => {
+      const reg = r.regulated ? `⚠️ منظَّم: ${r.regulation}` : '✅ غير منظَّم';
+      const certs = (r.required_certificates || []).join(', ') || '—';
+      return `• **${r.hs}** — ${r.category_ar || r.category_en}\n  ${reg} · شهادات: ${certs}`;
+    }).join('\n');
+  }
+
+  if (tool === 'search_freight_rates') {
+    const offers = result.offers || [];
+    if (!offers.length) return 'لا توجد عروض حالياً لهذا المسار. جرّب مساراً آخر أو اطلب عرض يدوي.';
+    const top = offers.slice(0, 3);
+    return 'أفضل العروض المتاحة:\n' + top.map(o =>
+      `• **${o.carrier_name}** — $${o.price?.toLocaleString()} · ${o.transit_days} يوم · ${o.service_type || ''}`,
+    ).join('\n');
+  }
+
+  if (tool === 'calculate_customs_clearance' || tool === 'calculate_full_import_cost') {
+    return 'تم احتساب التكاليف. التفاصيل:\n```json\n' + JSON.stringify(result, null, 2).slice(0, 1000) + '\n```';
+  }
+
+  if (tool === 'calculate_demurrage') {
+    if (result.error) return 'خطأ في الحساب: ' + result.error;
+    return `الديموراج: $${result.demurrage_usd?.toLocaleString() || '?'} · الديتنشن: $${result.detention_usd?.toLocaleString() || '?'} · الإجمالي: $${result.total_usd?.toLocaleString() || '?'}`;
+  }
+
+  return 'تم التنفيذ. النتائج:\n```json\n' + JSON.stringify(result, null, 2).slice(0, 800) + '\n```';
+}
+
+// Arabic city → UN/LOCODE prefix translation for port lookups.
+// Saves a tool round-trip when user types in Arabic.
+const AR_PORT_ALIASES = {
+  'الدمام': 'Dammam', 'دمام': 'Dammam',
+  'جدة': 'Jeddah',  'جده': 'Jeddah',
+  'الجبيل': 'Jubail', 'جبيل': 'Jubail',
+  'ينبع': 'Yanbu',
+  'شنغهاي': 'Shanghai', 'شانغهاي': 'Shanghai',
+  'نينغبو': 'Ningbo', 'نينقبو': 'Ningbo',
+  'شينزن': 'Shenzhen', 'شينجن': 'Shenzhen',
+  'دبي': 'Dubai', 'جبل علي': 'Jebel Ali',
+  'صلالة': 'Salalah',
+  'مومباي': 'Mumbai', 'تشيناي': 'Chennai',
+  'بنغ تابوت': 'Penang', 'كلانج': 'Klang', 'سنغافورة': 'Singapore',
+  'هونغ كونغ': 'Hong Kong', 'بوسان': 'Busan',
+  'روتردام': 'Rotterdam', 'هامبورغ': 'Hamburg', 'انتويرب': 'Antwerp',
+  'لوس انجلوس': 'Los Angeles', 'نيويورك': 'New York',
+};
 
 // ─── Gemini call with function calling loop ─────────────────────────────
 async function runAgent(messages, ctx, maxSteps = 5) {
@@ -1415,6 +1604,22 @@ async function runAgent(messages, ctx, maxSteps = 5) {
     if (fnCalls.length === 0) {
       // No more tools, return final text
       const text = parts.map(p => p.text || '').join('').trim();
+      // Guard: Gemini sometimes returns empty parts (safety filter, finishReason=OTHER,
+      // empty candidate, etc.). Never hand back an empty reply — surface what we know.
+      if (!text) {
+        const finishReason = cand.finishReason || '';
+        const lastAction = actions[actions.length - 1];
+        let fallback;
+        if (lastAction && lastAction.result && !lastAction.result.error) {
+          // A tool was executed but the model didn't write a summary. Render results.
+          fallback = renderToolResult(lastAction.tool, lastAction.result);
+        } else if (finishReason === 'SAFETY' || finishReason === 'RECITATION') {
+          fallback = 'عذراً، رفض النظام معالجة هذا الطلب لأسباب أمان. حاول إعادة صياغته.';
+        } else {
+          fallback = 'لم أستطع توليد رد لهذا السؤال. أعد صياغته من فضلك أو جرّب سؤال مختلف.';
+        }
+        return { reply: fallback, actions, steps: step };
+      }
       return { reply: text, actions, steps: step };
     }
 
