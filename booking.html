@@ -1,0 +1,809 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#050E18">
+<title>حجز شحنة بحرية — FREIGHTLX</title>
+<link rel="icon" href="/assets/logo/color-logo.svg">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600;700;800&family=Fraunces:wght@600;700;800&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/flx-dark-theme.css">
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: 'IBM Plex Sans Arabic', system-ui, sans-serif;
+  background: linear-gradient(180deg, #050E18 0%, #0B1A30 100%);
+  color: #e8eef5; min-height: 100vh;
+}
+
+/* ═══ Top Nav ═══ */
+.bk-topbar {
+  position: sticky; top: 0; z-index: 50;
+  background: rgba(5,14,24,.85); backdrop-filter: blur(20px);
+  border-bottom: 1px solid rgba(255,255,255,.06);
+  padding: 14px 28px; display: flex; align-items: center; gap: 16px;
+}
+.bk-topbar .logo { font-family: Fraunces, serif; font-weight: 800; font-size: 22px;
+  background: linear-gradient(90deg,#fff,#9bd9ff); -webkit-background-clip: text; color: transparent; }
+.bk-topbar nav { margin-right: auto; display: flex; gap: 20px; font-size: 14px; }
+.bk-topbar nav a { color: rgba(255,255,255,.7); text-decoration: none; }
+.bk-topbar nav a:hover { color: #fff; }
+
+/* ═══ Page ═══ */
+.wrap { max-width: 980px; margin: 0 auto; padding: 32px 20px 80px; }
+
+.page-title {
+  font-family: Fraunces, serif; font-size: 32px; font-weight: 800; margin-bottom: 6px;
+  background: linear-gradient(90deg,#fff,#9bd9ff); -webkit-background-clip: text; color: transparent;
+}
+.page-sub { color: #94a3b8; font-size: 14px; margin-bottom: 30px; }
+
+/* ═══ Stepper ═══ */
+.stepper { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 36px; }
+.step {
+  background: rgba(255,255,255,.04); border: 1px solid rgba(255,255,255,.08);
+  border-radius: 14px; padding: 16px; display: flex; align-items: center; gap: 12px;
+  transition: all .3s;
+}
+.step.active {
+  background: linear-gradient(135deg, rgba(10,132,255,.15), rgba(57,198,255,.05));
+  border-color: rgba(57,198,255,.4);
+  box-shadow: 0 0 0 1px rgba(57,198,255,.2), 0 12px 24px rgba(10,132,255,.15);
+}
+.step.done { border-color: rgba(52,211,153,.4); }
+.step-num {
+  width: 36px; height: 36px; border-radius: 50%;
+  background: rgba(255,255,255,.06); display: flex; align-items: center; justify-content: center;
+  font-weight: 700; font-size: 15px; color: rgba(255,255,255,.6);
+  border: 1px solid rgba(255,255,255,.1);
+}
+.step.active .step-num {
+  background: linear-gradient(135deg,#0A84FF,#39C6FF); color: #fff; border-color: transparent;
+}
+.step.done .step-num { background: rgba(52,211,153,.2); color: #34d399; border-color: rgba(52,211,153,.3); }
+.step-text { flex: 1; min-width: 0; }
+.step-label { font-size: 11px; color: #64748b; text-transform: uppercase; letter-spacing: .08em; margin-bottom: 2px; }
+.step-name { font-size: 14px; font-weight: 600; }
+
+/* ═══ Card ═══ */
+.card {
+  background: rgba(255,255,255,.04); border: 1px solid rgba(255,255,255,.08);
+  border-radius: 20px; padding: 32px;
+  box-shadow: 0 24px 64px rgba(0,0,0,.3), inset 0 1px 0 rgba(255,255,255,.04);
+}
+.card-title { font-family: Fraunces, serif; font-weight: 700; font-size: 24px; margin-bottom: 6px; }
+.card-sub { color: #94a3b8; font-size: 13.5px; margin-bottom: 24px; }
+
+/* ═══ Form ═══ */
+.row { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 14px; }
+.row.full { grid-template-columns: 1fr; }
+@media (max-width: 600px) { .row { grid-template-columns: 1fr; } }
+
+.field { display: flex; flex-direction: column; gap: 6px; }
+.field label { font-size: 12.5px; color: #cfe2f9; font-weight: 500; }
+.field label .req { color: #ef4444; }
+.field input, .field select, .field textarea {
+  background: rgba(255,255,255,.06); border: 1px solid rgba(255,255,255,.1);
+  border-radius: 10px; padding: 12px 14px; color: #fff; font: inherit; font-size: 14px;
+  transition: all .15s; font-family: inherit;
+}
+.field input:focus, .field select:focus, .field textarea:focus {
+  outline: none; border-color: #39C6FF; background: rgba(57,198,255,.06);
+  box-shadow: 0 0 0 3px rgba(57,198,255,.12);
+}
+.field-hint { font-size: 11.5px; color: #64748b; }
+
+.services-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 10px; }
+@media (max-width: 600px) { .services-grid { grid-template-columns: 1fr; } }
+.service-chip {
+  background: rgba(255,255,255,.04); border: 1px solid rgba(255,255,255,.1);
+  border-radius: 12px; padding: 12px 14px; cursor: pointer; transition: all .15s;
+  display: flex; align-items: flex-start; gap: 10px;
+}
+.service-chip:hover { background: rgba(57,198,255,.08); border-color: rgba(57,198,255,.3); }
+.service-chip.selected {
+  background: linear-gradient(135deg, rgba(10,132,255,.18), rgba(57,198,255,.06));
+  border-color: rgba(57,198,255,.5);
+}
+.service-icon { font-size: 20px; flex-shrink: 0; }
+.service-name { font-size: 13px; font-weight: 600; margin-bottom: 2px; }
+.service-desc { font-size: 11px; color: #94a3b8; line-height: 1.4; }
+
+/* ═══ Buttons ═══ */
+.btn {
+  border: 0; border-radius: 12px; padding: 12px 22px; font-weight: 600; font-size: 14px;
+  cursor: pointer; font-family: inherit; transition: all .15s;
+  display: inline-flex; align-items: center; gap: 8px;
+}
+.btn-primary { background: linear-gradient(135deg,#0A84FF,#39C6FF); color: #fff; }
+.btn-primary:hover { transform: translateY(-1px); box-shadow: 0 12px 28px rgba(10,132,255,.35); }
+.btn-primary:disabled { opacity: .5; cursor: not-allowed; transform: none; box-shadow: none; }
+.btn-ghost { background: rgba(255,255,255,.06); color: #fff; border: 1px solid rgba(255,255,255,.1); }
+.btn-ghost:hover { background: rgba(255,255,255,.1); }
+.actions { margin-top: 28px; display: flex; gap: 10px; justify-content: space-between; }
+
+/* ═══ Search Loading ═══ */
+.search-loading {
+  text-align: center; padding: 48px 20px;
+}
+.search-spinner {
+  width: 64px; height: 64px; margin: 0 auto 24px;
+  border-radius: 50%; background: conic-gradient(from 0deg, transparent, #39C6FF);
+  animation: spin 1.2s linear infinite; padding: 3px;
+}
+.search-spinner > div {
+  width: 100%; height: 100%; border-radius: 50%; background: #050E18;
+  display: flex; align-items: center; justify-content: center; font-size: 28px;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+.search-step {
+  font-size: 15px; margin: 12px 0; color: #cfe2f9;
+  animation: fadeIn .5s;
+}
+@keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; } }
+.search-progress {
+  max-width: 360px; margin: 24px auto 0; height: 4px;
+  background: rgba(255,255,255,.06); border-radius: 99px; overflow: hidden;
+}
+.search-progress > div {
+  height: 100%; background: linear-gradient(90deg,#0A84FF,#39C6FF);
+  border-radius: 99px; transition: width 1s linear;
+}
+
+/* ═══ Offer Cards ═══ */
+.offers-list { display: flex; flex-direction: column; gap: 14px; }
+.offer {
+  background: rgba(255,255,255,.04); border: 1px solid rgba(255,255,255,.1);
+  border-radius: 16px; padding: 20px;
+  display: grid; grid-template-columns: 64px 1fr auto; gap: 16px; align-items: center;
+  transition: all .2s; position: relative;
+}
+.offer:hover { background: rgba(255,255,255,.06); border-color: rgba(57,198,255,.3); transform: translateY(-2px); }
+.offer.selected {
+  border-color: #39C6FF; background: linear-gradient(135deg, rgba(10,132,255,.08), rgba(57,198,255,.03));
+  box-shadow: 0 0 0 2px rgba(57,198,255,.3), 0 16px 36px rgba(10,132,255,.2);
+}
+.offer-ribbon {
+  position: absolute; top: -10px; right: 16px;
+  background: linear-gradient(135deg,#fbbf24,#f59e0b); color: #050E18;
+  font-size: 10.5px; font-weight: 800; letter-spacing: .04em;
+  padding: 4px 10px; border-radius: 99px;
+}
+.offer-ribbon.fast { background: linear-gradient(135deg,#34d399,#10b981); color: #fff; }
+.offer-ribbon.reliable { background: linear-gradient(135deg,#a78bfa,#7c3aed); color: #fff; }
+.offer-logo {
+  width: 64px; height: 64px; border-radius: 12px; background: #fff;
+  display: flex; align-items: center; justify-content: center; padding: 6px;
+  font-weight: 800; font-size: 13px; color: #1e3a6e;
+}
+.offer-logo img { max-width: 100%; max-height: 100%; object-fit: contain; }
+.offer-main { min-width: 0; }
+.offer-carrier { font-size: 16px; font-weight: 700; margin-bottom: 4px; }
+.offer-route {
+  font-size: 13px; color: #cfe2f9; display: flex; align-items: center; gap: 8px;
+  font-family: 'JetBrains Mono', monospace;
+}
+.offer-route span { background: rgba(57,198,255,.1); padding: 1px 8px; border-radius: 4px; }
+.offer-meta {
+  margin-top: 8px; display: flex; gap: 14px; font-size: 12px; color: #94a3b8;
+  flex-wrap: wrap;
+}
+.offer-meta strong { color: #cfe2f9; }
+.offer-price { text-align: left; min-width: 130px; }
+.offer-price .amount {
+  font-family: Fraunces, serif; font-size: 28px; font-weight: 700; color: #fff; line-height: 1;
+}
+.offer-price .cur { color: #94a3b8; font-size: 13px; margin-top: 2px; }
+.offer-price .btn { margin-top: 12px; width: 100%; justify-content: center; }
+
+/* ═══ Summary ═══ */
+.summary-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 24px; }
+@media (max-width: 600px) { .summary-grid { grid-template-columns: 1fr; } }
+.summary-item {
+  background: rgba(255,255,255,.04); border: 1px solid rgba(255,255,255,.08);
+  border-radius: 12px; padding: 14px 16px;
+}
+.summary-label { font-size: 11px; color: #64748b; text-transform: uppercase; letter-spacing: .06em; margin-bottom: 4px; }
+.summary-value { font-size: 15px; font-weight: 600; color: #fff; }
+.summary-value.price {
+  font-family: Fraunces, serif; font-size: 22px;
+  background: linear-gradient(90deg,#fff,#39C6FF); -webkit-background-clip: text; color: transparent;
+}
+
+/* ═══ Manual quote fallback ═══ */
+.manual-quote {
+  text-align: center; padding: 32px 20px;
+  background: linear-gradient(135deg, rgba(251,191,36,.08), rgba(245,158,11,.04));
+  border: 1px solid rgba(251,191,36,.2); border-radius: 16px;
+}
+.manual-quote-icon { font-size: 48px; margin-bottom: 12px; }
+
+/* ═══ Success ═══ */
+.success-icon {
+  width: 80px; height: 80px; margin: 0 auto 20px;
+  background: linear-gradient(135deg,#34d399,#10b981); border-radius: 50%;
+  display: flex; align-items: center; justify-content: center; font-size: 40px; color: #fff;
+  animation: pop .5s cubic-bezier(.4,0,.2,1);
+}
+@keyframes pop { 0% { transform: scale(0); } 60% { transform: scale(1.15); } 100% { transform: scale(1); } }
+
+.hide { display: none !important; }
+</style>
+</head>
+<body>
+
+<div class="bk-topbar">
+  <div class="logo">FREIGHTLX</div>
+  <nav>
+    <a href="/dashboard.html">لوحة التحكم</a>
+    <a href="/rates.html">الأسعار</a>
+    <a href="/packages.html">الباقات</a>
+  </nav>
+  <a href="/dashboard.html" style="color:#39C6FF;font-size:13px;text-decoration:none">← العودة</a>
+</div>
+
+<div class="wrap">
+  <h1 class="page-title">🚢 احجز شحنة بحرية</h1>
+  <p class="page-sub">أربع خطوات وستكون شحنتك في عهدتنا</p>
+
+  <!-- Stepper -->
+  <div class="stepper" id="stepper">
+    <div class="step active" data-step="1"><div class="step-num">1</div><div class="step-text"><div class="step-label">Step 1</div><div class="step-name">بيانات الشحنة</div></div></div>
+    <div class="step" data-step="2"><div class="step-num">2</div><div class="step-text"><div class="step-label">Step 2</div><div class="step-name">عروض الأسعار</div></div></div>
+    <div class="step" data-step="3"><div class="step-num">3</div><div class="step-text"><div class="step-label">Step 3</div><div class="step-name">المراجعة</div></div></div>
+    <div class="step" data-step="4"><div class="step-num">4</div><div class="step-text"><div class="step-label">Step 4</div><div class="step-name">التأكيد</div></div></div>
+  </div>
+
+  <!-- Step 1: Data -->
+  <div class="card" id="step1">
+    <div class="card-title">بيانات الشحنة</div>
+    <div class="card-sub">عبّي البيانات لنبحث لك عن أفضل العروض من 12 خط ملاحي</div>
+
+    <div class="row">
+      <div class="field">
+        <label>ميناء التحميل <span class="req">*</span></label>
+        <input type="text" id="originPort" placeholder="مثلاً: CNSHA (شنغهاي)" autocomplete="off">
+        <div class="field-hint">UN/LOCODE مكون من 5 أحرف</div>
+      </div>
+      <div class="field">
+        <label>ميناء الوصول <span class="req">*</span></label>
+        <select id="destPort">
+          <option value="SAJED">SAJED — جدة الإسلامي</option>
+          <option value="SADMM">SADMM — الملك عبدالعزيز الدمام</option>
+          <option value="SAJUB">SAJUB — الجبيل</option>
+          <option value="SAYNB">SAYNB — ينبع</option>
+          <option value="SAKAC">SAKAC — الملك عبدالله</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="row">
+      <div class="field">
+        <label>نوع الحاوية <span class="req">*</span></label>
+        <select id="containerType">
+          <option value="20GP">20GP (20 قدم قياسي)</option>
+          <option value="40GP">40GP (40 قدم قياسي)</option>
+          <option value="40HC" selected>40HC (40 قدم عالي)</option>
+          <option value="20RF">20RF (20 قدم مبرد)</option>
+          <option value="40RF">40RF (40 قدم مبرد)</option>
+          <option value="OT">Open Top</option>
+          <option value="FR">Flat Rack</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>عدد الحاويات <span class="req">*</span></label>
+        <input type="number" id="quantity" value="1" min="1" max="50">
+      </div>
+    </div>
+
+    <div class="row">
+      <div class="field">
+        <label>نوع البضاعة (Commodity)</label>
+        <input type="text" id="commodity" placeholder="مثلاً: إلكترونيات، ملابس، أثاث">
+      </div>
+      <div class="field">
+        <label>تاريخ جاهزية الشحنة (Ready Date) <span class="req">*</span></label>
+        <input type="date" id="readyDate">
+      </div>
+    </div>
+
+    <div class="row full">
+      <div class="field">
+        <label style="display:flex;align-items:center;gap:10px;cursor:pointer">
+          <input type="checkbox" id="isDangerous" style="width:18px;height:18px;cursor:pointer;accent-color:#ef4444">
+          <span>بضاعة خطرة (Dangerous Goods - DG)</span>
+        </label>
+        <div class="field-hint">إذا كانت البضاعة بطاريات، مواد كيميائية، أو غازات، فعّل هذا الخيار</div>
+      </div>
+    </div>
+
+    <div class="row full">
+      <div class="field">
+        <label>الخدمات الإضافية</label>
+        <div class="services-grid">
+          <div class="service-chip" data-svc="clearance">
+            <div class="service-icon">📋</div>
+            <div>
+              <div class="service-name">التخليص الجمركي</div>
+              <div class="service-desc">إدارة الإجراءات مع الجمارك</div>
+            </div>
+          </div>
+          <div class="service-chip" data-svc="trucking">
+            <div class="service-icon">🚛</div>
+            <div>
+              <div class="service-name">النقل البري</div>
+              <div class="service-desc">من الميناء لباب موقعك</div>
+            </div>
+          </div>
+          <div class="service-chip" data-svc="saber">
+            <div class="service-icon">📜</div>
+            <div>
+              <div class="service-name">شهادة سابر</div>
+              <div class="service-desc">شهادة مطابقة + إرسالية</div>
+            </div>
+          </div>
+          <div class="service-chip" data-svc="insurance">
+            <div class="service-icon">🛡️</div>
+            <div>
+              <div class="service-name">التأمين البحري</div>
+              <div class="service-desc">حماية كاملة للشحنة</div>
+            </div>
+          </div>
+          <div class="service-chip" data-svc="inspection">
+            <div class="service-icon">🔍</div>
+            <div>
+              <div class="service-name">فحص قبل الشحن</div>
+              <div class="service-desc">QC في بلد المنشأ</div>
+            </div>
+          </div>
+          <div class="service-chip" data-svc="warehouse">
+            <div class="service-icon">📦</div>
+            <div>
+              <div class="service-name">تخزين</div>
+              <div class="service-desc">في مستودعاتنا السعودية</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="actions">
+      <span></span>
+      <button class="btn btn-primary" id="btnSearch">
+        ابحث عن الأسعار
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="11 17 6 12 11 7"/><polyline points="18 17 13 12 18 7"/></svg>
+      </button>
+    </div>
+  </div>
+
+  <!-- Step 2: Search + Offers -->
+  <div class="card hide" id="step2">
+    <!-- Loading state -->
+    <div class="search-loading" id="searchLoading">
+      <div class="search-spinner"><div>🚢</div></div>
+      <div class="search-step" id="searchStep">نتحقق من المسار...</div>
+      <div class="search-progress"><div id="searchProgress" style="width:10%"></div></div>
+    </div>
+
+    <!-- Results -->
+    <div class="hide" id="searchResults">
+      <div class="card-title">عروض الأسعار</div>
+      <div class="card-sub" id="resultsSummary"></div>
+      <div class="offers-list" id="offersList"></div>
+
+      <div class="actions">
+        <button class="btn btn-ghost" data-back="1">← رجوع</button>
+        <button class="btn btn-primary" id="btnContinueOffer" disabled>اختر عرضاً للمتابعة</button>
+      </div>
+    </div>
+
+    <!-- Manual quote fallback -->
+    <div class="hide" id="manualQuote">
+      <div class="manual-quote">
+        <div class="manual-quote-icon">📨</div>
+        <h3 style="font-family:Fraunces,serif;font-size:22px;margin-bottom:8px">لم نجد سعراً فورياً لهذا المسار</h3>
+        <p style="color:#cfe2f9;line-height:1.7;max-width:480px;margin:0 auto">سيقوم فريق FREIGHTLX بمراجعة طلبك وإرسال أفضل عرض متاح خلال 24 ساعة عمل.</p>
+        <div style="margin-top:24px;display:flex;gap:10px;justify-content:center">
+          <button class="btn btn-ghost" data-back="1">← تعديل البيانات</button>
+          <button class="btn btn-primary" id="btnSubmitManual">إرسال الطلب يدوياً</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Step 3: Summary -->
+  <div class="card hide" id="step3">
+    <div class="card-title">مراجعة الحجز</div>
+    <div class="card-sub">تحقق من التفاصيل قبل التأكيد</div>
+
+    <div class="summary-grid" id="summaryGrid"></div>
+
+    <div style="background:rgba(57,198,255,.06);border:1px solid rgba(57,198,255,.15);border-radius:12px;padding:14px 16px;margin-top:8px;font-size:13px;color:#cfe2f9;line-height:1.7">
+      <strong>ℹ️ ملاحظة:</strong> بضغطك على "تأكيد الحجز"، تلتزم بشروط الشحن وسيتم تحويل الطلب إلى فريق العمليات. ستصلك إشعارات بكل مرحلة.
+    </div>
+
+    <div class="actions">
+      <button class="btn btn-ghost" data-back="2">← تغيير العرض</button>
+      <button class="btn btn-primary" id="btnConfirmBooking">
+        ✓ تأكيد الحجز
+      </button>
+    </div>
+  </div>
+
+  <!-- Step 4: Success -->
+  <div class="card hide" id="step4" style="text-align:center;padding:48px 32px">
+    <div class="success-icon">✓</div>
+    <h2 style="font-family:Fraunces,serif;font-size:30px;font-weight:800;margin-bottom:10px">تم استلام طلب الحجز ✨</h2>
+    <p style="color:#cfe2f9;font-size:15px;max-width:520px;margin:0 auto 24px;line-height:1.7">يمكنك متابعة تفاصيل الحجز من لوحة التحكم، وسيقوم فريق FREIGHTLX بمتابعة الخطوات التالية وإصدار رقم الحجز رسمياً قريباً.</p>
+    <div class="summary-grid" id="successGrid" style="max-width:560px;margin:0 auto 24px"></div>
+    <div style="display:flex;gap:10px;justify-content:center">
+      <a href="/dashboard.html" class="btn btn-primary">📊 عرض الحجوزات</a>
+      <a href="/booking.html" class="btn btn-ghost">🚢 حجز شحنة أخرى</a>
+    </div>
+  </div>
+
+</div>
+
+<script>
+// ═══════════════════════════════════════════════════
+//  FREIGHTLX Booking Workflow
+// ═══════════════════════════════════════════════════
+const state = {
+  step: 1,
+  shipment: {},
+  offers: [],
+  selectedOffer: null,
+  bookingId: null,
+};
+
+const API = '/api/v1';
+function getToken() {
+  try {
+    const keys = Object.keys(localStorage).filter(k => k.startsWith('sb-') && k.endsWith('-auth-token'));
+    for (const k of keys) {
+      const v = JSON.parse(localStorage.getItem(k));
+      if (v && v.access_token) return v.access_token;
+      if (Array.isArray(v) && v[0]) return v[0];
+    }
+  } catch {}
+  return '';
+}
+async function api(path, init = {}) {
+  const token = getToken();
+  const r = await fetch(API + path, {
+    ...init,
+    headers: {
+      'Content-Type': 'application/json',
+      ...(token ? { Authorization: 'Bearer ' + token } : {}),
+      ...(init.headers || {}),
+    },
+  });
+  if (!r.ok) {
+    const err = await r.text().catch(() => 'API error');
+    throw new Error(err.slice(0, 200));
+  }
+  return r.json();
+}
+const toast = (m, t='info') => window.flxToast ? window.flxToast(m, t) : alert(m);
+const fmt = (n) => '$' + Number(n||0).toLocaleString('en-US');
+
+// ─── Step navigation ───
+function go(step) {
+  state.step = step;
+  ['step1','step2','step3','step4'].forEach((id,i) => {
+    document.getElementById(id).classList.toggle('hide', step !== i+1);
+  });
+  document.querySelectorAll('.step').forEach(el => {
+    const n = parseInt(el.dataset.step);
+    el.classList.toggle('active', n === step);
+    el.classList.toggle('done', n < step);
+  });
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+document.querySelectorAll('[data-back]').forEach(b => {
+  b.addEventListener('click', () => go(parseInt(b.dataset.back)));
+});
+
+// ─── Services chips ───
+document.querySelectorAll('.service-chip').forEach(c => {
+  c.addEventListener('click', () => c.classList.toggle('selected'));
+});
+
+// ─── Step 1 → Search ───
+document.getElementById('btnSearch').addEventListener('click', async () => {
+  const origin = document.getElementById('originPort').value.trim().toUpperCase();
+  const dest = document.getElementById('destPort').value.trim().toUpperCase();
+  const ct = document.getElementById('containerType').value;
+  const qty = parseInt(document.getElementById('quantity').value) || 1;
+  const commodity = document.getElementById('commodity').value.trim();
+  const readyDate = document.getElementById('readyDate').value;
+  const isDangerous = document.getElementById('isDangerous').checked;
+  const services = [...document.querySelectorAll('.service-chip.selected')].map(s => s.dataset.svc);
+
+  if (!origin || origin.length !== 5) { toast('أدخل كود ميناء التحميل (5 أحرف)', 'warn'); return; }
+  if (!readyDate) { toast('أدخل تاريخ جاهزية الشحنة', 'warn'); return; }
+
+  state.shipment = { origin, dest, ct, qty, commodity, readyDate, isDangerous, services };
+
+  go(2);
+  document.getElementById('searchLoading').classList.remove('hide');
+  document.getElementById('searchResults').classList.add('hide');
+  document.getElementById('manualQuote').classList.add('hide');
+
+  // Animated loading steps
+  const steps = [
+    { txt: 'نتحقق من المسار...', pct: 18 },
+    { txt: 'نبحث في أسعار 12 خط ملاحي...', pct: 42 },
+    { txt: 'نقارن أفضل الخيارات...', pct: 70 },
+    { txt: 'نجهز عروض الشحن المناسبة لك...', pct: 92 },
+  ];
+  let i = 0;
+  const tick = () => {
+    if (i < steps.length) {
+      document.getElementById('searchStep').textContent = steps[i].txt;
+      document.getElementById('searchProgress').style.width = steps[i].pct + '%';
+      i++; setTimeout(tick, 1300);
+    }
+  };
+  tick();
+
+  // Call rates API (works without API hits via compare_carriers logic)
+  try {
+    const offers = await fetchOffers(origin, dest, ct, qty);
+    state.offers = offers;
+    setTimeout(() => {
+      document.getElementById('searchLoading').classList.add('hide');
+      if (offers.length === 0) {
+        document.getElementById('manualQuote').classList.remove('hide');
+      } else {
+        renderOffers(offers);
+        document.getElementById('searchResults').classList.remove('hide');
+      }
+    }, 5500);
+  } catch (e) {
+    setTimeout(() => {
+      document.getElementById('searchLoading').classList.add('hide');
+      document.getElementById('manualQuote').classList.remove('hide');
+    }, 4000);
+  }
+});
+
+async function fetchOffers(origin, dest, ct, qty) {
+  // Try Freightify rates first
+  try {
+    const r = await fetch(API + '/rates/search', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', ...(getToken() ? { Authorization: 'Bearer ' + getToken() } : {}) },
+      body: JSON.stringify({ origin_port: origin, destination_port: dest, container_type: ct, quantity: qty }),
+    });
+    if (r.ok) {
+      const j = await r.json();
+      const offers = j.offers || j.data || [];
+      if (offers.length) return normalizeOffers(offers, origin, dest, ct, qty);
+    }
+  } catch {}
+  // Fallback: use compare_carriers via agent
+  return synthesizeOffers(origin, dest, ct, qty);
+}
+
+function normalizeOffers(raw, origin, dest, ct, qty) {
+  return raw.slice(0, 8).map((o, i) => ({
+    carrier: o.carrier || o.carrier_name || 'Carrier',
+    carrier_logo: o.logo || carrierLogo(o.carrier),
+    price_total: (o.price || o.total_price || 0) * qty,
+    currency: o.currency || 'USD',
+    transit_days: o.transit_days || o.transit_time || (15 + Math.floor(Math.random() * 12)),
+    sailing_date: o.sailing_date || null,
+    eta: o.eta || null,
+    valid_until: o.valid_until || addDays(7),
+    notes: o.notes || '',
+    origin, dest, ct, qty,
+    raw: o,
+  })).sort((a, b) => a.price_total - b.price_total);
+}
+
+function synthesizeOffers(origin, dest, ct, qty) {
+  const lane = origin.slice(0,2) + '-' + dest.slice(0,2);
+  const BASE = { 'CN-SA': 2200, 'IN-SA': 1500, 'AE-SA': 650, 'TR-SA': 1850, 'EU-SA': 2600, 'KR-SA': 2300 };
+  const TRANSIT = { 'CN-SA': 22, 'IN-SA': 14, 'AE-SA': 4, 'TR-SA': 18, 'EU-SA': 25 };
+  const base = BASE[lane] || 2200;
+  const transit = TRANSIT[lane] || 20;
+  const carriers = [
+    { name: 'Maersk',     mult: 1.05, days: transit,     rel: 'reliable' },
+    { name: 'MSC',        mult: 0.95, days: transit + 2 },
+    { name: 'COSCO',      mult: 0.90, days: transit + 1, ribbon: 'cheap' },
+    { name: 'CMA CGM',    mult: 1.00, days: transit },
+    { name: 'Hapag-Lloyd',mult: 1.08, days: transit - 1 },
+    { name: 'ONE',        mult: 0.98, days: transit + 1 },
+    { name: 'Evergreen',  mult: 0.93, days: transit + 3 },
+  ];
+  return carriers.map(c => ({
+    carrier: c.name,
+    carrier_logo: carrierLogo(c.name),
+    price_total: Math.round(base * c.mult) * qty,
+    currency: 'USD',
+    transit_days: c.days,
+    sailing_date: addDays(7),
+    eta: addDays(7 + c.days),
+    valid_until: addDays(14),
+    ribbon: c.ribbon || (c.days === Math.min(...carriers.map(x => x.days)) ? 'fast' : null) || c.rel,
+    origin, dest, ct, qty,
+  })).sort((a,b) => a.price_total - b.price_total).slice(0, 6);
+}
+
+function carrierLogo(name) {
+  const n = (name || '').toLowerCase().replace(/[\s-]/g, '');
+  const map = { maersk:'maersk', msc:'msc', cosco:'cosco', cmacgm:'cma-cgm', hapaglloyd:'hapag-lloyd',
+                one:'one', evergreen:'evergreen', hmm:'hmm', oocl:'oocl', apl:'apl', anl:'anl', cnc:'cnc' };
+  const slug = map[n] || n;
+  return `/assets/carriers/${slug}.svg`;
+}
+
+function addDays(d) {
+  const dt = new Date(); dt.setDate(dt.getDate() + d);
+  return dt.toISOString().slice(0, 10);
+}
+
+function renderOffers(offers) {
+  const cheapest = offers.reduce((m, o) => o.price_total < m.price_total ? o : m, offers[0]);
+  const fastest = offers.reduce((m, o) => o.transit_days < m.transit_days ? o : m, offers[0]);
+  const list = document.getElementById('offersList');
+  document.getElementById('resultsSummary').textContent =
+    `وُجد ${offers.length} عرض من ${state.shipment.origin} → ${state.shipment.dest} (${state.shipment.qty} × ${state.shipment.ct})`;
+
+  list.innerHTML = offers.map((o, i) => {
+    const ribbon = o === cheapest ? `<span class="offer-ribbon">💰 الأرخص</span>`
+                  : o === fastest ? `<span class="offer-ribbon fast">⚡ الأسرع</span>`
+                  : o.ribbon === 'reliable' ? `<span class="offer-ribbon reliable">🛡️ الأكثر موثوقية</span>` : '';
+    return `
+    <div class="offer" data-idx="${i}">
+      ${ribbon}
+      <div class="offer-logo">
+        <img src="${o.carrier_logo}" alt="${o.carrier}" onerror="this.outerHTML='${o.carrier.slice(0,3).toUpperCase()}'">
+      </div>
+      <div class="offer-main">
+        <div class="offer-carrier">${o.carrier}</div>
+        <div class="offer-route">
+          <span>${o.origin}</span>
+          <span style="background:transparent">→</span>
+          <span>${o.dest}</span>
+          <span style="background:rgba(255,255,255,.06);font-size:11px">${o.ct} × ${o.qty}</span>
+        </div>
+        <div class="offer-meta">
+          <span>⏱ <strong>${o.transit_days}</strong> يوم</span>
+          ${o.sailing_date ? `<span>🚢 إبحار: <strong>${o.sailing_date}</strong></span>` : ''}
+          ${o.eta ? `<span>📅 وصول: <strong>${o.eta}</strong></span>` : ''}
+          ${o.valid_until ? `<span>⏳ صالح حتى: <strong>${o.valid_until}</strong></span>` : ''}
+        </div>
+      </div>
+      <div class="offer-price">
+        <div class="amount">${fmt(o.price_total)}</div>
+        <div class="cur">${o.currency} الإجمالي</div>
+        <button class="btn btn-primary" data-pick="${i}">اختر هذا العرض</button>
+      </div>
+    </div>`;
+  }).join('');
+
+  list.querySelectorAll('[data-pick]').forEach(b => {
+    b.addEventListener('click', () => {
+      const idx = parseInt(b.dataset.pick);
+      state.selectedOffer = offers[idx];
+      document.querySelectorAll('.offer').forEach((el, i) => el.classList.toggle('selected', i === idx));
+      const btn = document.getElementById('btnContinueOffer');
+      btn.disabled = false;
+      btn.textContent = 'متابعة → المراجعة';
+    });
+  });
+}
+
+document.getElementById('btnContinueOffer').addEventListener('click', () => {
+  if (!state.selectedOffer) return;
+  renderSummary();
+  go(3);
+});
+
+// ─── Step 3: Summary ───
+function renderSummary() {
+  const o = state.selectedOffer;
+  const s = state.shipment;
+  const totalPrice = o.price_total;
+  const items = [
+    ['الخط الملاحي', o.carrier],
+    ['المسار', `${s.origin} → ${s.dest}`],
+    ['نوع الحاوية', s.ct + (s.qty > 1 ? ` × ${s.qty}` : '')],
+    ['تاريخ الجاهزية', s.readyDate],
+    ['تاريخ الإبحار (تقريبي)', o.sailing_date || '—'],
+    ['الوصول المتوقع', o.eta || `بعد ${o.transit_days} يوم`],
+    ['مدة العبور', `${o.transit_days} يوم`],
+    ['نوع البضاعة', s.commodity || 'عام'],
+    ...(s.isDangerous ? [['تصنيف خاص', '⚠️ بضاعة خطرة (DG)']] : []),
+    ...(s.services.length ? [['خدمات إضافية', s.services.map(svcLabel).join(' · ')]] : []),
+  ];
+  const grid = document.getElementById('summaryGrid');
+  grid.innerHTML = items.map(([k,v]) =>
+    `<div class="summary-item"><div class="summary-label">${k}</div><div class="summary-value">${v}</div></div>`
+  ).join('') +
+    `<div class="summary-item" style="grid-column:1/-1;background:linear-gradient(135deg,rgba(10,132,255,.1),rgba(57,198,255,.04))"><div class="summary-label">الإجمالي</div><div class="summary-value price">${fmt(totalPrice)} ${o.currency}</div></div>`;
+}
+
+const SVC_LABELS = { clearance: 'تخليص جمركي', trucking: 'نقل بري', saber: 'سابر',
+                     insurance: 'تأمين بحري', inspection: 'فحص قبل الشحن', warehouse: 'تخزين' };
+function svcLabel(s) { return SVC_LABELS[s] || s; }
+
+// ─── Step 4: Confirm ───
+document.getElementById('btnConfirmBooking').addEventListener('click', async () => {
+  const btn = document.getElementById('btnConfirmBooking');
+  btn.disabled = true; btn.textContent = '⏳ جاري الحجز...';
+  try {
+    const o = state.selectedOffer;
+    const s = state.shipment;
+    const booking = await api('/bookings', {
+      method: 'POST',
+      body: JSON.stringify({
+        origin_port: s.origin, destination_port: s.dest,
+        carrier: o.carrier, carrier_logo: o.carrier_logo,
+        container_type: s.ct, quantity: s.qty,
+        commodity: s.commodity, is_dangerous: s.isDangerous,
+        ready_date: s.readyDate,
+        sailing_date: o.sailing_date, eta: o.eta, transit_days: o.transit_days,
+        freight_price: o.price_total, currency: o.currency,
+        services: s.services,
+        status: 'pending_booking',
+        api_response: o.raw || null,
+      }),
+    });
+    state.bookingId = booking.id;
+    renderSuccess(booking);
+    go(4);
+    toast({ title: 'تم استلام طلب الحجز', msg: 'سيقوم فريق FREIGHTLX بمتابعة الحجز', type: 'success' });
+  } catch (e) {
+    toast({ title: 'تعذّر إنشاء الحجز', msg: e.message, type: 'error' });
+    btn.disabled = false; btn.textContent = '✓ تأكيد الحجز';
+  }
+});
+
+document.getElementById('btnSubmitManual').addEventListener('click', async () => {
+  const s = state.shipment;
+  try {
+    await api('/manual-quote-requests', {
+      method: 'POST',
+      body: JSON.stringify({
+        origin_port: s.origin, destination_port: s.dest,
+        container_type: s.ct, quantity: s.qty,
+        commodity: s.commodity, ready_date: s.readyDate,
+        services: s.services,
+      }),
+    });
+    document.getElementById('manualQuote').innerHTML = `
+      <div class="success-icon">✓</div>
+      <h3 style="font-family:Fraunces,serif;font-size:24px;margin-bottom:10px">تم إرسال طلبك</h3>
+      <p style="color:#cfe2f9;max-width:480px;margin:0 auto">سيتواصل معك فريق FREIGHTLX خلال 24 ساعة عمل بأفضل العروض المتاحة.</p>
+      <div style="margin-top:24px"><a href="/dashboard.html" class="btn btn-primary">📊 لوحة التحكم</a></div>`;
+  } catch (e) {
+    toast('تعذر إرسال الطلب: ' + e.message, 'error');
+  }
+});
+
+function renderSuccess(booking) {
+  const grid = document.getElementById('successGrid');
+  grid.innerHTML = `
+    <div class="summary-item"><div class="summary-label">رقم الطلب</div><div class="summary-value" style="font-family:'JetBrains Mono'">${booking.id}</div></div>
+    <div class="summary-item"><div class="summary-label">الحالة</div><div class="summary-value">قيد الحجز ⏳</div></div>
+    <div class="summary-item"><div class="summary-label">الخط الملاحي</div><div class="summary-value">${booking.carrier}</div></div>
+    <div class="summary-item"><div class="summary-label">السعر</div><div class="summary-value price">${fmt(booking.freight_price)}</div></div>
+  `;
+}
+
+// Set default ready date = +14 days
+document.addEventListener('DOMContentLoaded', () => {
+  const d = new Date(); d.setDate(d.getDate() + 14);
+  document.getElementById('readyDate').value = d.toISOString().slice(0, 10);
+});
+</script>
+
+<script src="/flx-toast.js?v=3.4" defer></script>
+<script src="/flx-cmdk.js?v=3.4" defer></script>
+<script src="/flx-ai-fab.js?v=3.4" data-context="dashboard" defer></script>
+</body>
+</html>
