@@ -854,6 +854,179 @@ footer {
 
 /* ─── SELECTION ─── */
 ::selection { background: rgba(10, 132, 255, 0.35); color: white; }
+
+/* ═══════════════════════════════════════════════════════════
+   v5.0 LIGHT THEME OVERRIDE — Stripe-style palette
+   ═══════════════════════════════════════════════════════════ */
+:root {
+  --bg-primary: #FFFFFF;
+  --bg-soft: #F6F9FC;
+  --text-primary: #0A2540;
+  --text-secondary: #425466;
+  --text-muted: #697386;
+  --brand: #0A84FF;
+  --brand-hover: #0066CC;
+  --accent: #39C6FF;
+  --border: #E3E8EE;
+  --border-strong: #C1C9D2;
+  --shadow-sm: 0 1px 3px rgba(50,50,93,0.06), 0 1px 2px rgba(0,0,0,0.04);
+  --shadow-md: 0 4px 6px rgba(50,50,93,0.08), 0 1px 3px rgba(0,0,0,0.05);
+  --shadow-lg: 0 13px 27px -5px rgba(50,50,93,0.12), 0 8px 16px -8px rgba(0,0,0,0.07);
+  --shadow-xl: 0 30px 60px -12px rgba(50,50,93,0.16);
+}
+
+body {
+  background:
+    radial-gradient(ellipse 80% 50% at 20% 0%, rgba(10,132,255,0.04), transparent 60%),
+    radial-gradient(ellipse 60% 40% at 100% 100%, rgba(57,198,255,0.05), transparent 60%),
+    #FFFFFF !important;
+  color: #0A2540 !important;
+}
+
+/* Ambient + grid bg — soften */
+.ambient { opacity: 0.5 !important; mix-blend-mode: multiply; }
+.grid-bg {
+  background-image:
+    linear-gradient(rgba(10,132,255,0.025) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(10,132,255,0.025) 1px, transparent 1px) !important;
+  opacity: 0.7 !important;
+}
+
+/* Nav — light glass */
+nav, .nav, .navbar, header.top, .top-nav {
+  background: rgba(255,255,255,0.78) !important;
+  backdrop-filter: blur(20px) saturate(1.6) !important;
+  -webkit-backdrop-filter: blur(20px) saturate(1.6) !important;
+  border-bottom: 1px solid #E3E8EE !important;
+}
+nav a, .nav a, .navbar a { color: #425466 !important; }
+nav a:hover, .nav a:hover { color: #0A84FF !important; }
+.nav-cta, .navbar .btn { color: #FFFFFF !important; }
+
+/* Headings — deep navy text */
+h1, h2, h3, h4 { color: #0A2540 !important; }
+h1.gradient, .gradient-text, .hero-headline {
+  background: linear-gradient(135deg, #0A2540 0%, #0A84FF 60%, #39C6FF 100%) !important;
+  -webkit-background-clip: text !important;
+  -webkit-text-fill-color: transparent !important;
+  background-clip: text !important;
+}
+
+p, li, .lead, .muted, .sub { color: #425466 !important; }
+
+/* Cards & glass — pure white */
+.card, .glass, .glass-card, .feature-card,
+.ai-demo, .stat-card, .panel, .module,
+[class*="-card"] {
+  background: #FFFFFF !important;
+  border: 1px solid #E3E8EE !important;
+  box-shadow: var(--shadow-sm) !important;
+  color: #0A2540 !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+
+.card:hover, .glass:hover, .feature-card:hover {
+  box-shadow: var(--shadow-md) !important;
+  border-color: #C1C9D2 !important;
+}
+
+/* AI demo chat — light */
+.ai-demo {
+  background: #FFFFFF !important;
+  border: 1px solid #E3E8EE !important;
+  box-shadow: var(--shadow-lg) !important;
+}
+.ai-demo-head { border-bottom-color: #E3E8EE !important; }
+.ai-demo-title { color: #0A2540 !important; }
+.ai-demo-sub { color: #697386 !important; }
+.ai-demo-badge {
+  background: rgba(57,198,255,0.10) !important;
+  border-color: rgba(10,132,255,0.20) !important;
+  color: #0066CC !important;
+}
+.msg-user {
+  background: linear-gradient(135deg, #0A84FF 0%, #0066CC 100%) !important;
+  color: #FFFFFF !important;
+}
+.msg-ai {
+  background: #F6F9FC !important;
+  color: #0A2540 !important;
+  border: 1px solid #E3E8EE !important;
+}
+.ai-demo input, .ai-demo textarea {
+  background: #FFFFFF !important;
+  color: #0A2540 !important;
+  border: 1px solid #E3E8EE !important;
+}
+
+/* Buttons */
+.btn, button, .cta {
+  border-radius: 10px !important;
+  font-weight: 600 !important;
+}
+.btn-primary, .btn.primary, .cta-primary {
+  background: linear-gradient(180deg, #0A84FF 0%, #0066CC 100%) !important;
+  color: #FFFFFF !important;
+  border: 1px solid #0066CC !important;
+  box-shadow: 0 1px 2px rgba(10,132,255,0.30), inset 0 1px 0 rgba(255,255,255,0.20) !important;
+}
+.btn-primary:hover { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(10,132,255,0.32) !important; }
+.btn-secondary, .btn.secondary, .btn-outline {
+  background: #FFFFFF !important;
+  color: #0A2540 !important;
+  border: 1px solid #E3E8EE !important;
+}
+.btn-secondary:hover { background: #F6F9FC !important; border-color: #C1C9D2 !important; }
+
+/* Inputs */
+input, textarea, select {
+  background: #FFFFFF !important;
+  color: #0A2540 !important;
+  border: 1px solid #E3E8EE !important;
+}
+input:focus, textarea:focus, select:focus {
+  border-color: #0A84FF !important;
+  box-shadow: 0 0 0 4px rgba(10,132,255,0.10) !important;
+}
+input::placeholder, textarea::placeholder { color: #8898AA !important; }
+
+/* Pills / chips / status */
+.pill, .chip, .status-pill, .tag {
+  background: rgba(57,198,255,0.10) !important;
+  color: #0066CC !important;
+  border: 1px solid rgba(10,132,255,0.15) !important;
+}
+.pill.success, .tag.success { background: #E3FCEF !important; color: #00875A !important; border-color: #ABF5D1 !important; }
+.pill.warning, .tag.warning { background: #FFF8E6 !important; color: #B97309 !important; border-color: #FFE2A8 !important; }
+
+/* Stats */
+.stat-num, .stat-value, .big-number {
+  background: linear-gradient(135deg, #0A2540 0%, #0A84FF 100%) !important;
+  -webkit-background-clip: text !important;
+  -webkit-text-fill-color: transparent !important;
+  background-clip: text !important;
+}
+.stat-label { color: #697386 !important; }
+
+/* Footer */
+footer, .footer {
+  background: #F6F9FC !important;
+  color: #697386 !important;
+  border-top: 1px solid #E3E8EE !important;
+}
+footer a, .footer a { color: #425466 !important; }
+footer a:hover { color: #0A84FF !important; }
+
+/* Generic dark-to-light fixes */
+[style*="rgba(11, 42, 64"], [style*="rgba(7, 28, 44"], [style*="rgba(5, 14, 24"] {
+  background: #FFFFFF !important;
+}
+
+/* Logo on white — invert if it's a white-logo */
+img[src*="white-logo"] { filter: brightness(0) saturate(100%) invert(13%) sepia(34%) saturate(2000%) hue-rotate(193deg) brightness(96%) contrast(98%) !important; }
+
+::selection { background: rgba(10,132,255,0.20) !important; color: #0A2540 !important; }
 </style>
 </head>
 <body>
