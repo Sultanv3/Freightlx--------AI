@@ -93,6 +93,44 @@
 }
 .flx-ai-input:focus { border-color: rgba(57,198,255,.5); background: rgba(255,255,255,.09); }
 .flx-ai-input::placeholder { color: rgba(255,255,255,.4); }
+.flx-md-h2 { font-size: 14px; font-weight: 700; margin: 8px 0 4px; color: #cfe2f9; }
+.flx-md-h3 { font-size: 13px; font-weight: 700; margin: 6px 0 3px; color: #9bd9ff; }
+.flx-md-h4 { font-size: 12.5px; font-weight: 600; margin: 4px 0 2px; color: #cfe2f9; }
+.flx-md-list { margin: 4px 0 4px 0; padding-right: 18px; padding-left: 0; }
+.flx-md-list li { margin: 2px 0; line-height: 1.55; }
+.flx-md-code, pre.flx-md-code {
+  background: rgba(0,0,0,.4); border: 1px solid rgba(255,255,255,.08); border-radius: 8px;
+  padding: 8px 12px; margin: 6px 0; font: 500 12px ui-monospace, monospace;
+  color: #9bd9ff; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word;
+}
+.flx-md-inline {
+  background: rgba(57,198,255,.12); border: 1px solid rgba(57,198,255,.2); border-radius: 4px;
+  padding: 1px 6px; font: 500 12px ui-monospace, monospace; color: #39C6FF;
+}
+.flx-md-code-inline {
+  font: 600 12px ui-monospace, monospace; color: #fbbf24;
+  background: rgba(251,191,36,.08); border-radius: 4px; padding: 0 4px;
+}
+.flx-md-port {
+  background: rgba(168,85,247,.12); color: #c4b5fd;
+  border-radius: 4px; padding: 0 4px;
+  font: 600 11.5px ui-monospace, monospace;
+}
+.flx-md-num {
+  font-weight: 700; color: #34d399;
+  background: rgba(52,211,153,.08); border-radius: 4px; padding: 0 4px;
+}
+.flx-md-table {
+  border-collapse: collapse; margin: 6px 0; width: 100%; font-size: 12px;
+}
+.flx-md-table th, .flx-md-table td {
+  border: 1px solid rgba(255,255,255,.08); padding: 6px 10px; text-align: right;
+}
+.flx-md-table th { background: rgba(57,198,255,.1); color: #9bd9ff; font-weight: 700; }
+.flx-md-table tr:nth-child(even) { background: rgba(255,255,255,.02); }
+strong { color: #fff; font-weight: 700; }
+em { color: #cfe2f9; font-style: italic; }
+
 .flx-ai-send, .flx-ai-mic {
   background: linear-gradient(135deg,#0A84FF,#39C6FF); border: none; border-radius: 12px;
   padding: 0 16px; color: #fff; cursor: pointer; font-weight: 600; font-size: 13px;
@@ -198,9 +236,10 @@
       for (const a of acts) {
         body.appendChild(html(`<div class="flx-ai-msg action">✓ ${a.tool || a.name || 'action'}</div>`));
       }
-      // Render reply
+      // Render reply with markdown
       const reply = j.reply || j.error || 'لم أحصل على رد. حاول مرة ثانية.';
-      body.appendChild(html(`<div class="flx-ai-msg bot">${escapeHtml(reply)}</div>`));
+      const md = renderMarkdown(reply);
+      body.appendChild(html(`<div class="flx-ai-msg bot">${md}</div>`));
       history.push({ role: 'user', content: prompt });
       history.push({ role: 'assistant', content: reply });
       if (history.length > 12) history.splice(0, history.length - 12);
@@ -215,6 +254,64 @@
 
   function escapeHtml(s) {
     return String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  }
+
+  /** Minimal markdown renderer — safe (escapes first, then re-inserts allowed tags). */
+  function renderMarkdown(s) {
+    let t = escapeHtml(s);
+    // Code blocks ```lang\ncode``` (do these first to avoid inner replacements)
+    t = t.replace(/```([\s\S]*?)```/g, (_, code) => `<pre class="flx-md-code">${code.replace(/^\n+|\n+$/g, '')}</pre>`);
+    // Inline code `x` (using a placeholder marker to avoid re-replacement)
+    t = t.replace(/`([^`]+?)`/g, '<code class="flx-md-inline">$1</code>');
+    // Tables (simple): | a | b |\n|---|---|\n| 1 | 2 |
+    t = t.replace(/((?:^\|[^\n]+\|\n)+)/gm, (m) => {
+      const rows = m.trim().split('\n').filter(Boolean);
+      if (rows.length < 2) return m;
+      const headers = rows[0].split('|').slice(1, -1).map(c => c.trim());
+      const aligns = rows[1].split('|').slice(1, -1);
+      const isHeaderRow = aligns.every(c => /^[: ]*-+[: ]*$/.test(c.trim()));
+      const dataStart = isHeaderRow ? 2 : 1;
+      const data = rows.slice(dataStart).map(r => r.split('|').slice(1, -1).map(c => c.trim()));
+      let html = '<table class="flx-md-table"><thead><tr>';
+      for (const h of headers) html += `<th>${h}</th>`;
+      html += '</tr></thead><tbody>';
+      for (const row of data) {
+        html += '<tr>';
+        for (const c of row) html += `<td>${c}</td>`;
+        html += '</tr>';
+      }
+      html += '</tbody></table>';
+      return html;
+    });
+    // Headings
+    t = t.replace(/^####\s+(.+)$/gm, '<h4 class="flx-md-h4">$1</h4>');
+    t = t.replace(/^###\s+(.+)$/gm, '<h3 class="flx-md-h3">$1</h3>');
+    t = t.replace(/^##\s+(.+)$/gm, '<h2 class="flx-md-h2">$1</h2>');
+    // Bold + italic
+    t = t.replace(/\*\*([^*]+?)\*\*/g, '<strong>$1</strong>');
+    t = t.replace(/(^|\s)\*([^*\n]+?)\*/g, '$1<em>$2</em>');
+    // Lists (- or * at line start)
+    t = t.replace(/(?:^|\n)((?:[\-\*]\s+.+\n?)+)/g, (_, block) => {
+      const items = block.trim().split(/\n/).map(l => l.replace(/^[\-\*]\s+/, '').trim()).filter(Boolean);
+      return '\n<ul class="flx-md-list">' + items.map(i => `<li>${i}</li>`).join('') + '</ul>';
+    });
+    // Numbered lists
+    t = t.replace(/(?:^|\n)((?:\d+\.\s+.+\n?)+)/g, (_, block) => {
+      const items = block.trim().split(/\n/).map(l => l.replace(/^\d+\.\s+/, '').trim()).filter(Boolean);
+      return '\n<ol class="flx-md-list">' + items.map(i => `<li>${i}</li>`).join('') + '</ol>';
+    });
+    // Currency/numbers highlight: $XXX, NNN ﷼, NN%
+    t = t.replace(/(\$[\d,]+(?:\.\d+)?|\b[\d,]+\s*﷼|\b\d+(?:\.\d+)?%)/g, '<span class="flx-md-num">$1</span>');
+    // HS codes (8-12 digit)
+    t = t.replace(/\b(\d{8,12})\b/g, '<span class="flx-md-code-inline">$1</span>');
+    // Port codes (5 uppercase letters)
+    t = t.replace(/\b([A-Z]{5})\b/g, '<span class="flx-md-port">$1</span>');
+    // Line breaks
+    t = t.replace(/\n/g, '<br>');
+    // Cleanup empty <br>s near block elements
+    t = t.replace(/<br>\s*(<(?:ul|ol|table|h\d|pre))/g, '$1');
+    t = t.replace(/(<\/(?:ul|ol|table|h\d|pre)>)\s*<br>/g, '$1');
+    return t;
   }
 
   function getToken() {
