@@ -105,26 +105,45 @@
     t._h = setTimeout(() => { t.style.transform = 'translateX(120%)'; }, 4000);
   }
 
+  // ───── User cache for displaying names in tables ──────
+  let _userCache = null;
+  async function loadUserMap() {
+    try {
+      const j = await api('/admin/users');
+      const arr = j.data || j.users || [];
+      _userCache = Object.fromEntries(arr.map(u => [u.id, u]));
+      return _userCache;
+    } catch { _userCache = {}; return _userCache; }
+  }
+
   // ───── Loaders ───────────────────────────────────────────
   async function loadOverview() {
     try {
       const stats = await api('/admin/stats').catch(() => null);
-      if (stats?.data) {
-        const d = stats.data;
+      if (stats) {
+        // Backend returns: { totalRevenue, totalUsers, activeShipments, pendingInvoices, totalShipments, totalInvoices, totalQuotes, totalRateRequests }
         const set = (id, v) => { const el = $('#' + id); if (el) el.textContent = v; };
-        set('admRevenue', fmt.money(d.revenue || 0));
-        set('admUsers', d.users || 0);
-        set('admActiveShipments', d.active_shipments || 0);
-        set('admPendingInvoices', d.pending_invoices || 0);
+        set('admRevenue', fmt.money(stats.totalRevenue || stats.revenue || 0));
+        set('admUsers', stats.totalUsers || stats.users || 0);
+        set('admActiveShipments', stats.activeShipments || stats.active_shipments || 0);
+        set('admPendingInvoices', stats.pendingInvoices || stats.pending_invoices || 0);
+        // Extra: rate requests count
+        const rrEl = $('#admRateRequests');
+        if (rrEl) rrEl.textContent = stats.totalRateRequests || 0;
       }
       const act = await api('/admin/recent-activity').catch(() => null);
       const box = $('#admRecentActivity');
-      if (box && act?.data) {
-        box.innerHTML = (act.data || []).slice(0, 12).map(a => `
-          <div style="padding:10px 0;border-bottom:1px solid rgba(255,255,255,.06);display:flex;justify-content:space-between;gap:12px">
-            <span>${escapeHtml(a.action || a.title || a.message || 'نشاط')}</span>
-            <span style="color:#94a3b8;font-size:12px">${fmt.time(a.created_at || a.timestamp)}</span>
-          </div>`).join('') || '<div style="padding:20px;color:#94a3b8">لا توجد أنشطة حديثة</div>';
+      const events = act?.events || act?.data || [];
+      if (box) {
+        const icons = { shipment: '📦', invoice: '💰', rate_request: '🔍', user_signup: '👤' };
+        box.innerHTML = events.length ? events.slice(0, 12).map(e => `
+          <div style="padding:10px 0;border-bottom:1px solid rgba(255,255,255,.06);display:flex;justify-content:space-between;gap:12px;align-items:center">
+            <span style="display:flex;align-items:center;gap:8px">
+              <span style="font-size:16px">${icons[e.type] || '•'}</span>
+              <span>${escapeHtml(e.label || e.action || e.message || 'نشاط')}</span>
+            </span>
+            <span style="color:#94a3b8;font-size:12px;flex-shrink:0">${fmt.time(e.timestamp || e.created_at)}</span>
+          </div>`).join('') : '<div style="padding:20px;color:#94a3b8;text-align:center">لا توجد أنشطة حديثة</div>';
       }
     } catch (e) { console.warn('[adm] overview:', e.message); }
   }
@@ -172,20 +191,27 @@
         tb.innerHTML = '<tr><td colspan="8" style="padding:24px;text-align:center;color:#94a3b8">لا توجد شحنات</td></tr>';
         return;
       }
-      tb.innerHTML = list.map(s => `
+      // Build user lookup map (try to fetch profiles once for admin view)
+      const userMap = _userCache || await loadUserMap();
+      tb.innerHTML = list.map(s => {
+        const u = userMap[s.user_id] || {};
+        const userLabel = u.email || u.full_name || (s.user_id?.slice(0, 8) || '—');
+        return `
         <tr data-sid="${s.id}">
-          <td><code style="font-size:11px">${s.id?.slice(0, 8) || '—'}</code></td>
+          <td><code style="font-size:11px">${escapeHtml(s.id || '—')}</code></td>
+          <td title="${escapeHtml(userLabel)}" style="font-size:12px">${escapeHtml(userLabel)}</td>
           <td>${escapeHtml(s.origin || s.from || '—')} → ${escapeHtml(s.destination || s.to || '—')}</td>
           <td>${escapeHtml(s.carrier || '—')}</td>
-          <td>${escapeHtml(s.container_type || s.container || '—')}</td>
+          <td><code style="font-size:11px;background:rgba(255,255,255,.05);padding:2px 6px;border-radius:4px">${escapeHtml(s.container || s.container_type || '—')}</code></td>
           <td>${statusBadge(s.status)}</td>
-          <td>${fmt.money(s.total || s.price || 0)}</td>
-          <td style="color:#94a3b8;font-size:12px">${fmt.date(s.created_at)}</td>
+          <td>${fmt.money(s.price || s.total || 0)}</td>
+          <td style="color:#94a3b8;font-size:12px">${fmt.date(s.date || s.created_at)}</td>
           <td>
-            <button class="admin-btn admin-btn-ghost" data-act="edit-shipment" data-id="${s.id}" style="padding:4px 10px;font-size:11px">تعديل الحالة</button>
+            <button class="admin-btn admin-btn-ghost" data-act="edit-shipment" data-id="${s.id}" style="padding:4px 10px;font-size:11px">تعديل</button>
             <button class="admin-btn admin-btn-ghost" data-act="track" data-id="${s.id}" style="padding:4px 10px;font-size:11px">تتبع</button>
           </td>
-        </tr>`).join('');
+        </tr>`;
+      }).join('');
     } catch (e) {
       tb.innerHTML = `<tr><td colspan="8" style="padding:20px;text-align:center;color:#ef4444">خطأ: ${e.message}</td></tr>`;
     }
@@ -201,10 +227,15 @@
         tb.innerHTML = '<tr><td colspan="6" style="padding:24px;text-align:center;color:#94a3b8">لا توجد فواتير</td></tr>';
         return;
       }
-      tb.innerHTML = list.map(i => `
+      const userMap = _userCache || await loadUserMap();
+      tb.innerHTML = list.map(i => {
+        const u = userMap[i.user_id] || {};
+        const userLabel = u.email || u.full_name || (i.user_id?.slice(0, 8) || '—');
+        return `
         <tr data-iid="${i.id}">
-          <td><code style="font-size:11px">${i.invoice_number || i.id?.slice(0, 8) || '—'}</code></td>
-          <td>${escapeHtml(i.customer_name || i.user_email || '—')}</td>
+          <td><code style="font-size:11px">${escapeHtml(i.id || '—')}</code></td>
+          <td title="${escapeHtml(userLabel)}" style="font-size:12px">${escapeHtml(userLabel)}</td>
+          <td>${escapeHtml(i.description || '—')}</td>
           <td><strong>${fmt.money(i.amount || i.total || 0)}</strong></td>
           <td>${statusBadge(i.status)}</td>
           <td style="color:#94a3b8;font-size:12px">${fmt.date(i.created_at)}</td>
@@ -212,7 +243,8 @@
             ${i.status === 'pending' ? `<button class="admin-btn admin-btn-success" data-act="mark-paid" data-id="${i.id}" style="padding:4px 10px;font-size:11px">تأشير كمدفوعة</button>` : ''}
             <button class="admin-btn admin-btn-ghost" data-act="view-invoice" data-id="${i.id}" style="padding:4px 10px;font-size:11px">عرض</button>
           </td>
-        </tr>`).join('');
+        </tr>`;
+      }).join('');
     } catch (e) {
       tb.innerHTML = `<tr><td colspan="6" style="padding:20px;text-align:center;color:#ef4444">خطأ: ${e.message}</td></tr>`;
     }
@@ -228,15 +260,21 @@
         tb.innerHTML = '<tr><td colspan="6" style="padding:24px;text-align:center;color:#94a3b8">لا توجد عروض</td></tr>';
         return;
       }
-      tb.innerHTML = list.map(q => `
+      const userMap = _userCache || await loadUserMap();
+      tb.innerHTML = list.map(q => {
+        const u = userMap[q.user_id] || {};
+        const userLabel = u.email || u.full_name || (q.user_id?.slice(0, 8) || '—');
+        return `
         <tr data-qid="${q.id}">
-          <td><code style="font-size:11px">${q.id?.slice(0, 8) || '—'}</code></td>
-          <td>${escapeHtml(q.origin_port || '—')} → ${escapeHtml(q.destination_port || '—')}</td>
+          <td><code style="font-size:11px">${escapeHtml(q.id || '—')}</code></td>
+          <td title="${escapeHtml(userLabel)}" style="font-size:12px">${escapeHtml(userLabel)}</td>
+          <td>${escapeHtml(q.origin || q.origin_port || '—')} → ${escapeHtml(q.destination || q.destination_port || '—')}</td>
           <td>${escapeHtml(q.carrier || '—')}</td>
-          <td><strong>${fmt.money(q.total || q.price || 0)}</strong></td>
+          <td><strong>${fmt.money(q.price || q.total || 0)}</strong></td>
           <td>${statusBadge(q.status)}</td>
           <td style="color:#94a3b8;font-size:12px">${fmt.date(q.valid_until || q.created_at)}</td>
-        </tr>`).join('');
+        </tr>`;
+      }).join('');
     } catch (e) {
       tb.innerHTML = `<tr><td colspan="6" style="padding:20px;text-align:center;color:#ef4444">خطأ: ${e.message}</td></tr>`;
     }
