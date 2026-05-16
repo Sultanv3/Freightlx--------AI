@@ -950,7 +950,7 @@ async function webHandler(req) {
         }
         return json({ shipment: s, events, total: events.length });
       }
-      // ── POST /shipments/{id}/status — update status with notification ──
+      // ── POST /shipments/{id}/status — update status (admin can update any) ──
       if (req.method === 'POST' && segments[1] && segments[2] === 'status') {
         const body = await req.json();
         const newStatus = body.status;
@@ -963,12 +963,34 @@ async function webHandler(req) {
           status_text: body.status_text || statusTexts[newStatus] || newStatus,
         };
         if (newStatus === 'delivered') patch.delivered_at = new Date().toISOString();
-        const [s] = await sb(`/shipments?id=eq.${segments[1]}&user_id=eq.${user.id}`, { method: 'PATCH', body: patch });
+
+        // Admin can update any shipment; customer only own
+        const all = await isAdmin();
+        const filter = all
+          ? `/shipments?id=eq.${segments[1]}`
+          : `/shipments?id=eq.${segments[1]}&user_id=eq.${user.id}`;
+        const [s] = await sb(filter, { method: 'PATCH', body: patch });
         if (!s) return json({ error: { code: 'NOT_FOUND' } }, 404);
+
+        // Notify the actual shipment OWNER (not the requesting admin)
+        const ownerId = s.user_id;
+        const noteText = body.note ? ` — ${body.note}` : '';
         await sb('/notifications', { method: 'POST', body: [{
-          user_id: user.id, type: 'info',
-          text: `الشحنة <strong>${s.id}</strong> الآن: ${patch.status_text}`,
+          user_id: ownerId, type: 'info',
+          text: `📦 الشحنة <strong>${s.id}</strong>: ${patch.status_text}${noteText}`,
         }], prefer: 'return=minimal' });
+
+        // Log event for tracking
+        try {
+          await sb('/shipment_events', { method: 'POST', body: [{
+            shipment_id: s.id,
+            status: newStatus,
+            label: patch.status_text,
+            note: body.note || null,
+            event_at: new Date().toISOString(),
+          }], prefer: 'return=minimal' });
+        } catch {}
+
         return json(s);
       }
     }
