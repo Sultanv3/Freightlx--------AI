@@ -829,6 +829,9 @@ form.addEventListener('submit', async (e) => {
     const ms = Date.now() - t0;
     const reqId = data.freightify_req_id;
     const inProgress = data.in_progress;
+    // Track if initial offers came from the lane-matrix recovery path,
+    // so the poller can confidently replace them with real Freightify offers.
+    let isSynthSource = data.source === 'synth_lane_matrix';
 
     // CASE A: No offers AND no reqId → genuinely no rates for this route
     if (allOffers.length === 0 && !reqId) {
@@ -871,8 +874,12 @@ form.addEventListener('submit', async (e) => {
           if (!pr.ok) return;
           const pd = await pr.json();
           const newOffers = pd.offers || [];
-          if (newOffers.length > allOffers.length) {
+          // Replace if: (a) we have more offers than before, OR
+          // (b) we're currently showing synth offers and any real Freightify offers arrived.
+          const realArrived = isSynthSource && newOffers.length > 0;
+          if (newOffers.length > allOffers.length || realArrived) {
             allOffers = newOffers;
+            if (realArrived) isSynthSource = false;
             renderOffers();
             if (document.getElementById('resultsCard').style.display === 'none') {
               document.getElementById('resultsCard').style.display = 'block';
