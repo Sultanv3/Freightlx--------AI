@@ -168,6 +168,43 @@ const TOOLS = [
       },
     },
   },
+  {
+    name: 'lookup_port',
+    description: 'يبحث في قاعدة 323 ميناء عالمي معتمد (UN/LOCODE). يعطي الكود الرسمي، البلد، المنطقة، والـ Tier. استخدمه عندما المستخدم يذكر اسم ميناء ويحتاج الكود الرسمي، أو يسأل عن موانئ في بلد/منطقة معينة.',
+    parameters: {
+      type: 'object',
+      properties: {
+        q: { type: 'string', description: 'اسم الميناء بالعربية أو الإنجليزية (مثل شنغهاي/Shanghai)' },
+        code: { type: 'string', description: 'كود UN/LOCODE المكون من 5 أحرف (مثل CNSHA)' },
+        country: { type: 'string', description: 'فلتر حسب البلد' },
+        region: { type: 'string', description: 'East Asia, Southeast Asia, South Asia, Middle East, Europe, North America, Africa, Oceania' },
+      },
+    },
+  },
+  {
+    name: 'calculate_demurrage',
+    description: 'يحسب رسوم الديموراج والديتنشن للحاويات المتأخرة في الميناء السعودي. الديموراج رسوم الميناء، الديتنشن رسوم الخط الملاحي. استخدمه عند سؤال المستخدم عن تكلفة تأخر شحنة في الميناء.',
+    parameters: {
+      type: 'object',
+      properties: {
+        days_late: { type: 'number', description: 'عدد أيام التأخر بعد الإعفاء' },
+        container_type: { type: 'string', enum: ['20GP', '40GP', '40HC', '20RF', '40RF'], description: 'نوع الحاوية' },
+        port: { type: 'string', description: 'كود الميناء (SAJED, SADMM)', default: 'SAJED' },
+        carrier: { type: 'string', description: 'الخط الملاحي (للديتنشن)' },
+      },
+      required: ['days_late', 'container_type'],
+    },
+  },
+  {
+    name: 'get_admin_stats',
+    description: 'للأدمن فقط: يجلب إحصائيات شاملة عن المنصة (إيرادات، عدد عملاء، شحنات نشطة، فواتير معلقة، نشاطات حديثة). استخدمه عندما الأدمن يسأل عن أداء الأعمال أو يحتاج لقطة سريعة.',
+    parameters: {
+      type: 'object',
+      properties: {
+        include_activity: { type: 'boolean', description: 'هل يشمل النشاطات الحديثة', default: true },
+      },
+    },
+  },
 ];
 
 // Format tools for Gemini API
@@ -1235,6 +1272,95 @@ async function execTool(name, args, ctx) {
       return { count: results.length, results };
     } catch (e) {
       return { error: `lookup_hs_code error: ${e.message}` };
+    }
+  }
+
+  if (name === 'lookup_port') {
+    try {
+      const qs = [];
+      if (args && args.q)       qs.push('q=' + encodeURIComponent(args.q));
+      if (args && args.code)    qs.push('code=' + encodeURIComponent(args.code));
+      if (args && args.country) qs.push('country=' + encodeURIComponent(args.country));
+      if (args && args.region)  qs.push('region=' + encodeURIComponent(args.region));
+      qs.push('limit=10');
+      const r = await fetch(`${base}/api/ports?${qs.join('&')}`);
+      if (!r.ok) return { error: `Port lookup failed: ${r.status}` };
+      const j = await r.json();
+      return { count: (j.results || []).length, results: j.results || [] };
+    } catch (e) {
+      return { error: `lookup_port error: ${e.message}` };
+    }
+  }
+
+  if (name === 'calculate_demurrage') {
+    const days = Math.max(0, Number(args?.days_late || 0));
+    const ct = (args?.container_type || '20GP').toUpperCase();
+    const port = (args?.port || 'SAJED').toUpperCase();
+    // FREIGHTLX-tested rates (USD per day, post free period)
+    const PORT_FEES = {
+      SAJED: { '20GP': 25, '40GP': 50, '40HC': 50, '20RF': 95, '40RF': 175 },
+      SADMM: { '20GP': 30, '40GP': 55, '40HC': 55, '20RF': 100, '40RF': 180 },
+      SAJUB: { '20GP': 28, '40GP': 52, '40HC': 52, '20RF': 97, '40RF': 177 },
+      SAYNB: { '20GP': 28, '40GP': 52, '40HC': 52, '20RF': 97, '40RF': 177 },
+    };
+    const DETENTION = {
+      Maersk:   { '20GP': 75, '40GP': 150, '40HC': 150 },
+      MSC:      { '20GP': 70, '40GP': 140, '40HC': 140 },
+      COSCO:    { '20GP': 65, '40GP': 130, '40HC': 130 },
+      CMACGM:   { '20GP': 75, '40GP': 150, '40HC': 150 },
+      HapagLloyd: { '20GP': 80, '40GP': 160, '40HC': 160 },
+      ONE:      { '20GP': 70, '40GP': 140, '40HC': 140 },
+      default:  { '20GP': 70, '40GP': 140, '40HC': 140 },
+    };
+    const freeDays = ct.endsWith('RF') ? 3 : 7;  // reefers get shorter free
+    const billableDays = Math.max(0, days - freeDays);
+    const portRate = (PORT_FEES[port] || PORT_FEES.SAJED)[ct] || 50;
+    const carrierKey = (args?.carrier || '').replace(/[\s-]/g, '');
+    const detentionRate = (DETENTION[carrierKey] || DETENTION.default)[ct] || 100;
+
+    const demurrage = portRate * billableDays;
+    const detention = detentionRate * billableDays;
+
+    return {
+      input: { days_late: days, container_type: ct, port, carrier: args?.carrier || 'غير محدد' },
+      free_days: freeDays,
+      billable_days: billableDays,
+      port_demurrage_per_day_usd: portRate,
+      carrier_detention_per_day_usd: detentionRate,
+      total_demurrage_usd: demurrage,
+      total_detention_usd: detention,
+      grand_total_usd: demurrage + detention,
+      grand_total_sar: Math.round((demurrage + detention) * 3.75),
+      note: billableDays === 0
+        ? `لا توجد رسوم — الشحنة ضمن فترة الإعفاء (${freeDays} أيام)`
+        : `إجمالي ${billableDays} يوم × ($${portRate} ميناء + $${detentionRate} خط) = $${demurrage + detention} (~${Math.round((demurrage + detention) * 3.75)} ﷼)`,
+    };
+  }
+
+  if (name === 'get_admin_stats') {
+    if (!authToken) return { error: 'يحتاج تسجيل دخول كأدمن' };
+    try {
+      const [stats, activity] = await Promise.all([
+        fetch(`${base}/api/v1/admin/stats`, { headers: H }).then(r => r.ok ? r.json() : null).catch(() => null),
+        args?.include_activity !== false
+          ? fetch(`${base}/api/v1/admin/recent-activity`, { headers: H }).then(r => r.ok ? r.json() : null).catch(() => null)
+          : null,
+      ]);
+      const data = stats?.data || stats || {};
+      return {
+        stats: {
+          total_revenue_usd: data.revenue || 0,
+          total_users: data.users || 0,
+          active_shipments: data.active_shipments || 0,
+          pending_invoices: data.pending_invoices || 0,
+          new_signups_30d: data.new_signups_30d || 0,
+          monthly_revenue: data.monthly_revenue || 0,
+        },
+        recent_activity: activity?.data ? activity.data.slice(0, 10) : [],
+        timestamp: new Date().toISOString(),
+      };
+    } catch (e) {
+      return { error: `admin_stats error: ${e.message}` };
     }
   }
 
