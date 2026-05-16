@@ -1531,12 +1531,18 @@ function renderToolResult(tool, result) {
 
   if (tool === 'calculate_demurrage') {
     if (result.error) return 'خطأ في الحساب: ' + result.error;
-    const demur = result.total_demurrage_usd ?? result.demurrage_usd ?? 0;
-    const deten = result.total_detention_usd ?? result.detention_usd ?? 0;
-    const total = result.total_usd ?? (demur + deten);
-    const days = result.days_late ?? '?';
-    const ct = result.container_type ?? '?';
-    return `**حساب الديموراج والديتنشن:**\n\n• الحاوية: \`${ct}\` · أيام التأخر: ${days}\n• الديموراج (الميناء): **$${Number(demur).toLocaleString()}**\n• الديتنشن (الخط الملاحي): **$${Number(deten).toLocaleString()}**\n• **الإجمالي: $${Number(total).toLocaleString()}**`;
+    // Tool returns input fields nested under "input"
+    const inp = result.input || {};
+    const demur = result.total_demurrage_usd ?? 0;
+    const deten = result.total_detention_usd ?? 0;
+    const total = result.grand_total_usd ?? (demur + deten);
+    const totalSar = result.grand_total_sar ?? Math.round(total * 3.75);
+    const days = inp.days_late ?? '?';
+    const ct = inp.container_type ?? '?';
+    const port = inp.port ?? 'SAJED';
+    const billable = result.billable_days ?? days;
+    const freeDays = result.free_days ?? 7;
+    return `**حساب الديموراج والديتنشن:**\n\n📦 الحاوية: \`${ct}\` · الميناء: \`${port}\`\n⏱ أيام التأخر: **${days}** · أيام الإعفاء: ${freeDays} · أيام محتسبة: **${billable}**\n\n• الديموراج (الميناء): **$${Number(demur).toLocaleString()}**\n• الديتنشن (الخط الملاحي): **$${Number(deten).toLocaleString()}**\n• **الإجمالي: $${Number(total).toLocaleString()}** (~${Number(totalSar).toLocaleString()} ﷼)\n\n${result.note || ''}`;
   }
 
   return 'تم التنفيذ. النتائج:\n```json\n' + JSON.stringify(result, null, 2).slice(0, 800) + '\n```';
@@ -1568,7 +1574,59 @@ const AR_PORT_ALIASES = {
   'كوريا': 'Busan', 'كوريا الجنوبية': 'Busan',
   'المانيا': 'Hamburg', 'ألمانيا': 'Hamburg',
   'هولندا': 'Rotterdam',
+  // Saudi Arabia (destination default → Jeddah, the main entry port)
+  'السعودية': 'Jeddah', 'سعودية': 'Jeddah',
+  'المملكة': 'Jeddah', 'مملكة': 'Jeddah',
+  'KSA': 'Jeddah', 'ksa': 'Jeddah',
 };
+
+// ─── Quick rate estimate (works without auth) ───────────────────────────
+// Returns realistic lane-aware estimates from a built-in matrix. Used when
+// the user isn't logged in but asks for a rate via the AI.
+function quickRateEstimate(originCode, destCode, containerType = '40HC') {
+  const LANES = {
+    // KEY: origin country prefix - destination country prefix
+    'CN-SA': { base40HC: 2750, transit: 28, carriers: ['MSC', 'COSCO', 'Maersk', 'CMA CGM', 'ONE'] },
+    'IN-SA': { base40HC: 1180, transit: 14, carriers: ['MSC', 'Maersk', 'CMA CGM', 'OOCL'] },
+    'AE-SA': { base40HC: 420,  transit: 4,  carriers: ['Maersk', 'MSC', 'Hapag-Lloyd'] },
+    'TR-SA': { base40HC: 1920, transit: 16, carriers: ['MSC', 'CMA CGM', 'Maersk'] },
+    'DE-SA': { base40HC: 3150, transit: 23, carriers: ['Hapag-Lloyd', 'MSC', 'Maersk'] },
+    'NL-SA': { base40HC: 2980, transit: 22, carriers: ['Maersk', 'MSC', 'ONE'] },
+    'KR-SA': { base40HC: 2890, transit: 32, carriers: ['HMM', 'ONE', 'COSCO'] },
+    'JP-SA': { base40HC: 3050, transit: 34, carriers: ['ONE', 'Maersk', 'MSC'] },
+    'US-SA': { base40HC: 4280, transit: 38, carriers: ['Maersk', 'MSC', 'Hapag-Lloyd'] },
+    'IT-SA': { base40HC: 2150, transit: 18, carriers: ['MSC', 'Maersk', 'CMA CGM'] },
+    'default': { base40HC: 2500, transit: 25, carriers: ['MSC', 'Maersk', 'CMA CGM'] },
+  };
+  const ctMul = { '20GP': 0.52, '20HC': 0.56, '40GP': 0.97, '40HC': 1.0, '40RF': 1.53, '45HC': 1.07 };
+
+  const oc = String(originCode).slice(0, 2).toUpperCase();
+  const dc = String(destCode).slice(0, 2).toUpperCase();
+  const lane = LANES[`${oc}-${dc}`] || LANES.default;
+  const ct = String(containerType).toUpperCase();
+  const mul = ctMul[ct] ?? 1.0;
+
+  const today = new Date();
+  const offers = lane.carriers.map((carrier, i) => {
+    const variance = (i * 73) % 200 - 100; // ±100 USD deterministic spread
+    const price = Math.round(lane.base40HC * mul + variance);
+    const transit = lane.transit + ((i % 5) - 2);
+    return {
+      carrier_name: carrier,
+      price,
+      currency: 'USD',
+      transit_days: transit,
+      container_type: ct,
+      etd: new Date(today.getTime() + (3 + i) * 86400000).toISOString().slice(0, 10),
+      eta: new Date(today.getTime() + (3 + i + transit) * 86400000).toISOString().slice(0, 10),
+      service_type: i % 3 === 0 ? 'Direct' : 'T/S Jebel Ali',
+      free_days: 10 + (i % 5),
+      validity_until: new Date(today.getTime() + 14 * 86400000).toISOString().slice(0, 10),
+    };
+  }).sort((a, b) => a.price - b.price);
+
+  return { offers, source: 'synth_estimate', lane: `${oc}-${dc}` };
+}
 
 // ─── Intent-based fallback (works without Gemini) ───────────────────────
 // Routes the user message to the right tool via keyword detection.
@@ -1682,11 +1740,22 @@ async function intentFallback(message, ctx, reason) {
         if (oCode && dCode) {
           const ct = extractContainer();
           const args = { originPort: oCode, destinationPort: dCode, containerType: ct };
+          // First try the live (authenticated) rate search
           const result = await execTool('search_freight_rates', args, ctx);
           actions.push({ tool: 'search_freight_rates', args, result });
-          if (!result.error) {
-            return { reply: renderToolResult('search_freight_rates', result), actions, steps: 0, fallback_used: 'intent_rates' };
+          if (!result.error && (result.offers || []).length > 0) {
+            return { reply: renderToolResult('search_freight_rates', result), actions, steps: 0, fallback_used: 'intent_rates_live' };
           }
+          // Fallback: use the built-in lane matrix (no auth required)
+          const estimate = quickRateEstimate(oCode, dCode, ct);
+          actions.push({ tool: 'quick_rate_estimate', args, result: estimate });
+          const lines = estimate.offers.slice(0, 5).map(o =>
+            `• **${o.carrier_name}** — $${o.price.toLocaleString()} · ${o.transit_days} يوم · ${o.service_type} · ${o.free_days} free days`
+          ).join('\n');
+          return {
+            reply: `📊 **تقدير أسعار الشحن** (${oCode} → ${dCode}, ${ct}):\n\n${lines}\n\n_هذه تقديرات استرشادية. سجّل دخولك للحصول على أسعار حية من 12 خط ملاحي._`,
+            actions, steps: 0, fallback_used: 'intent_rates_estimate',
+          };
         }
       } catch {}
     }
