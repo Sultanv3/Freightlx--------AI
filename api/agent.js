@@ -1891,6 +1891,134 @@ const SECTOR_GUIDES = {
   },
 };
 
+// ═══════════════════════════════════════════════════════════
+// CONTEXTUAL ACTION CARDS — بطاقات اقتراح للخطوة التالية
+// كل intent له 2-3 بطاقات اقتراحية للسؤال التالي المنطقي
+// ═══════════════════════════════════════════════════════════
+function getActionCards(intent, lastReply = '') {
+  const C = (icon, label, ask) => ({ icon, label, ask });
+
+  // After getting RATES → suggest customs + booking + comparison
+  if (intent === 'intent_rates_live' || intent === 'intent_rates_estimate' || intent === 'intent_rates_authed') {
+    return [
+      C('🧮', 'احسب الجمارك', 'احسب التكلفة الكاملة لاستيراد 40HC قيمتها 80000 ريال'),
+      C('📜', 'الشهادات', 'وش شهادات سابر اللي احتاجها'),
+      C('⚓', 'قارن الخطوط', 'قارن Maersk و MSC'),
+    ];
+  }
+  // After CUSTOMS calculation → suggest port + booking + saber
+  if (intent === 'intent_customs' || intent === 'intent_customs_formula') {
+    return [
+      C('🚢', 'ابحث عن سعر شحن', 'سعر شحن 40HC من شنغهاي لجدة'),
+      C('📜', 'شهادات سابر', 'وش شهادات سابر اللي احتاجها'),
+      C('💰', 'التكلفة الكاملة', 'احسب التكلفة الكاملة لاستيراد 40HC قيمتها 80000 ريال'),
+    ];
+  }
+  // After PORT lookup → suggest rates with that port + adjacent ports
+  if (intent === 'intent_port' || intent === 'intent_port_incomplete') {
+    return [
+      C('💰', 'سعر شحن لهذا الميناء', 'سعر شحن 40HC من شنغهاي لجدة'),
+      C('🛣', 'المسارات الشائعة', 'وش أكثر المسارات استخداماً للمستوردين'),
+      C('📍', 'تتبع شحنة', 'تتبع شحنة'),
+    ];
+  }
+  // After HS / Product → suggest customs + saber
+  if (intent === 'intent_hs' || intent === 'intent_product_knowledge') {
+    return [
+      C('🧮', 'احسب الجمارك', 'احسب جمارك على 50000 ريال HS 851830'),
+      C('📜', 'الشهادات المطلوبة', 'وش شهادات سابر اللي احتاجها'),
+      C('🚢', 'احسب الشحن', 'سعر شحن 40HC من شنغهاي لجدة'),
+    ];
+  }
+  // After SABER → suggest specific product + customs
+  if (intent === 'intent_saber') {
+    return [
+      C('📦', 'منتج معيّن', 'وش HS code لسماعات بلوتوث'),
+      C('🧮', 'احسب الجمارك', 'احسب جمارك على 50000 ريال HS 851830'),
+      C('🚢', 'سعر شحن', 'سعر شحن 40HC من شنغهاي لجدة'),
+    ];
+  }
+  // After DEMURRAGE → suggest rates + clearance
+  if (intent === 'intent_demurrage' || intent === 'intent_demurrage_incomplete') {
+    return [
+      C('🚢', 'احجز شحنة سريعة', 'سعر شحن 40HC من شنغهاي لجدة'),
+      C('📋', 'رسوم التخليص', 'كم سعر تخليص الجمارك'),
+      C('⏰', 'تأخر التخليص', 'الجمارك تأخرت 10 ايام'),
+    ];
+  }
+  // After CONCEPTS → suggest practical query
+  if (intent === 'intent_concept') {
+    return [
+      C('🚢', 'احسب FCL', 'سعر شحن 40HC من شنغهاي لجدة'),
+      C('📦', 'احسب LCL', 'كم سعر LCL لـ 3 CBM من الصين'),
+      C('🧮', 'الجمارك', 'احسب جمارك 50000 ريال'),
+    ];
+  }
+  // After SEASONS → suggest rate search
+  if (intent === 'intent_seasonal' || intent === 'intent_seasonal_early') {
+    return [
+      C('🚢', 'اطلب الأسعار الحين', 'سعر شحن 40HC من شنغهاي لجدة'),
+      C('⚓', 'قارن الخطوط', 'قارن Maersk و MSC'),
+      C('💰', 'التكلفة الكاملة', 'احسب التكلفة الكاملة 40HC من شنغهاي 80000 ريال'),
+    ];
+  }
+  // After SECTOR ADVICE → suggest specific actions
+  if (intent === 'intent_sector_guide' || intent === 'intent_general_advice') {
+    return [
+      C('🚢', 'احسب الشحن', 'سعر شحن 40HC من شنغهاي لجدة'),
+      C('📜', 'الشهادات', 'وش شهادات سابر'),
+      C('🧮', 'الجمارك', 'احسب جمارك 50000 ريال'),
+    ];
+  }
+  // After CARRIER COMPARE → suggest specific carrier rates
+  if (intent === 'intent_carrier_compare') {
+    return [
+      C('💰', 'اطلب أسعارهم', 'سعر شحن 40HC من شنغهاي لجدة'),
+      C('🚢', 'مسار آخر', 'سعر شحن من تركيا لجدة'),
+      C('📜', 'الشهادات', 'وش شهادات سابر'),
+    ];
+  }
+  // After DOCUMENTS / TRACKING / CLEARANCE / DELAY → suggest action
+  if (intent === 'intent_documents' || intent === 'intent_tracking' ||
+      intent === 'intent_clearance_fees' || intent === 'intent_delay') {
+    return [
+      C('🚢', 'احسب الشحن', 'سعر شحن 40HC من شنغهاي لجدة'),
+      C('🧮', 'احسب الجمارك', 'احسب جمارك 50000 ريال HS 851830'),
+      C('📜', 'الشهادات', 'وش شهادات سابر'),
+    ];
+  }
+  // After BANNED/REGULATIONS → suggest checking specific product
+  if (intent === 'intent_regulations') {
+    return [
+      C('📦', 'استورد منتج معيّن', 'كيف استورد ثلاجة'),
+      C('📜', 'الشهادات', 'وش شهادات سابر'),
+      C('🧮', 'الجمارك', 'احسب جمارك 50000 ريال'),
+    ];
+  }
+  // After FULL COST → suggest booking
+  if (intent === 'intent_full_cost' || intent === 'intent_full_cost_incomplete') {
+    return [
+      C('📦', 'سجّل دخول وابدأ الحجز', 'احجز شحنتي'),
+      C('⚓', 'قارن الخطوط', 'قارن Maersk و MSC'),
+      C('📜', 'الشهادات', 'وش شهادات سابر'),
+    ];
+  }
+  // After GREETING → starter prompts
+  if (intent === 'intent_greeting' || intent === 'intent_clarify') {
+    return [
+      C('🚢', 'سعر شحن', 'سعر شحن 40HC من شنغهاي لجدة'),
+      C('🧮', 'الجمارك', 'احسب جمارك 50000 ريال HS 851830'),
+      C('📜', 'الشهادات', 'وش شهادات سابر لاستيراد سماعات'),
+    ];
+  }
+  // Default — most useful starting points
+  return [
+    C('🚢', 'أسعار الشحن', 'سعر شحن 40HC من شنغهاي لجدة'),
+    C('🧮', 'حساب الجمارك', 'احسب جمارك 50000 ريال HS 851830'),
+    C('📜', 'شهادات سابر', 'وش شهادات سابر لاستيراد سماعات'),
+  ];
+}
+
 // SHIPPING CONCEPTS — مفاهيم أساسية للشحن (FCL/LCL/INCOTERMS/etc)
 const SHIPPING_CONCEPTS = {
   'fcl': {
@@ -2653,12 +2781,17 @@ export default async function handler(req, res) {
 
   try {
     const result = await runAgent(messages, ctx);
+    // Decorate every response with contextual action cards
+    // (suggests the next logical question — guided conversation UX)
+    const actionCards = getActionCards(result.fallback_used || 'gemini', result.reply || '');
     res.statusCode = 200;
     res.setHeader('Content-Type', 'application/json; charset=utf-8');
     res.end(JSON.stringify({
       reply: result.reply,
       actions: result.actions,
       steps: result.steps,
+      actionCards,
+      fallback_used: result.fallback_used,
       model: 'gemini-with-fallback',
     }));
   } catch (e) {
