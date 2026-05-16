@@ -1557,36 +1557,168 @@ const AR_PORT_ALIASES = {
 };
 
 // ─── Intent-based fallback (works without Gemini) ───────────────────────
-// Routes the user message to the right tool via keyword detection, so the
-// platform keeps working during Gemini outages (quota, 503, network errors).
+// Routes the user message to the right tool via keyword detection.
+// Priority order matters: most-specific intents first, greeting last.
 async function intentFallback(message, ctx, reason) {
   const msg = String(message || '').toLowerCase();
   const actions = [];
 
-  // Strip Arabic diacritics + normalize
-  const norm = msg.replace(/[ًٌٍَُِّْ]/g, '').replace(/[إأآا]/g, 'ا').trim();
+  // Strip Arabic diacritics + normalize alef variants
+  const norm = msg
+    .replace(/[ًٌٍَُِّْ]/g, '')
+    .replace(/[إأآا]/g, 'ا')
+    .replace(/ى/g, 'ي')
+    .trim();
 
-  // ─── Intent: port lookup ───
-  const portMatch = norm.match(/(?:ميناء|كود ميناء|رمز ميناء|port)\s*([؀-ۿa-z]{3,20})/);
-  if (portMatch || /port|ميناء/.test(norm)) {
-    try {
-      // Extract location word — try to find anything after ميناء/port
-      let loc = portMatch?.[1] || norm.replace(/.*?(ميناء|port|كود|رمز)/g, '').trim().split(/\s+/)[0];
-      if (loc && loc.length >= 3) {
+  // Helpers ────────
+  const findCity = () => {
+    const cities = Object.keys(AR_PORT_ALIASES);
+    const found = [];
+    for (const c of cities) if (norm.includes(c)) found.push(c);
+    return found;
+  };
+  const extractValue = () => {
+    // Match standalone numbers (not HS codes which are usually 6+ digits attached to "hs")
+    // Strip "hs ###" first to avoid confusing the value with the code
+    const cleaned = msg.replace(/hs\s*[:\s]*[\d.]+/gi, '').replace(/[\d]{6,12}/g, '');
+    const m = cleaned.match(/(\d{3,}(?:[,.]?\d{3})*)\s*(?:ريال|sar|usd|دولار|\$)?/);
+    return m ? parseFloat(m[1].replace(/[,.]/g, '')) : null;
+  };
+  const extractContainer = () => {
+    const m = msg.match(/(20|40|45)\s*(gp|hc|hq|rf|ft|قدم)/i);
+    if (!m) return '40HC';
+    const size = m[1];
+    const t = (m[2] || '').toLowerCase();
+    if (t.startsWith('rf')) return `${size}RF`;
+    if (t.startsWith('gp')) return `${size}GP`;
+    return `${size}HC`;
+  };
+
+  // ════════════════════════════════════════════════════════════
+  // 1️⃣ CUSTOMS CALCULATION — highest priority when intent is clear
+  //    Triggered by explicit "احسب" + "جمرك/ضريبة"
+  // ════════════════════════════════════════════════════════════
+  const customsExplicit = /(?:احسب|حساب|calculate)\s.*(?:جمرك|ضريبة|customs|vat|تخليص)/i.test(norm)
+                       || /(?:جمرك|ضريبة|vat).*(?:احسب|حساب|calculate)/i.test(norm);
+  if (customsExplicit) {
+    const value = extractValue();
+    if (value && value >= 100) {
+      try {
+        const hsCode = msg.match(/hs\s*[:\s]*([\d.]+)/i)?.[1] || null;
+        const result = await execTool('calculate_customs_clearance', {
+          cif_value_sar: value, hs_code: hsCode,
+        }, ctx);
+        actions.push({ tool: 'calculate_customs_clearance', args: { cif_value_sar: value, hs_code: hsCode }, result });
+        if (!result.error) {
+          return { reply: renderToolResult('calculate_customs_clearance', result), actions, steps: 0, fallback_used: 'intent_customs' };
+        }
+      } catch {}
+    }
+    return {
+      reply: '**حساب الجمارك السعودية:**\n\n1. **الرسوم الجمركية** = قيمة CIF × نسبة التعرفة (5% / 12% / 20% حسب HS code)\n2. **ضريبة القيمة المضافة (VAT)** = (CIF + الرسوم) × 15%\n3. **رسوم الميناء** = ~$50-100 لكل حاوية\n\nأعطني **قيمة الشحنة + HS code** لحساب دقيق.\nمثال: `احسب جمارك 50,000 ريال HS 851830`',
+      actions, steps: 0, fallback_used: 'intent_customs_formula',
+    };
+  }
+
+  // ════════════════════════════════════════════════════════════
+  // 2️⃣ DEMURRAGE / DETENTION — container delay fees
+  // ════════════════════════════════════════════════════════════
+  if (/ديموراج|demurrage|detention|تأخر|تأخير/.test(norm)) {
+    const daysMatch = msg.match(/(\d+)\s*(?:يوم|ايام|days?)/);
+    const portCode = msg.match(/\b(sajed|sadmm|sajub|sayna)\b/i)?.[0]?.toUpperCase()
+                  || (norm.includes('دمام') ? 'SADMM' : norm.includes('جدة') ? 'SAJED' : 'SAJED');
+    if (daysMatch) {
+      try {
+        const args = {
+          days_late: parseInt(daysMatch[1], 10),
+          container_type: extractContainer(),
+          port: portCode,
+        };
+        const result = await execTool('calculate_demurrage', args, ctx);
+        actions.push({ tool: 'calculate_demurrage', args, result });
+        if (!result.error) {
+          return { reply: renderToolResult('calculate_demurrage', result), actions, steps: 0, fallback_used: 'intent_demurrage' };
+        }
+      } catch {}
+    }
+    return {
+      reply: '**حساب الديموراج/الديتنشن:**\n\nالديموراج (رسوم الميناء) + الديتنشن (رسوم الخط الملاحي) عن أيام تأخر الحاوية بعد فترة الإعفاء (free days).\n\nأعطني: **عدد أيام التأخر** + **نوع الحاوية** + **الميناء**.\nمثال: `ديموراج 40HC في الدمام تأخر 5 ايام`',
+      actions, steps: 0, fallback_used: 'intent_demurrage_incomplete',
+    };
+  }
+
+  // ════════════════════════════════════════════════════════════
+  // 3️⃣ RATE SEARCH — origin → destination
+  // ════════════════════════════════════════════════════════════
+  const ratesIntent = /سعر.*شحن|كم سعر|اسعار شحن|rate|شحن.*من|شحن.*ال[يى]|freight|cost.*ship/i.test(norm);
+  if (ratesIntent) {
+    const found = findCity();
+    if (found.length >= 2) {
+      try {
+        const [origin, dest] = found;
+        const o = await execTool('lookup_port', { q: AR_PORT_ALIASES[origin] }, ctx);
+        const d = await execTool('lookup_port', { q: AR_PORT_ALIASES[dest] }, ctx);
+        const oCode = o.results?.[0]?.code;
+        const dCode = d.results?.[0]?.code;
+        if (oCode && dCode) {
+          const ct = extractContainer();
+          const args = { originPort: oCode, destinationPort: dCode, containerType: ct };
+          const result = await execTool('search_freight_rates', args, ctx);
+          actions.push({ tool: 'search_freight_rates', args, result });
+          if (!result.error) {
+            return { reply: renderToolResult('search_freight_rates', result), actions, steps: 0, fallback_used: 'intent_rates' };
+          }
+        }
+      } catch {}
+    }
+    return {
+      reply: 'لإيجاد أسعار الشحن أحتاج: **ميناء المصدر** + **ميناء الوجهة** + **نوع الحاوية**.\nمثال: `سعر 40HC من شنغهاي إلى جدة`\n\nأو استخدم رموز UN/LOCODE مباشرة (CNSHA · SAJED · SADMM · AEJEA · INBOM).',
+      actions, steps: 0, fallback_used: 'intent_rates_incomplete',
+    };
+  }
+
+  // ════════════════════════════════════════════════════════════
+  // 4️⃣ PORT LOOKUP — when ميناء/port keyword + city
+  // ════════════════════════════════════════════════════════════
+  if (/\b(ميناء|port)\b/i.test(norm)) {
+    let loc = null;
+    // Strategy A: known Arabic city in message
+    const cities = findCity();
+    if (cities.length > 0) loc = AR_PORT_ALIASES[cities[0]];
+    // Strategy B: regex extraction after "ميناء"/"port"
+    if (!loc) {
+      const m = norm.match(/(?:ميناء|port(?:\s+code)?(?:\s+for)?)\s+([؀-ۿa-z]+)/i);
+      if (m && m[1].length >= 3) loc = m[1];
+    }
+    // Strategy C: last word in message
+    if (!loc) {
+      const words = norm.replace(/[؟?,،\.!]/g, '').split(/\s+/).filter(w => w.length >= 3);
+      loc = words[words.length - 1];
+    }
+    if (loc) {
+      try {
         const result = await execTool('lookup_port', { q: loc }, ctx);
         actions.push({ tool: 'lookup_port', args: { q: loc }, result });
         if (!result.error && result.count > 0) {
           return { reply: renderToolResult('lookup_port', result), actions, steps: 0, fallback_used: 'intent_port' };
         }
-      }
-    } catch {}
+      } catch {}
+    }
+    return {
+      reply: 'لإيجاد الميناء أحتاج اسم المدينة. جرّب:\n• `ميناء الدمام` → SADMM\n• `ميناء جدة` → SAJED\n• `port for Shanghai` → CNSHA',
+      actions, steps: 0, fallback_used: 'intent_port_incomplete',
+    };
   }
 
-  // ─── Intent: HS code lookup ───
-  if (/hs\s*code|رمز.*منتج|تصنيف.*جمرك/.test(norm) || /hs\s*\d+/i.test(msg)) {
+  // ════════════════════════════════════════════════════════════
+  // 5️⃣ HS CODE — when "HS" + number, or "تصنيف جمركي"
+  // ════════════════════════════════════════════════════════════
+  if (/\bhs\b|تصنيف.*جمرك|رمز.*منتج/.test(norm)) {
     try {
-      const hsMatch = msg.match(/hs\s*[:\s]*([\d.]+)/i) || msg.match(/([0-9]{4,12})/);
-      const args = hsMatch ? { hs: hsMatch[1].replace(/\D/g, '') } : { q: norm.replace(/hs\s*code|رمز/g, '').trim() };
+      const hsMatch = msg.match(/hs\s*[:\s]*([\d.]+)/i) || msg.match(/\b(\d{4,12})\b/);
+      const args = hsMatch
+        ? { hs: hsMatch[1].replace(/\D/g, '') }
+        : { q: norm.replace(/\bhs\s*code?\b|تصنيف|رمز/gi, '').trim() };
       const result = await execTool('lookup_hs_code', args, ctx);
       actions.push({ tool: 'lookup_hs_code', args, result });
       if (!result.error) {
@@ -1595,85 +1727,33 @@ async function intentFallback(message, ctx, reason) {
     } catch {}
   }
 
-  // ─── Intent: rate search (origin → destination) ───
-  if (/سعر.*شحن|كم سعر|rate|شحن.*من|شحن.*الى|freight/.test(norm)) {
-    // Very rough extraction — look for known city pairs
-    const cityMap = AR_PORT_ALIASES;
-    const cities = Object.keys(cityMap);
-    let origin = null, dest = null;
-    for (const c of cities) {
-      if (norm.includes(c)) {
-        if (!origin) origin = c;
-        else if (!dest) { dest = c; break; }
-      }
-    }
-    if (origin && dest) {
-      try {
-        // Translate to port codes via the ports endpoint (best-effort)
-        const o = await execTool('lookup_port', { q: cityMap[origin] }, ctx);
-        const d = await execTool('lookup_port', { q: cityMap[dest] }, ctx);
-        const oCode = o.results?.[0]?.code;
-        const dCode = d.results?.[0]?.code;
-        if (oCode && dCode) {
-          const containerMatch = msg.match(/(\d{2})\s*(?:gp|hc|hq|قدم|ft)/i);
-          const ct = containerMatch ? `${containerMatch[1]}HC` : '40HC';
-          const result = await execTool('search_freight_rates', {
-            originPort: oCode, destinationPort: dCode, containerType: ct,
-          }, ctx);
-          actions.push({ tool: 'search_freight_rates', args: { originPort: oCode, destinationPort: dCode, containerType: ct }, result });
-          if (!result.error) {
-            return { reply: renderToolResult('search_freight_rates', result), actions, steps: 0, fallback_used: 'intent_rates' };
-          }
-        }
-      } catch {}
-    }
+  // ════════════════════════════════════════════════════════════
+  // 6️⃣ SABER — certificates / مطابقة / قياس
+  // ════════════════════════════════════════════════════════════
+  if (/سابر|saber|شهادة|مطابقة|قياس|certification/.test(norm)) {
     return {
-      reply: 'لتحديد سعر الشحن، أحتاج: ميناء المصدر (مثل CNSHA) + ميناء الوجهة (مثل SAJED) + نوع الحاوية. جرّب الصياغة: "سعر 40HC من شنغهاي إلى جدة"',
-      actions, steps: 0, fallback_used: 'intent_rates_incomplete',
-    };
-  }
-
-  // ─── Intent: customs calculation ───
-  if (/جمرك|جمارك|customs|ضريبة|قيمة مضافة|vat/.test(norm)) {
-    const valueMatch = msg.match(/(\d{4,}(?:[,.]?\d{3})*)\s*(?:ريال|sar|usd|دولار|\$)?/);
-    if (valueMatch) {
-      const value = parseFloat(valueMatch[1].replace(/[,.]/g, ''));
-      try {
-        const result = await execTool('calculate_customs_clearance', {
-          cif_value_sar: value, hs_code: msg.match(/hs\s*[:\s]*([\d.]+)/i)?.[1] || null,
-        }, ctx);
-        actions.push({ tool: 'calculate_customs_clearance', args: { cif_value_sar: value }, result });
-        if (!result.error) {
-          return { reply: renderToolResult('calculate_customs_clearance', result), actions, steps: 0, fallback_used: 'intent_customs' };
-        }
-      } catch {}
-    }
-    // Without value: explain the formula
-    return {
-      reply: '**حساب الجمارك السعودية:**\n\n1. **الرسوم الجمركية** = قيمة CIF × نسبة التعرفة (5% / 12% / 20% حسب HS code)\n2. **ضريبة القيمة المضافة (VAT)** = (CIF + الرسوم) × 15%\n3. **رسوم الميناء** = ~$50-100 لكل حاوية\n\nأعطني قيمة الشحنة + HS code لحساب دقيق.',
-      actions, steps: 0, fallback_used: 'intent_customs_formula',
-    };
-  }
-
-  // ─── Intent: SABER certification ───
-  if (/سابر|saber|شهادة|مطابقة|قياس/.test(norm)) {
-    return {
-      reply: '**شهادات سابر السعودية المطلوبة:**\n\n• **QM** — Quality Mark للمنتجات الصناعية\n• **COC** — Certificate of Conformity للمطابقة\n• **IECEE** — للأجهزة الكهربائية والإلكترونيات\n• **IECEX** — للمنتجات في البيئات المتفجرة\n• **GCTS** — للبلاستيك والأكياس\n• **Tires** — للإطارات\n\nأخبرني عن المنتج لتحديد الشهادات بدقة، أو استخدم HS code للبحث في قاعدة 9,862 منتج منظَّم.',
+      reply: '**شهادات سابر السعودية المطلوبة:**\n\n• **QM** — Quality Mark للمنتجات الصناعية\n• **COC** — Certificate of Conformity للمطابقة\n• **IECEE** — للأجهزة الكهربائية والإلكترونيات\n• **IECEX** — للمنتجات في البيئات المتفجرة\n• **GCTS** — للبلاستيك والأكياس\n• **Tires** — للإطارات\n\nأعطني اسم المنتج أو HS code لتحديد الشهادات بدقة من قاعدة 9,862 منتج منظَّم.',
       actions, steps: 0, fallback_used: 'intent_saber',
     };
   }
 
-  // ─── Intent: greeting / capabilities ───
-  if (/مرحبا|اهلا|سلام|hello|hi|capabilities|قدرات|تقدر|وش/.test(norm)) {
+  // ════════════════════════════════════════════════════════════
+  // 7️⃣ GREETING — only when message is a simple greeting/capability
+  //    NOT if it contains specific request keywords
+  // ════════════════════════════════════════════════════════════
+  const isOnlyGreeting = norm.length < 30 && /^(مرحبا|اهلا|سلام|هلا|hi|hello|good\s+(morning|evening)|قدرات|تقدر|وش تسوي|what.*do)/i.test(norm.trim());
+  if (isOnlyGreeting) {
     return {
-      reply: '👋 أهلاً! أنا **FREIGHTLX AI** — المهندس التشغيلي للمنصة.\n\n**أقدر أساعدك في:**\n• 🚢 البحث عن أسعار شحن من 12 خط ملاحي\n• 🧮 حساب التخليص الجمركي وضريبة القيمة المضافة 15%\n• 📜 تحديد شهادات سابر المطلوبة\n• ⚓ معلومات الموانئ العالمية (323 ميناء)\n• 📊 تتبع شحناتك وفواتيرك\n• 💵 حساب الديموراج للحاويات المتأخرة\n\nاكتب سؤالك بالعربية أو الإنجليزية.',
+      reply: '👋 أهلاً! أنا **FREIGHTLX AI** — المهندس التشغيلي للمنصة.\n\n**أقدر أساعدك في:**\n• 🚢 البحث عن أسعار شحن من 12 خط ملاحي\n• 🧮 حساب التخليص الجمركي وضريبة القيمة المضافة 15%\n• 📜 تحديد شهادات سابر المطلوبة\n• ⚓ معلومات الموانئ العالمية (323 ميناء)\n• 💵 حساب الديموراج للحاويات المتأخرة\n• 📊 تتبع شحناتك وفواتيرك\n\nاكتب سؤالك بالعربية أو الإنجليزية.',
       actions, steps: 0, fallback_used: 'intent_greeting',
     };
   }
 
-  // ─── Default fallback ───
+  // ════════════════════════════════════════════════════════════
+  // 8️⃣ DEFAULT — last resort
+  // ════════════════════════════════════════════════════════════
   return {
-    reply: 'أنا هنا لمساعدتك في:\n\n• **أسعار الشحن** — اكتب "سعر 40HC من شنغهاي إلى جدة"\n• **الجمارك** — اكتب "احسب جمارك على 50,000 ريال HS 851830"\n• **شهادات سابر** — اكتب "ما الشهادات لاستيراد سماعات؟"\n• **الموانئ** — اكتب "كود ميناء الدمام"\n\nالخدمة الذكية تواجه ضغط مؤقت — لكن الأدوات الأساسية شغّالة.',
+    reply: 'لم أفهم سؤالك تماماً. جرّب أحد هذه:\n\n• **أسعار الشحن** — `سعر 40HC من شنغهاي إلى جدة`\n• **الجمارك** — `احسب جمارك 50,000 ريال HS 851830`\n• **شهادات سابر** — `ما الشهادات لاستيراد سماعات؟`\n• **الموانئ** — `كود ميناء الدمام`\n• **الديموراج** — `ديموراج 40HC تأخر 5 أيام`',
     actions, steps: 0, fallback_used: 'intent_default',
     gemini_error: reason,
   };
