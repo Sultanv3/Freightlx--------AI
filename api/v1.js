@@ -736,6 +736,23 @@ async function webHandler(req) {
   const user = await getUserFromAuth(req);
   if (!user) return json({ error: { code: 'UNAUTHORIZED', message: 'Supabase Bearer token required' } }, 401);
 
+  // Cache role lookup
+  let cachedRole = null;
+  async function getRole() {
+    if (cachedRole !== null) return cachedRole;
+    try {
+      const [p] = await sb(`/profiles?id=eq.${user.id}&select=role&limit=1`);
+      cachedRole = p?.role || 'user';
+    } catch { cachedRole = 'user'; }
+    return cachedRole;
+  }
+  const adminMode = url.searchParams.get('scope') === 'all' || req.headers.get('x-admin-view') === '1';
+  async function isAdmin() {
+    if (!adminMode) return false;
+    const r = await getRole();
+    return r === 'admin' || r === 'super_admin';
+  }
+
   if (req.method === 'GET' && segments[0] === 'shipments' && !segments[1]) {
     await seedUserData(user.id);
   }
@@ -878,10 +895,14 @@ async function webHandler(req) {
     if (segments[0] === 'shipments') {
       if (req.method === 'GET' && !segments[1]) {
         const status = url.searchParams.get('status');
-        let q = `/shipments?user_id=eq.${user.id}&select=*&order=created_at.desc`;
+        const limit = parseInt(url.searchParams.get('limit') || '100');
+        const all = await isAdmin();
+        let q = all
+          ? `/shipments?select=*&order=created_at.desc&limit=${limit}`
+          : `/shipments?user_id=eq.${user.id}&select=*&order=created_at.desc&limit=${limit}`;
         if (status) q += `&status=eq.${status}`;
         const data = await sb(q);
-        return json({ data, total: data.length, page: 1, limit: data.length });
+        return json({ data, total: data.length, page: 1, limit, admin_view: all });
       }
       if (req.method === 'GET' && segments[1] && !segments[2]) {
         const [s] = await sb(`/shipments?id=eq.${segments[1]}&user_id=eq.${user.id}&select=*&limit=1`);
@@ -955,8 +976,13 @@ async function webHandler(req) {
     // ─── QUOTES ───
     if (segments[0] === 'quotes') {
       if (req.method === 'GET' && !segments[1]) {
-        const data = await sb(`/quotes?user_id=eq.${user.id}&select=*&order=created_at.desc`);
-        return json({ data, total: data.length, page: 1, limit: data.length });
+        const limit = parseInt(url.searchParams.get('limit') || '100');
+        const all = await isAdmin();
+        const q = all
+          ? `/quotes?select=*&order=created_at.desc&limit=${limit}`
+          : `/quotes?user_id=eq.${user.id}&select=*&order=created_at.desc&limit=${limit}`;
+        const data = await sb(q);
+        return json({ data, total: data.length, page: 1, limit, admin_view: all });
       }
       if (req.method === 'POST' && !segments[1]) {
         const body = await req.json();
@@ -1004,14 +1030,24 @@ async function webHandler(req) {
     // ─── INVOICES ───
     if (segments[0] === 'invoices') {
       if (req.method === 'GET' && !segments[1]) {
-        const data = await sb(`/invoices?user_id=eq.${user.id}&select=*&order=created_at.desc`);
-        return json({ data, total: data.length, page: 1, limit: data.length });
+        const limit = parseInt(url.searchParams.get('limit') || '100');
+        const all = await isAdmin();
+        const q = all
+          ? `/invoices?select=*&order=created_at.desc&limit=${limit}`
+          : `/invoices?user_id=eq.${user.id}&select=*&order=created_at.desc&limit=${limit}`;
+        const data = await sb(q);
+        return json({ data, total: data.length, page: 1, limit, admin_view: all });
       }
       if (req.method === 'PATCH' && segments[1] && segments[2] === 'status') {
         const body = await req.json();
         const patch = { status: body.status };
         if (body.status === 'paid') patch.paid_at = new Date().toISOString();
-        const [inv] = await sb(`/invoices?id=eq.${segments[1]}&user_id=eq.${user.id}`, { method: 'PATCH', body: patch });
+        // Admin can update any invoice; user only their own
+        const all = await isAdmin();
+        const filter = all
+          ? `/invoices?id=eq.${segments[1]}`
+          : `/invoices?id=eq.${segments[1]}&user_id=eq.${user.id}`;
+        const [inv] = await sb(filter, { method: 'PATCH', body: patch });
         if (!inv) return json({ error: { code: 'NOT_FOUND' } }, 404);
         if (body.status === 'paid') {
           await sb('/notifications', { method: 'POST', body: [{
@@ -1199,6 +1235,32 @@ async function webHandler(req) {
         const unread = data.filter(n => !n.read).length;
         return json({ data, unread, total: data.length });
       }
+      // POST /notifications — broadcast (admin) or send to a specific user
+      if (req.method === 'POST' && !segments[1]) {
+        const body = await req.json();
+        const [p] = await sb(`/profiles?id=eq.${user.id}&select=role&limit=1`);
+        const isAdminRole = p?.role === 'admin' || p?.role === 'super_admin';
+        if (body.broadcast) {
+          if (!isAdminRole) return json({ error: { code: 'FORBIDDEN' } }, 403);
+          const targets = body.user_ids?.length ? body.user_ids.map(id => ({ id })) : await sb('/profiles?select=id');
+          const notifs = targets.map(u => ({
+            user_id: u.id,
+            type: body.type || 'info',
+            text: body.title ? `<strong>${body.title}</strong>${body.message ? ' — ' + body.message : ''}` : (body.message || body.text),
+          }));
+          if (notifs.length) await sb('/notifications', { method: 'POST', body: notifs, prefer: 'return=minimal' });
+          return json({ ok: true, sent: notifs.length, broadcast: true }, 201);
+        }
+        // Targeted: admin can send to any user; user only to self
+        const targetUserId = body.user_id || user.id;
+        if (targetUserId !== user.id && !isAdminRole) return json({ error: { code: 'FORBIDDEN' } }, 403);
+        const [n] = await sb('/notifications', { method: 'POST', body: [{
+          user_id: targetUserId,
+          type: body.type || 'info',
+          text: body.title ? `<strong>${body.title}</strong>${body.message ? ' — ' + body.message : ''}` : (body.message || body.text),
+        }]});
+        return json(n, 201);
+      }
       if (req.method === 'POST' && segments[1] === 'mark-read') {
         await sb(`/notifications?user_id=eq.${user.id}&read=eq.false`, {
           method: 'PATCH', body: { read: true }, prefer: 'return=minimal',
@@ -1331,16 +1393,91 @@ async function webHandler(req) {
         const users = await sb('/profiles?select=*&order=created_at.desc');
         return json({ data: users, total: users.length });
       }
-      // PATCH /admin/users/{id} — update role/status
+      // POST /admin/users — invite/create a new user (sends Supabase auth invite)
+      if (segments[1] === 'users' && !segments[2] && req.method === 'POST') {
+        const body = await req.json();
+        if (!body.email) return json({ error: { code: 'BAD_REQUEST', message: 'email required' } }, 400);
+        // Try Supabase auth invite via admin endpoint
+        let inviteResult = null;
+        try {
+          const r = await fetch(`${SUPABASE_URL}/auth/v1/invite`, {
+            method: 'POST',
+            headers: {
+              apikey: SUPABASE_SERVICE_ROLE_KEY,
+              Authorization: `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`,
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ email: body.email, data: { full_name: body.full_name || '' } }),
+          });
+          inviteResult = await r.json().catch(() => ({}));
+        } catch (e) {
+          return json({ error: { code: 'INVITE_FAILED', message: e.message } }, 500);
+        }
+        return json({ ok: true, invited: body.email, supabase: inviteResult }, 201);
+      }
+      // PATCH /admin/users/{id} — update role/status/suspended
       if (segments[1] === 'users' && segments[2] && req.method === 'PATCH') {
         const body = await req.json();
         const patch = {};
         if (body.role) patch.role = body.role;
         if (body.status) patch.status = body.status;
         if (body.full_name) patch.full_name = body.full_name;
+        if (typeof body.suspended === 'boolean') patch.suspended = body.suspended;
         const [u] = await sb(`/profiles?id=eq.${segments[2]}`, { method: 'PATCH', body: patch });
         if (!u) return json({ error: { code: 'NOT_FOUND' } }, 404);
         return json(u);
+      }
+      // POST /admin/broadcast — send notification to all users (or filter)
+      if (segments[1] === 'broadcast' && !segments[2] && req.method === 'POST') {
+        const body = await req.json();
+        if (!body.message && !body.title) return json({ error: { code: 'BAD_REQUEST', message: 'title or message required' } }, 400);
+        // Get target users
+        let targetUsers = [];
+        if (body.user_ids && Array.isArray(body.user_ids)) {
+          targetUsers = body.user_ids.map(id => ({ id }));
+        } else if (body.role) {
+          targetUsers = await sb(`/profiles?role=eq.${body.role}&select=id`);
+        } else {
+          targetUsers = await sb('/profiles?select=id');
+        }
+        if (!targetUsers.length) return json({ ok: true, sent: 0, note: 'no targets' });
+        const notifs = targetUsers.map(u => ({
+          user_id: u.id,
+          type: body.type || 'info',
+          text: body.title ? `<strong>${body.title}</strong> ${body.message || ''}` : body.message,
+          broadcast: true,
+        }));
+        await sb('/notifications', { method: 'POST', body: notifs, prefer: 'return=minimal' });
+        return json({ ok: true, sent: targetUsers.length });
+      }
+      // POST /admin/shipments — create shipment for any user
+      if (segments[1] === 'shipments' && !segments[2] && req.method === 'POST') {
+        const body = await req.json();
+        const id = body.id || genId('FLX-A');
+        const targetUserId = body.user_id || user.id;
+        const [s] = await sb('/shipments', { method: 'POST', body: [{
+          id, user_id: targetUserId,
+          origin: body.origin, destination: body.destination,
+          carrier: body.carrier, container: body.container || '40HC',
+          price: body.price || 0, status: body.status || 'pending',
+          status_text: body.status_text || 'قيد الموافقة',
+          date: new Date().toISOString().slice(0, 10),
+        }]});
+        // Notify customer
+        if (targetUserId !== user.id) {
+          await sb('/notifications', { method: 'POST', body: [{
+            user_id: targetUserId, type: 'info',
+            text: `تم إنشاء شحنة جديدة <strong>${id}</strong> من قبل الإدارة`,
+          }], prefer: 'return=minimal' });
+        }
+        return json(s, 201);
+      }
+      // PATCH /admin/shipments/{id} — admin can update any shipment
+      if (segments[1] === 'shipments' && segments[2] && req.method === 'PATCH') {
+        const body = await req.json();
+        const [s] = await sb(`/shipments?id=eq.${segments[2]}`, { method: 'PATCH', body });
+        if (!s) return json({ error: { code: 'NOT_FOUND' } }, 404);
+        return json(s);
       }
       // GET /admin/analytics — comprehensive analytics for admin dashboard
       if (segments[1] === 'analytics' && req.method === 'GET') {
