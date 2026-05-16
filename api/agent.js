@@ -1810,6 +1810,40 @@ const SECTOR_GUIDES = {
   },
 };
 
+// SHIPPING CONCEPTS — مفاهيم أساسية للشحن (FCL/LCL/INCOTERMS/etc)
+const SHIPPING_CONCEPTS = {
+  'fcl': {
+    title: 'FCL — Full Container Load (حاوية كاملة)',
+    desc: 'تستأجر الحاوية كاملة لشحنتك. أفضل لـ: حجم 12+ متر مكعب · شحنات منتظمة.',
+    sizes: '20GP=28m³ · 40GP=56m³ · 40HC=68m³ · 40RF=56m³ مبرّد',
+  },
+  'lcl': {
+    title: 'LCL — Less than Container Load (حاوية جزئية)',
+    desc: 'تشارك الحاوية مع شحنات أخرى. أفضل لـ حجم أقل من 10 متر مكعب.',
+    pricing: 'يُحسب لكل CBM · معدل $40-80 لكل CBM للصين-السعودية',
+  },
+  'fob': {
+    title: 'FOB — Free On Board',
+    desc: 'البائع يسلّم البضاعة على ظهر السفينة في ميناء المصدر. أنت تدفع الشحن.',
+  },
+  'cif': {
+    title: 'CIF — Cost, Insurance, Freight',
+    desc: 'البائع يدفع الشحن + التأمين حتى ميناء الوجهة. الأسهل للمبتدئين.',
+  },
+  'exw': {
+    title: 'EXW — Ex Works (من المصنع)',
+    desc: 'تستلم البضاعة من مستودع البائع. أنت تتولى كل شي.',
+  },
+  'ddp': {
+    title: 'DDP — Delivered Duty Paid',
+    desc: 'البائع يوصل لباب مستودعك ويدفع كل شي (شحن + جمارك + ضريبة). الأغلى لكن الأسهل.',
+  },
+  'incoterms': {
+    title: 'INCOTERMS — مصطلحات التجارة الدولية',
+    desc: 'قواعد دولية تحدد من يدفع ماذا. أهم 4 للسوق السعودي: EXW · FOB · CIF · DDP.',
+  },
+};
+
 // SHIPPING SEASONS — أوقات الذروة والركود
 const SHIPPING_SEASONS = {
   peak: {
@@ -2022,6 +2056,29 @@ async function intentFallback(message, ctx, reason, history = []) {
   // ════════════════════════════════════════════════════════════
   // 3️⃣ RATE SEARCH — origin → destination
   // ════════════════════════════════════════════════════════════
+  // CONCEPTS — "ما الفرق بين FCL و LCL" / "وش معنى CIF" / etc
+  // Check BEFORE rates because contains "شحن" might trigger rates wrongly
+  const conceptKeys = Object.keys(SHIPPING_CONCEPTS);
+  const conceptsInMsg = conceptKeys.filter(k =>
+    msg.toLowerCase().includes(k) || norm.includes(k)
+  );
+  const isConceptQ = /ما.*الفرق|الفرق\s+بين|ما\s*هو|وش\s+معني|وش\s+يعني|معني|definition|what\s+is|difference/i.test(norm);
+  if (conceptsInMsg.length > 0 && (isConceptQ || conceptsInMsg.length >= 2 || norm.length < 40)) {
+    const concepts = conceptsInMsg.slice(0, 3);
+    let reply = `📚 **شرح المصطلحات:**\n\n`;
+    for (const c of concepts) {
+      const def = SHIPPING_CONCEPTS[c];
+      reply += `**${def.title}**\n${def.desc}\n`;
+      if (def.sizes) reply += `📦 ${def.sizes}\n`;
+      if (def.pricing) reply += `💰 ${def.pricing}\n`;
+      reply += '\n';
+    }
+    if (conceptsInMsg.length >= 2) {
+      reply += `💡 **الخلاصة**: استخدم ${concepts[0].toUpperCase()} للحجم الكبير و ${concepts[1].toUpperCase()} للصغير.`;
+    }
+    return { reply, actions, steps: 0, fallback_used: 'intent_concept' };
+  }
+
   // SEASONS check BEFORE rates — "متى أحسن وقت" should not match rates
   if (/متي.*احسن|متي.*افضل|افضل.*وقت|اوقات.*شحن|موسم|seasonal|peak.*season|low.*season/i.test(norm)) {
     return {
