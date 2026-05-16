@@ -1366,6 +1366,181 @@ async function webHandler(req) {
     }
 
     // ─── ADMIN ───
+    // ─── BOOKINGS (Customer + Admin) ───
+    if (segments[0] === 'bookings') {
+      const all = await isAdmin();
+      // GET /bookings — list
+      if (req.method === 'GET' && !segments[1]) {
+        const limit = parseInt(url.searchParams.get('limit') || '100');
+        const status = url.searchParams.get('status');
+        const filter = all ? '' : `&user_id=eq.${user.id}`;
+        let q = `/bookings?select=*&order=created_at.desc&limit=${limit}${filter}`;
+        if (status) q += `&status=eq.${status}`;
+        const data = await sb(q);
+        return json({ data, total: data.length, admin_view: all });
+      }
+      // GET /bookings/{id}
+      if (req.method === 'GET' && segments[1] && !segments[2]) {
+        const filter = all ? `id=eq.${segments[1]}` : `id=eq.${segments[1]}&user_id=eq.${user.id}`;
+        const [b] = await sb(`/bookings?${filter}&select=*&limit=1`);
+        if (!b) return json({ error: { code: 'NOT_FOUND' } }, 404);
+        return json(b);
+      }
+      // POST /bookings — create booking from quote/rate selection
+      if (req.method === 'POST' && !segments[1]) {
+        const body = await req.json();
+        // Customer info
+        const [profile] = await sb(`/profiles?id=eq.${user.id}&select=email,full_name,phone&limit=1`).catch(() => [null]);
+        const record = {
+          user_id: user.id,
+          customer_name: body.customer_name || profile?.full_name || '',
+          customer_email: body.customer_email || profile?.email || user.email,
+          customer_phone: body.customer_phone || profile?.phone || '',
+          origin_port: body.origin_port,
+          destination_port: body.destination_port,
+          carrier: body.carrier,
+          carrier_logo: body.carrier_logo || null,
+          container_type: body.container_type || '40HC',
+          quantity: body.quantity || 1,
+          commodity: body.commodity || '',
+          is_dangerous: !!body.is_dangerous,
+          ready_date: body.ready_date || null,
+          sailing_date: body.sailing_date || null,
+          eta: body.eta || null,
+          transit_days: body.transit_days || null,
+          freight_price: body.freight_price || body.price || 0,
+          currency: body.currency || 'USD',
+          services: body.services || [],
+          status: body.status || 'pending_booking',
+          source_quote_id: body.quote_id || null,
+          source_rate_request_id: body.rate_request_id || null,
+          api_request: body.api_request || null,
+          api_response: body.api_response || null,
+          customer_notes: body.notes || '',
+        };
+        const [created] = await sb('/bookings', { method: 'POST', body: [record] });
+        // Notify customer
+        await sb('/notifications', { method: 'POST', body: [{
+          user_id: user.id, type: 'success',
+          text: `تم استلام طلب الحجز <strong>${created.id}</strong>. يمكنك متابعة التفاصيل من لوحة التحكم.`,
+        }], prefer: 'return=minimal' });
+        // Notify admins
+        const admins = await sb('/profiles?role=in.(admin,super_admin)&select=id');
+        if (admins.length) {
+          await sb('/notifications', { method: 'POST', body: admins.map(a => ({
+            user_id: a.id, type: 'info',
+            text: `حجز جديد <strong>${created.id}</strong> من ${created.customer_name || created.customer_email}.`,
+          })), prefer: 'return=minimal' });
+        }
+        return json(created, 201);
+      }
+      // PATCH /bookings/{id} — update fields
+      if (req.method === 'PATCH' && segments[1] && !segments[2]) {
+        const body = await req.json();
+        const allowed = ['status', 'sailing_date', 'eta', 'booking_number', 'carrier_ref',
+                         'internal_notes', 'customer_notes', 'assigned_to', 'internal_cost',
+                         'margin', 'freight_price', 'transit_days'];
+        const patch = {};
+        for (const k of allowed) if (body[k] !== undefined) patch[k] = body[k];
+        // Customers can only update their own; admin all
+        const filter = all ? `id=eq.${segments[1]}` : `id=eq.${segments[1]}&user_id=eq.${user.id}`;
+        // Admin can update everything; customer only customer_notes
+        if (!all) {
+          for (const k of Object.keys(patch)) {
+            if (k !== 'customer_notes') delete patch[k];
+          }
+        }
+        const [updated] = await sb(`/bookings?${filter}`, { method: 'PATCH', body: patch });
+        if (!updated) return json({ error: { code: 'NOT_FOUND' } }, 404);
+        // Notify customer if status changed by admin
+        if (all && body.status && updated.user_id) {
+          const statusLabels = {
+            booking_confirmed: 'تم تأكيد الحجز ✅',
+            pending_manual_review: 'الحجز قيد المراجعة اليدوية ⏳',
+            booking_failed: 'تعذر تأكيد الحجز ⚠️',
+            shipment_in_progress: 'الشحنة جارية 🚢',
+            completed: 'اكتملت الشحنة ✅',
+            cancelled: 'تم إلغاء الحجز',
+          };
+          const label = statusLabels[body.status] || body.status;
+          await sb('/notifications', { method: 'POST', body: [{
+            user_id: updated.user_id, type: 'info',
+            text: `الحجز <strong>${updated.id}</strong>: ${label}`,
+          }], prefer: 'return=minimal' });
+        }
+        return json(updated);
+      }
+      // POST /bookings/{id}/confirm — admin marks as confirmed
+      if (req.method === 'POST' && segments[1] && segments[2] === 'confirm') {
+        if (!all) return json({ error: { code: 'FORBIDDEN' } }, 403);
+        const body = await req.json().catch(() => ({}));
+        const patch = {
+          status: 'booking_confirmed',
+          booking_number: body.booking_number || `BN-${Date.now().toString(36).toUpperCase()}`,
+          carrier_ref: body.carrier_ref || null,
+          sailing_date: body.sailing_date || null,
+          eta: body.eta || null,
+        };
+        const [updated] = await sb(`/bookings?id=eq.${segments[1]}`, { method: 'PATCH', body: patch });
+        if (!updated) return json({ error: { code: 'NOT_FOUND' } }, 404);
+        await sb('/notifications', { method: 'POST', body: [{
+          user_id: updated.user_id, type: 'success',
+          text: `✅ تم تأكيد الحجز <strong>${updated.id}</strong>. رقم الحجز: ${patch.booking_number}.`,
+        }], prefer: 'return=minimal' });
+        return json(updated);
+      }
+      // POST /bookings/{id}/cancel
+      if (req.method === 'POST' && segments[1] && segments[2] === 'cancel') {
+        const filter = all ? `id=eq.${segments[1]}` : `id=eq.${segments[1]}&user_id=eq.${user.id}`;
+        const [updated] = await sb(`/bookings?${filter}`, {
+          method: 'PATCH', body: { status: 'cancelled' },
+        });
+        if (!updated) return json({ error: { code: 'NOT_FOUND' } }, 404);
+        return json(updated);
+      }
+    }
+
+    // ─── MANUAL QUOTE REQUESTS (when API fails) ───
+    if (segments[0] === 'manual-quote-requests') {
+      const all = await isAdmin();
+      if (req.method === 'GET' && !segments[1]) {
+        const filter = all ? '' : `&user_id=eq.${user.id}`;
+        const data = await sb(`/manual_quote_requests?select=*&order=created_at.desc${filter}&limit=100`);
+        return json({ data, total: data.length, admin_view: all });
+      }
+      if (req.method === 'POST' && !segments[1]) {
+        const body = await req.json();
+        const [created] = await sb('/manual_quote_requests', { method: 'POST', body: [{
+          user_id: user.id,
+          origin_port: body.origin_port,
+          destination_port: body.destination_port,
+          container_type: body.container_type || '40HC',
+          quantity: body.quantity || 1,
+          commodity: body.commodity || '',
+          ready_date: body.ready_date || null,
+          services: body.services || [],
+          reason: body.reason || 'no_api_rates',
+          status: 'pending',
+        }]});
+        // Notify admins
+        const admins = await sb('/profiles?role=in.(admin,super_admin)&select=id');
+        if (admins.length) {
+          await sb('/notifications', { method: 'POST', body: admins.map(a => ({
+            user_id: a.id, type: 'warn',
+            text: `طلب تسعير يدوي جديد <strong>${created.id}</strong> — ${created.origin_port} → ${created.destination_port}`,
+          })), prefer: 'return=minimal' });
+        }
+        return json(created, 201);
+      }
+      if (req.method === 'PATCH' && segments[1]) {
+        if (!all) return json({ error: { code: 'FORBIDDEN' } }, 403);
+        const body = await req.json();
+        const [updated] = await sb(`/manual_quote_requests?id=eq.${segments[1]}`, { method: 'PATCH', body });
+        if (!updated) return json({ error: { code: 'NOT_FOUND' } }, 404);
+        return json(updated);
+      }
+    }
+
     if (segments[0] === 'admin') {
       const [profile] = await sb(`/profiles?id=eq.${user.id}&select=role&limit=1`);
       if (!profile || !['admin', 'super_admin'].includes(profile.role)) {
