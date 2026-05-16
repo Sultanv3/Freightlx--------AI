@@ -423,6 +423,95 @@ section { position: relative; z-index: 1; }
   display: flex; flex-wrap: wrap; gap: 8px;
 }
 
+/* ═══ PROGRESSIVE CARDS (after each bot message) ═══ */
+.progressive-cards {
+  display: flex; flex-direction: column; gap: 8px;
+  margin-top: 4px; max-width: 88%;
+  animation: cardSlideIn 0.4s cubic-bezier(0.4, 0, 0.2, 1) backwards;
+}
+.progressive-cards .next-card:nth-child(1) { animation-delay: 0.1s; }
+.progressive-cards .next-card:nth-child(2) { animation-delay: 0.2s; }
+.progressive-cards .next-card:nth-child(3) { animation-delay: 0.3s; }
+
+@keyframes cardSlideIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.next-card {
+  display: flex; align-items: center; gap: 12px;
+  padding: 12px 16px;
+  background: linear-gradient(135deg, #FFFFFF 0%, #FAFCFF 100%);
+  border: 1px solid var(--border);
+  border-radius: var(--r-lg);
+  cursor: pointer;
+  transition: all 0.18s cubic-bezier(0.4, 0, 0.2, 1);
+  text-align: right;
+  font-family: var(--font-ar);
+  font-size: 13.5px;
+  font-weight: 500;
+  color: var(--text);
+  box-shadow: var(--shadow-xs);
+  width: 100%;
+  position: relative;
+  overflow: hidden;
+  animation: cardSlideIn 0.4s cubic-bezier(0.4, 0, 0.2, 1) backwards;
+}
+
+.next-card::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, var(--blue-soft), transparent);
+  opacity: 0;
+  transition: opacity 0.2s;
+  pointer-events: none;
+}
+
+.next-card:hover {
+  border-color: var(--blue);
+  transform: translateX(-4px);
+  box-shadow: 0 4px 16px rgba(10, 132, 255, 0.18), 0 2px 6px rgba(10, 132, 255, 0.10);
+}
+.next-card:hover::before { opacity: 1; }
+
+.next-card:active { transform: translateX(-2px) scale(0.99); }
+
+.next-card .nc-icon {
+  font-size: 22px;
+  line-height: 1;
+  width: 36px; height: 36px;
+  display: flex; align-items: center; justify-content: center;
+  background: linear-gradient(135deg, var(--blue-soft), var(--cyan-soft));
+  border-radius: var(--r-md);
+  flex-shrink: 0;
+  transition: transform 0.18s;
+}
+.next-card:hover .nc-icon {
+  transform: scale(1.1) rotate(-3deg);
+  background: linear-gradient(135deg, var(--blue), var(--cyan));
+}
+.next-card:hover .nc-icon { color: #FFFFFF; }
+
+.next-card .nc-label {
+  flex: 1;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.next-card .nc-arrow {
+  font-family: var(--font-en);
+  font-weight: 700;
+  font-size: 18px;
+  color: var(--text-muted);
+  transition: all 0.18s;
+  flex-shrink: 0;
+}
+.next-card:hover .nc-arrow {
+  color: var(--blue);
+  transform: translateX(-4px);
+}
+
 .ai-action-card {
   display: inline-flex; align-items: center; gap: 6px;
   padding: 8px 12px;
@@ -1317,11 +1406,33 @@ section { position: relative; z-index: 1; }
     return t;
   }
 
-  function addMsg(text, who = 'bot') {
+  function addMsg(text, who = 'bot', actionCards = null) {
+    const wrap = document.createElement('div');
+    wrap.style.cssText = 'display:flex; flex-direction:column; align-items:' + (who === 'user' ? 'flex-end' : 'flex-start') + '; gap:10px;';
     const div = document.createElement('div');
     div.className = 'msg msg-' + (who === 'user' ? 'user' : 'bot');
     div.innerHTML = renderMarkdown(text);
-    body.appendChild(div);
+    wrap.appendChild(div);
+
+    // Progressive action cards (suggested next steps)
+    if (who === 'bot' && Array.isArray(actionCards) && actionCards.length > 0) {
+      const cardsWrap = document.createElement('div');
+      cardsWrap.className = 'progressive-cards';
+      cardsWrap.innerHTML = actionCards.map(c => {
+        const icon = c.icon || '💬';
+        const label = String(c.label || '').replace(/[&<>]/g, m => ({ '&':'&amp;','<':'&lt;','>':'&gt;'}[m]));
+        const ask = String(c.ask || '').replace(/"/g, '&quot;');
+        return `<button class="next-card" data-ask="${ask}"><span class="nc-icon">${icon}</span><span class="nc-label">${label}</span><span class="nc-arrow">←</span></button>`;
+      }).join('');
+      wrap.appendChild(cardsWrap);
+
+      // Wire clicks
+      cardsWrap.querySelectorAll('.next-card').forEach(btn => {
+        btn.addEventListener('click', () => sendMessage(btn.dataset.ask));
+      });
+    }
+
+    body.appendChild(wrap);
     body.scrollTop = body.scrollHeight;
     return div;
   }
@@ -1363,7 +1474,7 @@ section { position: relative; z-index: 1; }
       const j = await r.json();
       typing.remove();
       const reply = j.reply || j.error || 'عذراً، حدث خطأ. حاول مرة ثانية.';
-      addMsg(reply, 'bot');
+      addMsg(reply, 'bot', j.actionCards || []);
       history.push({ role: 'assistant', content: reply });
     } catch (e) {
       typing.remove();
@@ -1374,8 +1485,13 @@ section { position: relative; z-index: 1; }
   }
 
   addMsg(
-    '👋 أهلاً! أنا **FREIGHTLX AI** — المهندس التشغيلي للمنصة.\n\nأنا لا أجيب فقط — أنفّذ مهامك فعلياً:\n• 🚢 أبحث عن أسعار شحن من 12 خط ملاحي عالمي\n• 🧮 أحسب التخليص الجمركي وضريبة 15%\n• 📜 أحدد شهادات سابر المطلوبة\n• ⚓ أبحث في 323 ميناء عالمي\n• 💼 أحسب التكلفة الكاملة للاستيراد\n\nاكتب سؤالك تحت، أو جرّب أحد الأمثلة 👇',
-    'bot'
+    '👋 أهلاً! أنا **FREIGHTLX AI** — المهندس التشغيلي للمنصة.\n\nأنا لا أجيب فقط — أنفّذ مهامك فعلياً:\n• 🚢 أبحث عن أسعار شحن من 12 خط ملاحي عالمي\n• 🧮 أحسب التخليص الجمركي وضريبة 15%\n• 📜 أحدد شهادات سابر المطلوبة\n• ⚓ أبحث في 323 ميناء عالمي\n• 💼 أحسب التكلفة الكاملة للاستيراد\n\nاختر بطاقة 👇 أو اكتب سؤالك',
+    'bot',
+    [
+      { icon: '🚢', label: 'سعر شحن من شنغهاي لجدة', ask: 'سعر شحن 40HC من شنغهاي لجدة' },
+      { icon: '🧮', label: 'احسب الجمارك والضريبة', ask: 'احسب جمارك 50000 ريال HS 851830' },
+      { icon: '📜', label: 'شهادات سابر لمنتجي', ask: 'وش شهادات سابر لاستيراد سماعات بلوتوث' },
+    ]
   );
 
   form.addEventListener('submit', (e) => { e.preventDefault(); sendMessage(input.value); });
