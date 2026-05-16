@@ -2022,6 +2022,22 @@ async function intentFallback(message, ctx, reason, history = []) {
   // ════════════════════════════════════════════════════════════
   // 3️⃣ RATE SEARCH — origin → destination
   // ════════════════════════════════════════════════════════════
+  // SEASONS check BEFORE rates — "متى أحسن وقت" should not match rates
+  if (/متى.*احسن|متى.*افضل|افضل.*وقت|اوقات.*شحن|موسم|seasonal|peak.*season|low.*season/i.test(norm)) {
+    return {
+      reply: `🗓 **مواسم الشحن للسوق السعودي:**\n\n` +
+             `🔴 **موسم الذروة** (${SHIPPING_SEASONS.peak.months.join('، ')})\n` +
+             `   ${SHIPPING_SEASONS.peak.reason}\n` +
+             `   ${SHIPPING_SEASONS.peak.impact}\n\n` +
+             `🟡 **موسم متوسط** (${SHIPPING_SEASONS.shoulder.months.join('، ')})\n` +
+             `   ${SHIPPING_SEASONS.shoulder.impact}\n\n` +
+             `🟢 **موسم منخفض** (${SHIPPING_SEASONS.low.months.join('، ')})\n` +
+             `   ${SHIPPING_SEASONS.low.reason} · ${SHIPPING_SEASONS.low.impact}\n\n` +
+             `💡 احجز قبل 4-6 أسابيع في موسم الذروة لتجنب الارتفاع.`,
+      actions, steps: 0, fallback_used: 'intent_seasonal_early',
+    };
+  }
+
   const ratesIntent = /سعر.*شحن|كم سعر|اسعار شحن|rate|shipping.*from|ship.*from|شحن.*من|شحن.*ال[يى]|freight|cost.*ship/i.test(norm);
   if (ratesIntent) {
     const found = findCity();
