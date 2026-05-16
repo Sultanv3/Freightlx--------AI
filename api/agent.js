@@ -1631,7 +1631,22 @@ function quickRateEstimate(originCode, destCode, containerType = '40HC') {
 // ─── Intent-based fallback (works without Gemini) ───────────────────────
 // Routes the user message to the right tool via keyword detection.
 // Priority order matters: most-specific intents first, greeting last.
-async function intentFallback(message, ctx, reason) {
+// English port aliases (city name → known canonical query)
+const EN_PORT_ALIASES = {
+  'shanghai': 'Shanghai', 'ningbo': 'Ningbo', 'shenzhen': 'Shenzhen',
+  'jeddah': 'Jeddah', 'dammam': 'Dammam', 'jubail': 'Jubail', 'yanbu': 'Yanbu',
+  'dubai': 'Dubai', 'jebel ali': 'Jebel Ali', 'jebelali': 'Jebel Ali',
+  'salalah': 'Salalah', 'mumbai': 'Mumbai', 'chennai': 'Chennai',
+  'singapore': 'Singapore', 'penang': 'Penang', 'klang': 'Klang',
+  'busan': 'Busan', 'hong kong': 'Hong Kong', 'hongkong': 'Hong Kong',
+  'rotterdam': 'Rotterdam', 'hamburg': 'Hamburg', 'antwerp': 'Antwerp',
+  'istanbul': 'Istanbul', 'ambarli': 'Istanbul',
+  'china': 'Shanghai', 'india': 'Mumbai', 'turkey': 'Istanbul', 'uae': 'Jebel Ali',
+  'germany': 'Hamburg', 'netherlands': 'Rotterdam', 'korea': 'Busan',
+  'saudi': 'Jeddah', 'saudi arabia': 'Jeddah', 'ksa': 'Jeddah',
+};
+
+async function intentFallback(message, ctx, reason, history = []) {
   const msg = String(message || '').toLowerCase();
   const actions = [];
 
@@ -1640,30 +1655,47 @@ async function intentFallback(message, ctx, reason) {
     .replace(/[ًٌٍَُِّْ]/g, '')
     .replace(/[إأآا]/g, 'ا')
     .replace(/ى/g, 'ي')
+    // Common typo fixes
+    .replace(/شنقهاي/g, 'شنغهاي')
+    .replace(/جده/g, 'جدة')
+    .replace(/شحنه/g, 'شحنة')
+    .replace(/شنزن/g, 'شنزن')
     .trim();
 
+  // ─── Context from last assistant message (for multi-turn) ────────
+  const lastAssistant = [...history].reverse().find(m => m.role === 'assistant')?.content || '';
+  const lastUser = [...history].reverse().find(m => m.role === 'user')?.content || '';
+  const wantsValue   = /قيمة|كم.*ريال|عطني.*قيم|value/i.test(lastAssistant);
+  const wantsPort    = /ميناء.*مصدر|وجهة|origin|destination/i.test(lastAssistant);
+  const inCustomsCtx = /جمرك|ضريبة|customs|vat/i.test(lastAssistant) || /جمرك|ضريبة/i.test(lastUser);
+  const inRatesCtx   = /سعر|شحن|rate|freight/i.test(lastAssistant) || /سعر|شحن/i.test(lastUser);
+
   // Helpers ────────
-  // Find Arabic cities IN MESSAGE ORDER (origin → destination matters for rates).
-  // Dedupe by english-port-name so "الصين"+"صين" don't both yield Shanghai.
-  // Also prefer longer match (e.g. "السعودية" over "سعودية") to avoid substring overlap.
+  // Find cities IN MESSAGE ORDER, supporting both Arabic and English aliases.
+  // Returns array of {city, en} so caller can lookup the canonical English name.
   const findCity = () => {
-    const cities = Object.keys(AR_PORT_ALIASES);
     const matches = [];
-    for (const c of cities) {
+    // Arabic aliases
+    for (const c of Object.keys(AR_PORT_ALIASES)) {
       const idx = norm.indexOf(c);
       if (idx >= 0) matches.push({ city: c, idx, len: c.length, en: AR_PORT_ALIASES[c] });
     }
-    // Sort by position. When two matches overlap at same idx (longer first wins).
+    // English aliases (msg is already lowercased)
+    for (const c of Object.keys(EN_PORT_ALIASES)) {
+      const idx = msg.indexOf(c);
+      if (idx >= 0) matches.push({ city: c, idx, len: c.length, en: EN_PORT_ALIASES[c] });
+    }
     matches.sort((a, b) => a.idx - b.idx || b.len - a.len);
-    // Dedupe: skip a match if any earlier KEPT match overlaps its range OR maps to same English port.
     const kept = [];
     for (const m of matches) {
       const overlaps = kept.some(k => m.idx >= k.idx && m.idx < k.idx + k.len);
       const duplicate = kept.some(k => k.en === m.en);
       if (!overlaps && !duplicate) kept.push(m);
     }
-    return kept.map(f => f.city);
+    return kept.map(f => f);  // return full objects with .en
   };
+  // Look up port code by alias key (English or Arabic)
+  const portEnglish = (cityObj) => cityObj?.en;
   const extractValue = () => {
     // Match standalone numbers (not HS codes which are usually 6+ digits attached to "hs")
     // Strip "hs ###" first to avoid confusing the value with the code
@@ -1682,11 +1714,63 @@ async function intentFallback(message, ctx, reason) {
   };
 
   // ════════════════════════════════════════════════════════════
+  // 0️⃣ FULL IMPORT COST — chained: rates + customs (highest priority)
+  //    "احسب التكلفة الكاملة" / "كم يكلفني" / "full cost" / "total cost"
+  // ════════════════════════════════════════════════════════════
+  const fullCostIntent = /تكلف[هة]\s*كامل|اجمالي.*تكلف|كم\s*يكلف|كم\s*التكلف|full.*cost|total.*cost|complete.*import/i.test(norm)
+                      || (/تكلف/.test(norm) && /استيراد|import/i.test(norm));
+  if (fullCostIntent) {
+    const cities = findCity();
+    const value = extractValue();
+    const ct = extractContainer();
+    const hsMatch = msg.match(/hs\s*[:\s]*([\d.]+)/i);
+    if (cities.length >= 2 && value && value >= 100) {
+      try {
+        // Step 1: shipping cost estimate
+        const o = await execTool('lookup_port', { q: cities[0].en }, ctx);
+        const d = await execTool('lookup_port', { q: cities[1].en }, ctx);
+        const oCode = o.results?.[0]?.code;
+        const dCode = d.results?.[0]?.code;
+        let shipping = null;
+        if (oCode && dCode) {
+          shipping = quickRateEstimate(oCode, dCode, ct).offers[0];
+          actions.push({ tool: 'quick_rate_estimate', args: { oCode, dCode, ct }, result: shipping });
+        }
+        // Step 2: customs
+        const customs = await execTool('calculate_customs_clearance', {
+          cif_value_sar: value, hs_code: hsMatch ? hsMatch[1] : null,
+        }, ctx);
+        actions.push({ tool: 'calculate_customs_clearance', args: { cif_value_sar: value }, result: customs });
+        // Render combined summary
+        const shipUsd = shipping?.price || 0;
+        const shipSar = Math.round(shipUsd * 3.75);
+        const customsTotal = customs?.total_landed_cost_sar || customs?.total_taxes_sar || 0;
+        const grandTotal = Number(value) + shipSar + customsTotal;
+        return {
+          reply: `📦 **التكلفة الكاملة لاستيراد ${ct} ${cities[0].city}→${cities[1].city}:**\n\n` +
+                 `• قيمة البضاعة: **${value.toLocaleString()} ﷼**\n` +
+                 (shipping ? `• الشحن (${shipping.carrier_name}): **${shipSar.toLocaleString()} ﷼** (~$${shipUsd.toLocaleString()})\n` : '') +
+                 `• الجمارك + ضريبة ١٥٪: **${customsTotal.toLocaleString()} ﷼**\n` +
+                 `\n💰 **الإجمالي: ${grandTotal.toLocaleString()} ﷼**`,
+          actions, steps: 0, fallback_used: 'intent_full_cost',
+        };
+      } catch (e) {}
+    }
+    // Missing data — ask for it
+    return {
+      reply: '**حساب التكلفة الكاملة** يحتاج:\n\n• ميناء المصدر (مثلاً: شنغهاي)\n• ميناء الوجهة (مثلاً: جدة)\n• قيمة البضاعة بالريال\n• نوع الحاوية (40HC افتراضياً)\n• HS code (اختياري للدقة)\n\nمثال: `احسب التكلفة الكاملة 40HC من شنغهاي لجدة قيمتها 80,000 ريال HS 851830`',
+      actions, steps: 0, fallback_used: 'intent_full_cost_incomplete',
+    };
+  }
+
+  // ════════════════════════════════════════════════════════════
   // 1️⃣ CUSTOMS CALCULATION — highest priority when intent is clear
   //    Triggered by explicit "احسب" + "جمرك/ضريبة"
   // ════════════════════════════════════════════════════════════
   const customsExplicit = /(?:احسب|حساب|calculate)\s.*(?:جمرك|جمارك|ضريبة|ضرايب|customs|vat|تخليص)/i.test(norm)
-                       || /(?:جمرك|جمارك|ضريبة|ضرايب|vat).*(?:احسب|حساب|calculate)/i.test(norm);
+                       || /(?:جمرك|جمارك|ضريبة|ضرايب|vat).*(?:احسب|حساب|calculate)/i.test(norm)
+                       // Context: previous turn asked for customs value, user replied with number
+                       || (inCustomsCtx && /^\s*[\d,.]+\s*(?:ريال|sar)?\s*$/i.test(norm));
   if (customsExplicit) {
     const value = extractValue();
     if (value && value >= 100) {
@@ -1737,14 +1821,14 @@ async function intentFallback(message, ctx, reason) {
   // ════════════════════════════════════════════════════════════
   // 3️⃣ RATE SEARCH — origin → destination
   // ════════════════════════════════════════════════════════════
-  const ratesIntent = /سعر.*شحن|كم سعر|اسعار شحن|rate|شحن.*من|شحن.*ال[يى]|freight|cost.*ship/i.test(norm);
+  const ratesIntent = /سعر.*شحن|كم سعر|اسعار شحن|rate|shipping.*from|ship.*from|شحن.*من|شحن.*ال[يى]|freight|cost.*ship/i.test(norm);
   if (ratesIntent) {
     const found = findCity();
     if (found.length >= 2) {
       try {
         const [origin, dest] = found;
-        const o = await execTool('lookup_port', { q: AR_PORT_ALIASES[origin] }, ctx);
-        const d = await execTool('lookup_port', { q: AR_PORT_ALIASES[dest] }, ctx);
+        const o = await execTool('lookup_port', { q: origin.en }, ctx);
+        const d = await execTool('lookup_port', { q: dest.en }, ctx);
         const oCode = o.results?.[0]?.code;
         const dCode = d.results?.[0]?.code;
         if (oCode && dCode) {
@@ -1781,9 +1865,9 @@ async function intentFallback(message, ctx, reason) {
   // ════════════════════════════════════════════════════════════
   if (/ميناء|port/i.test(norm)) {
     let loc = null;
-    // Strategy A: known Arabic city in message
+    // Strategy A: known city in message (AR or EN)
     const cities = findCity();
-    if (cities.length > 0) loc = AR_PORT_ALIASES[cities[0]];
+    if (cities.length > 0) loc = cities[0].en;
     // Strategy B: regex extraction after "ميناء"/"port"
     if (!loc) {
       const m = norm.match(/(?:ميناء|port(?:\s+code)?(?:\s+for)?)\s+([؀-ۿa-z]+)/i);
@@ -1849,10 +1933,41 @@ async function intentFallback(message, ctx, reason) {
   }
 
   // ════════════════════════════════════════════════════════════
-  // 8️⃣ DEFAULT — last resort
+  // 8️⃣ SMART DEFAULT — analyze what we DID parse, ask clarifying question
   // ════════════════════════════════════════════════════════════
+  // Detect partial intents and respond contextually
+  const hasCities = findCity().length;
+  const hasValue = !!extractValue();
+  const hasHs = /\bhs\s*[:\s]*[\d.]+/i.test(msg);
+  const mentionsImport = /استيراد|import|شحنه|شحنة|بضاع|cargo|goods|تجار/.test(norm);
+  const mentionsCompany = /شركه|شركة|company|business|تجار/.test(norm);
+  const mentionsBig = /\d{2,}\s*حاوي|\d{2,}\s*container/.test(norm);
+
+  if (mentionsImport || mentionsCompany || mentionsBig) {
+    // User describes a general scenario — give a contextual roadmap
+    let reply = '🚢 **خطوات الاستيراد للسوق السعودي:**\n\n';
+    reply += '1. **حدد المنتج + HS code** — يحدد التعرفة الجمركية والشهادات\n';
+    reply += '2. **شهادات سابر** — للمنتجات المنظَّمة (إلكترونيات / إطارات / بلاستيك)\n';
+    reply += '3. **اطلب أسعار شحن** — قارن 12 خط ملاحي عالمي\n';
+    reply += '4. **احسب التخليص** — رسوم جمركية + 15% ضريبة قيمة مضافة\n';
+    reply += '5. **احجز الشحنة** — ووثائق التسليم\n\n';
+    if (hasCities >= 2) reply += `📍 رصدت المسار في رسالتك — اكتب **"سعر شحن من ${findCity()[0].city} لـ${findCity()[1].city}"** لجلب الأسعار.\n`;
+    else if (hasCities === 1) reply += `📍 ذكرت **${findCity()[0].city}** — لإيجاد الأسعار أحتاج الميناء الثاني أيضاً.\n`;
+    reply += '\nأي خطوة تبي تبدأ فيها؟';
+    return { reply, actions, steps: 0, fallback_used: 'intent_general_advice' };
+  }
+
+  // Single-word vague queries → ask a leading question
+  if (norm.split(/\s+/).filter(Boolean).length <= 2) {
+    return {
+      reply: 'تحت أمرك. وش تحتاج بالضبط؟\n\n🚢 **سعر شحن** — أعطني الميناء المصدر والوجهة\n💰 **حساب جمارك** — أعطني قيمة البضاعة والـ HS code\n📜 **شهادات سابر** — أعطني نوع المنتج\n⚓ **بحث ميناء** — أعطني اسم المدينة\n📊 **تتبع شحنة** — أعطني رقم الشحنة',
+      actions, steps: 0, fallback_used: 'intent_clarify',
+    };
+  }
+
+  // Last resort
   return {
-    reply: 'لم أفهم سؤالك تماماً. جرّب أحد هذه:\n\n• **أسعار الشحن** — `سعر 40HC من شنغهاي إلى جدة`\n• **الجمارك** — `احسب جمارك 50,000 ريال HS 851830`\n• **شهادات سابر** — `ما الشهادات لاستيراد سماعات؟`\n• **الموانئ** — `كود ميناء الدمام`\n• **الديموراج** — `ديموراج 40HC تأخر 5 أيام`',
+    reply: 'لم أفهم سؤالك تماماً — لكني أساعدك في:\n\n• **أسعار الشحن** — `سعر 40HC من شنغهاي إلى جدة`\n• **الجمارك** — `احسب جمارك 50,000 ريال HS 851830`\n• **شهادات سابر** — `ما الشهادات لاستيراد سماعات؟`\n• **الموانئ** — `كود ميناء الدمام`\n• **الديموراج** — `ديموراج 40HC تأخر 5 أيام`\n• **التكلفة الكاملة** — `احسب التكلفة الكاملة لاستيراد 40HC من شنغهاي`',
     actions, steps: 0, fallback_used: 'intent_default',
     gemini_error: reason,
   };
@@ -1900,7 +2015,7 @@ async function runAgent(messages, ctx, maxSteps = 5) {
       // intent routing so the AI still gives useful answers without the LLM.
       if (step === 0) {
         const userMsg = messages[messages.length - 1]?.content || '';
-        return await intentFallback(userMsg, ctx, lastError);
+        return await intentFallback(userMsg, ctx, lastError, messages);
       }
       // Mid-conversation failure: use the last tool result if any
       const lastAction = actions[actions.length - 1];
@@ -1919,7 +2034,7 @@ async function runAgent(messages, ctx, maxSteps = 5) {
       // Empty candidate — route to intent fallback for first step too
       if (step === 0) {
         const userMsg = messages[messages.length - 1]?.content || '';
-        return await intentFallback(userMsg, ctx, 'empty_candidate');
+        return await intentFallback(userMsg, ctx, 'empty_candidate', messages);
       }
       return { reply: 'لم أتمكن من توليد رد. حاول إعادة الصياغة.', actions, steps: step };
     }
