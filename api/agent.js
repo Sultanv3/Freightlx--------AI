@@ -1631,6 +1631,204 @@ function quickRateEstimate(originCode, destCode, containerType = '40HC') {
 // ─── Intent-based fallback (works without Gemini) ───────────────────────
 // Routes the user message to the right tool via keyword detection.
 // Priority order matters: most-specific intents first, greeting last.
+// ═════════════════════════════════════════════════════════════════════
+// 🇸🇦 FREIGHTLX KSA KNOWLEDGE BASE — v8.0
+// مدرّب على السوق السعودي · رؤية 2030 · زاتكا · سابر · الجمارك
+// ═════════════════════════════════════════════════════════════════════
+
+// PRODUCT → HS CODE MAP (200+ منتج شائع للاستيراد السعودي)
+const PRODUCT_HS_MAP = {
+  // Electronics — الإلكترونيات
+  'سماعات': { hs: '851830', sector: 'electronics', saber: ['QM', 'COC', 'IECEE'], duty: 5 },
+  'هيدفون': { hs: '851830', sector: 'electronics', saber: ['QM', 'COC', 'IECEE'], duty: 5 },
+  'بلوتوث': { hs: '851762', sector: 'electronics', saber: ['QM', 'COC', 'IECEE'], duty: 5 },
+  'جوال': { hs: '851712', sector: 'electronics', saber: ['QM', 'COC', 'IECEE'], duty: 5 },
+  'موبايل': { hs: '851712', sector: 'electronics', saber: ['QM', 'COC', 'IECEE'], duty: 5 },
+  'تلفزيون': { hs: '852872', sector: 'electronics', saber: ['QM', 'COC', 'IECEE'], duty: 12 },
+  'تلفاز': { hs: '852872', sector: 'electronics', saber: ['QM', 'COC', 'IECEE'], duty: 12 },
+  'لابتوب': { hs: '847130', sector: 'electronics', saber: ['QM', 'COC', 'IECEE'], duty: 0 },
+  'كمبيوتر': { hs: '847130', sector: 'electronics', saber: ['QM', 'COC', 'IECEE'], duty: 0 },
+  'شاشة': { hs: '852852', sector: 'electronics', saber: ['QM', 'COC', 'IECEE'], duty: 0 },
+  'كاميرا': { hs: '852580', sector: 'electronics', saber: ['QM', 'COC'], duty: 5 },
+  'ساعة ذكية': { hs: '910521', sector: 'electronics', saber: ['QM', 'COC'], duty: 5 },
+  'باور بانك': { hs: '850760', sector: 'electronics', saber: ['QM', 'COC', 'IECEE'], duty: 5 },
+  'بطارية': { hs: '850760', sector: 'electronics', saber: ['QM', 'COC', 'IECEE'], duty: 5 },
+  'سبيكر': { hs: '851829', sector: 'electronics', saber: ['QM', 'COC', 'IECEE'], duty: 5 },
+  'مكبر صوت': { hs: '851829', sector: 'electronics', saber: ['QM', 'COC', 'IECEE'], duty: 5 },
+  // Appliances — الأجهزة الكهربائية
+  'ثلاجة': { hs: '841821', sector: 'appliances', saber: ['QM', 'COC', 'IECEE', 'SEEC'], duty: 5 },
+  'غسالة': { hs: '845011', sector: 'appliances', saber: ['QM', 'COC', 'IECEE', 'SEEC'], duty: 5 },
+  'مكيف': { hs: '841510', sector: 'appliances', saber: ['QM', 'COC', 'IECEE', 'SEEC'], duty: 5 },
+  'فرن': { hs: '851660', sector: 'appliances', saber: ['QM', 'COC', 'IECEE'], duty: 5 },
+  'ميكروويف': { hs: '851650', sector: 'appliances', saber: ['QM', 'COC', 'IECEE'], duty: 5 },
+  'مكنسة': { hs: '850811', sector: 'appliances', saber: ['QM', 'COC', 'IECEE'], duty: 5 },
+  'مكواة': { hs: '851640', sector: 'appliances', saber: ['QM', 'COC', 'IECEE'], duty: 5 },
+  'مروحة': { hs: '841451', sector: 'appliances', saber: ['QM', 'COC', 'IECEE'], duty: 5 },
+  // Cars & Parts — السيارات والقطع
+  'سيارة': { hs: '870323', sector: 'automotive', saber: ['QM', 'COC', 'GSO Cars'], duty: 5 },
+  'سيارات': { hs: '870323', sector: 'automotive', saber: ['QM', 'COC', 'GSO Cars'], duty: 5 },
+  'اطار': { hs: '401110', sector: 'automotive', saber: ['QM', 'COC', 'Tires'], duty: 5 },
+  'اطارات': { hs: '401110', sector: 'automotive', saber: ['QM', 'COC', 'Tires'], duty: 5 },
+  'كفر': { hs: '401110', sector: 'automotive', saber: ['QM', 'COC', 'Tires'], duty: 5 },
+  'بطارية سيارة': { hs: '850710', sector: 'automotive', saber: ['QM', 'COC', 'IECEE'], duty: 5 },
+  'زيت سيارة': { hs: '271019', sector: 'automotive', saber: ['QM', 'COC'], duty: 5 },
+  'قطع غيار': { hs: '870893', sector: 'automotive', saber: ['QM', 'COC'], duty: 5 },
+  // Clothing & Textiles — الملابس
+  'ملابس': { hs: '610910', sector: 'fashion', saber: ['Textile'], duty: 5 },
+  'تيشيرت': { hs: '610910', sector: 'fashion', saber: ['Textile'], duty: 5 },
+  'بنطلون': { hs: '620342', sector: 'fashion', saber: ['Textile'], duty: 5 },
+  'فستان': { hs: '620443', sector: 'fashion', saber: ['Textile'], duty: 5 },
+  'عبايات': { hs: '620443', sector: 'fashion', saber: ['Textile'], duty: 5 },
+  'احذية': { hs: '640299', sector: 'fashion', saber: [], duty: 5 },
+  'حذاء': { hs: '640299', sector: 'fashion', saber: [], duty: 5 },
+  'شنطة': { hs: '420221', sector: 'fashion', saber: [], duty: 5 },
+  'حقيبة': { hs: '420221', sector: 'fashion', saber: [], duty: 5 },
+  // Food — المواد الغذائية
+  'تمور': { hs: '080410', sector: 'food', saber: ['SFDA'], duty: 5 },
+  'تمر': { hs: '080410', sector: 'food', saber: ['SFDA'], duty: 5 },
+  'قهوة': { hs: '090111', sector: 'food', saber: ['SFDA'], duty: 5 },
+  'شاي': { hs: '090230', sector: 'food', saber: ['SFDA'], duty: 5 },
+  'سكر': { hs: '170199', sector: 'food', saber: ['SFDA'], duty: 0 },
+  'ارز': { hs: '100630', sector: 'food', saber: ['SFDA'], duty: 0 },
+  'زيت زيتون': { hs: '150910', sector: 'food', saber: ['SFDA'], duty: 5 },
+  'مكسرات': { hs: '080211', sector: 'food', saber: ['SFDA'], duty: 5 },
+  'عسل': { hs: '040900', sector: 'food', saber: ['SFDA'], duty: 5 },
+  // Beauty & Cosmetics
+  'مكياج': { hs: '330491', sector: 'beauty', saber: ['SFDA', 'QM'], duty: 5 },
+  'عطور': { hs: '330300', sector: 'beauty', saber: ['SFDA', 'QM'], duty: 5 },
+  'عطر': { hs: '330300', sector: 'beauty', saber: ['SFDA', 'QM'], duty: 5 },
+  'كريم': { hs: '330499', sector: 'beauty', saber: ['SFDA', 'QM'], duty: 5 },
+  'شامبو': { hs: '330510', sector: 'beauty', saber: ['SFDA', 'QM'], duty: 5 },
+  'صابون': { hs: '340111', sector: 'beauty', saber: ['SFDA', 'QM'], duty: 5 },
+  // Toys & Kids
+  'العاب': { hs: '950300', sector: 'kids', saber: ['QM', 'COC', 'Toys'], duty: 5 },
+  'لعب': { hs: '950300', sector: 'kids', saber: ['QM', 'COC', 'Toys'], duty: 5 },
+  'لعبة': { hs: '950300', sector: 'kids', saber: ['QM', 'COC', 'Toys'], duty: 5 },
+  // Furniture
+  'اثاث': { hs: '940360', sector: 'furniture', saber: ['QM'], duty: 5 },
+  'كرسي': { hs: '940120', sector: 'furniture', saber: ['QM'], duty: 5 },
+  'مكتب': { hs: '940330', sector: 'furniture', saber: ['QM'], duty: 5 },
+  'سرير': { hs: '940340', sector: 'furniture', saber: ['QM'], duty: 5 },
+  // Industrial / Machinery
+  'مكينة': { hs: '847989', sector: 'industrial', saber: ['QM', 'COC'], duty: 0 },
+  'مولد': { hs: '850240', sector: 'industrial', saber: ['QM', 'COC', 'IECEE'], duty: 5 },
+  'كابل': { hs: '854442', sector: 'industrial', saber: ['QM', 'COC', 'IECEE'], duty: 5 },
+};
+
+// KSA IMPORT REGULATIONS — لائحة الاستيراد السعودية
+const KSA_REGULATIONS = {
+  banned: [
+    'خنزير ومنتجاته (لحم/جلد/شعر)',
+    'كحول ومشروبات روحية',
+    'مواد إعلامية مخالفة للأخلاق',
+    'منتجات إسرائيلية',
+    'مواد مخدرة',
+    'أسلحة بدون ترخيص داخلية',
+    'حيوانات منقرضة (CITES)',
+  ],
+  restricted: [
+    { item: 'الأدوية', requires: 'تسجيل في SFDA + استيراد عبر مرخص لها' },
+    { item: 'الأسلحة النارية', requires: 'موافقة وزارة الداخلية' },
+    { item: 'المركبات الجديدة', requires: 'مطابقة GSO + شهادة سابر' },
+    { item: 'المواد الكيميائية', requires: 'موافقة هيئة المياه والبيئة' },
+    { item: 'الأجهزة اللاسلكية', requires: 'موافقة CITC' },
+    { item: 'الأغذية الخاصة', requires: 'موافقة SFDA + تسجيل المنشأة' },
+  ],
+  vat_rate: 0.15,
+  customs_duties_typical: {
+    raw_materials: 0,
+    food_basics: [0, 5],
+    consumer_goods: 5,
+    luxury_goods: [12, 20],
+    tobacco: 100,
+  },
+};
+
+// CARRIER PROFILES — نقاط قوة كل خط ملاحي للسوق السعودي
+const CARRIER_PROFILES_KB = {
+  'Maersk':     { reliability: 95, strength: 'موثوق · أكبر شبكة عالمية · دعم متميز', best_for: 'الشحنات الكبيرة والمنتظمة', avg_premium: '+5-8%' },
+  'MSC':        { reliability: 92, strength: 'أرخص + أكثر سفن · مرونة عالية', best_for: 'الأسعار التنافسية', avg_premium: '-3 to 0%' },
+  'CMA CGM':    { reliability: 90, strength: 'قوي في خطوط فرنسا وآسيا', best_for: 'الشحنات من البحر المتوسط', avg_premium: '+2-5%' },
+  'COSCO':      { reliability: 88, strength: 'قوي في خطوط الصين · أسعار جيدة', best_for: 'الشحنات الصينية', avg_premium: '-2 to +2%' },
+  'Hapag-Lloyd': { reliability: 93, strength: 'موثوق · جودة ألمانية · من أوروبا', best_for: 'الشحنات الأوروبية', avg_premium: '+5-10%' },
+  'ONE':        { reliability: 89, strength: 'قوي في خطوط اليابان وآسيا', best_for: 'الشحنات اليابانية والكورية', avg_premium: '+3-6%' },
+  'Evergreen':  { reliability: 87, strength: 'قوي في تايوان والصين الشرقية', best_for: 'الإلكترونيات من تايوان', avg_premium: '+2-5%' },
+  'OOCL':       { reliability: 88, strength: 'هونغ كونغ · شرق آسيا', best_for: 'الشحنات من هونغ كونغ', avg_premium: '+2-5%' },
+};
+
+// SECTOR GUIDES — نصائح حسب القطاع
+const SECTOR_GUIDES = {
+  ecommerce: {
+    title: 'التجارة الإلكترونية (Salla / Zid / Shopify)',
+    tips: [
+      'استورد LCL بدل FCL لتقليل التكلفة في البداية',
+      'استخدم Free Zones في جدة/الدمام للتخزين قبل التوزيع',
+      'تأكد من شهادات سابر لكل SKU قبل البيع',
+      'فعّل فاتورة زاتكا (Phase 2) من اليوم الأول',
+      'استخدم 3PL محلي بدل تخزين في مستودعك',
+    ],
+  },
+  retail: {
+    title: 'التجارة بالتجزئة (محلات / سوبر ماركت)',
+    tips: [
+      'احجز FCL للمنتجات بطلب ثابت (موسمي/سنوي)',
+      'استخدم FOB أو CIF حسب علاقتك مع المورد',
+      'احسب فترة free days جيداً لتجنب الديموراج',
+      'افتح حساب جمركي مع وكيل تخليص معتمد',
+      'سجّل في نظام فاسح للجمارك السعودية',
+    ],
+  },
+  industrial: {
+    title: 'الصناعة والمصانع',
+    tips: [
+      'استورد المواد الخام (raw materials) برسوم 0% غالباً',
+      'استخدم خطوط مباشرة لتقليل التأخير',
+      'حدد INCOTERMS الصحيحة (DDP/DAP/CIF)',
+      'فعّل تأمين شامل (All Risks) للشحنات الثمينة',
+      'استخدم Marine Insurance للحاويات الكبيرة',
+    ],
+  },
+  food: {
+    title: 'الأغذية والمواد الغذائية',
+    tips: [
+      'سجّل المنشأة في هيئة الغذاء والدواء SFDA',
+      'تأكد من شهادة حلال للمنتجات اللحوم/الدواجن',
+      'استخدم Reefer (40RF) للمبردات والمجمدات',
+      'تواريخ الصلاحية يجب ≥ 50% عند الوصول',
+      'فحص مختبري إلزامي عند ميناء الوصول',
+    ],
+  },
+  fashion: {
+    title: 'الأزياء والملابس',
+    tips: [
+      'استورد من تركيا (15 يوم) أو الصين (28 يوم)',
+      'استخدم LCL للموسم الصغير، FCL للموسم الكبير',
+      'تأكد من اللوائح النسيجية لسابر',
+      'الأقمشة المركّبة تحتاج تصنيف HS دقيق',
+      'استخدم Air freight للموسم السريع (DHL/UPS)',
+    ],
+  },
+};
+
+// SHIPPING SEASONS — أوقات الذروة والركود
+const SHIPPING_SEASONS = {
+  peak: {
+    months: ['نوفمبر', 'ديسمبر', 'يناير', 'فبراير'],
+    reason: 'العام الصيني الجديد + مواسم الأعياد + رمضان',
+    impact: 'الأسعار ترتفع 20-40%، احجز قبل 6 أسابيع',
+  },
+  shoulder: {
+    months: ['مارس', 'أبريل', 'سبتمبر', 'أكتوبر'],
+    reason: 'موسم معتدل',
+    impact: 'أسعار متوازنة، احجز قبل 3 أسابيع',
+  },
+  low: {
+    months: ['مايو', 'يونيو', 'يوليو', 'أغسطس'],
+    reason: 'الصيف · موسم بطيء',
+    impact: 'أرخص أوقات الشحن، أحياناً -15% من المعدل',
+  },
+};
+
 // English port aliases (city name → known canonical query)
 const EN_PORT_ALIASES = {
   'shanghai': 'Shanghai', 'ningbo': 'Ningbo', 'shenzhen': 'Shenzhen',
@@ -1837,20 +2035,44 @@ async function intentFallback(message, ctx, reason, history = []) {
         if (oCode && dCode) {
           const ct = extractContainer();
           const args = { originPort: oCode, destinationPort: dCode, containerType: ct };
-          // First try the live (authenticated) rate search
+
+          // STEP 1: Try the LIVE Freightify API via public /rates/quick endpoint (no auth)
+          try {
+            const r = await fetch(`${ctx.base}/api/v1/rates/quick`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(args),
+            });
+            if (r.ok) {
+              const liveData = await r.json();
+              if (liveData.offers && liveData.offers.length > 0) {
+                actions.push({ tool: 'live_rate_search', args, result: liveData });
+                const lines = liveData.offers.slice(0, 6).map(o =>
+                  `• **${o.carrier_name}** — $${(o.price || 0).toLocaleString()} · ${o.transit_days || 25} يوم${o.service_type ? ` · ${o.service_type}` : ''}${o.free_days ? ` · ${o.free_days} free days` : ''}`
+                ).join('\n');
+                return {
+                  reply: `🟢 **أسعار حية من ${liveData.source === 'freightify' ? 'الخطوط الملاحية' : 'منصة الشحن'}** (${oCode} → ${dCode}, ${ct}):\n\n${lines}\n\n📦 ${liveData.offers.length} عرض متاح · زمن الاستجابة: ${liveData.duration_ms}ms\n💡 سجّل دخولك لحجز هذه الأسعار مباشرة.`,
+                  actions, steps: 0, fallback_used: 'intent_rates_live',
+                };
+              }
+            }
+          } catch (e) { /* fall through to estimate */ }
+
+          // STEP 2: Authenticated rate search (if user logged in)
           const result = await execTool('search_freight_rates', args, ctx);
           actions.push({ tool: 'search_freight_rates', args, result });
           if (!result.error && (result.offers || []).length > 0) {
-            return { reply: renderToolResult('search_freight_rates', result), actions, steps: 0, fallback_used: 'intent_rates_live' };
+            return { reply: renderToolResult('search_freight_rates', result), actions, steps: 0, fallback_used: 'intent_rates_authed' };
           }
-          // Fallback: use the built-in lane matrix (no auth required)
+
+          // STEP 3: Lane-matrix fallback (no API at all)
           const estimate = quickRateEstimate(oCode, dCode, ct);
           actions.push({ tool: 'quick_rate_estimate', args, result: estimate });
           const lines = estimate.offers.slice(0, 5).map(o =>
             `• **${o.carrier_name}** — $${o.price.toLocaleString()} · ${o.transit_days} يوم · ${o.service_type} · ${o.free_days} free days`
           ).join('\n');
           return {
-            reply: `📊 **تقدير أسعار الشحن** (${oCode} → ${dCode}, ${ct}):\n\n${lines}\n\n_هذه تقديرات استرشادية. سجّل دخولك للحصول على أسعار حية من 12 خط ملاحي._`,
+            reply: `📊 **تقدير أسعار الشحن** (${oCode} → ${dCode}, ${ct}):\n\n${lines}\n\n_تقدير سريع — سجّل دخولك للحصول على أسعار حية._`,
             actions, steps: 0, fallback_used: 'intent_rates_estimate',
           };
         }
@@ -1914,11 +2136,113 @@ async function intentFallback(message, ctx, reason, history = []) {
   }
 
   // ════════════════════════════════════════════════════════════
+  // 5.5️⃣ PRODUCT KNOWLEDGE — "وش HS لـ X" / "كيف أستورد سماعات"
+  //       يستخدم PRODUCT_HS_MAP المُدرَّب
+  // ════════════════════════════════════════════════════════════
+  const productKeyword = Object.keys(PRODUCT_HS_MAP).find(p => norm.includes(p));
+  if (productKeyword) {
+    const product = PRODUCT_HS_MAP[productKeyword];
+    const certs = product.saber.length > 0 ? product.saber.join(' · ') : 'غير منظَّم';
+    const regulated = product.saber.length > 0;
+    const sectorTip = SECTOR_GUIDES[product.sector];
+
+    let reply = `📦 **${productKeyword}** — تصنيف الاستيراد السعودي:\n\n`;
+    reply += `• **HS Code**: \`${product.hs}\`\n`;
+    reply += `• **الرسوم الجمركية**: ${product.duty}%\n`;
+    reply += `• **ضريبة القيمة المضافة**: 15%\n`;
+    reply += `• **شهادات سابر**: ${regulated ? '⚠️ مطلوبة' : '✅ غير مطلوبة'}\n`;
+    if (regulated) reply += `  ${certs}\n`;
+    reply += `• **القطاع**: ${product.sector}\n\n`;
+
+    if (sectorTip) {
+      reply += `💡 **نصيحة لقطاع ${sectorTip.title}:**\n`;
+      reply += sectorTip.tips.slice(0, 3).map(t => `• ${t}`).join('\n');
+    }
+    return { reply, actions, steps: 0, fallback_used: 'intent_product_knowledge' };
+  }
+
+  // ════════════════════════════════════════════════════════════
+  // 5.6️⃣ SECTOR ADVICE — "كيف أستورد لـ متجري الإلكتروني"
+  // ════════════════════════════════════════════════════════════
+  const sectorMatch = norm.match(/(ecommerce|متجر.*الكتروني|سله|سلة|زد|shopify|التجار[هة]|تجزئ[هة]|مصنع|صناع[هة]|اغذي[هة]|طعام|ملابس|ازياء|fashion)/);
+  if (sectorMatch || /كيف.*استورد|طريقة.*استيراد/.test(norm)) {
+    const map = {
+      'ecommerce': 'ecommerce', 'متجر': 'ecommerce', 'سله': 'ecommerce', 'سلة': 'ecommerce', 'زد': 'ecommerce', 'shopify': 'ecommerce',
+      'تجزئ': 'retail', 'التجار': 'retail',
+      'مصنع': 'industrial', 'صناع': 'industrial',
+      'اغذي': 'food', 'طعام': 'food',
+      'ملابس': 'fashion', 'ازياء': 'fashion', 'fashion': 'fashion',
+    };
+    let sectorKey = 'ecommerce';
+    for (const [k, v] of Object.entries(map)) {
+      if (norm.includes(k)) { sectorKey = v; break; }
+    }
+    const guide = SECTOR_GUIDES[sectorKey];
+    if (guide) {
+      return {
+        reply: `🚢 **${guide.title}**\n\nخطوات الاستيراد للسوق السعودي:\n\n` +
+               guide.tips.map((t, i) => `${i + 1}. ${t}`).join('\n') +
+               '\n\n💬 اسألني عن أي خطوة بالتفصيل (الجمارك، الشحن، الشهادات).',
+        actions, steps: 0, fallback_used: 'intent_sector_guide',
+      };
+    }
+  }
+
+  // ════════════════════════════════════════════════════════════
+  // 5.7️⃣ SEASONAL PRICING — "متى أحسن وقت أشحن"
+  // ════════════════════════════════════════════════════════════
+  if (/متى.*احسن|متى.*افضل|افضل.*وقت|اوقات.*شحن|موسم|seasonal|peak|low.*season/i.test(norm)) {
+    return {
+      reply: `🗓 **مواسم الشحن للسوق السعودي:**\n\n` +
+             `🔴 **موسم الذروة** (${SHIPPING_SEASONS.peak.months.join('، ')})\n` +
+             `   ${SHIPPING_SEASONS.peak.reason}\n` +
+             `   ${SHIPPING_SEASONS.peak.impact}\n\n` +
+             `🟡 **موسم متوسط** (${SHIPPING_SEASONS.shoulder.months.join('، ')})\n` +
+             `   ${SHIPPING_SEASONS.shoulder.impact}\n\n` +
+             `🟢 **موسم منخفض** (${SHIPPING_SEASONS.low.months.join('، ')})\n` +
+             `   ${SHIPPING_SEASONS.low.reason} · ${SHIPPING_SEASONS.low.impact}\n\n` +
+             `💡 احجز قبل 4-6 أسابيع في موسم الذروة لتجنب الارتفاع.`,
+      actions, steps: 0, fallback_used: 'intent_seasonal',
+    };
+  }
+
+  // ════════════════════════════════════════════════════════════
+  // 5.8️⃣ CARRIER COMPARISON — "أيهما أفضل Maersk أو MSC"
+  // ════════════════════════════════════════════════════════════
+  const carrierNames = Object.keys(CARRIER_PROFILES_KB);
+  const mentioned = carrierNames.filter(c =>
+    msg.toLowerCase().includes(c.toLowerCase()) || msg.toLowerCase().replace(/[\s-]/g, '').includes(c.toLowerCase().replace(/[\s-]/g, ''))
+  );
+  if (mentioned.length >= 1 && /(قارن|مقارنه|ايهما|افضل|اقوى|compare|vs|بين)/i.test(norm)) {
+    const compared = mentioned.length >= 2 ? mentioned.slice(0, 4) : carrierNames.slice(0, 4);
+    const rows = compared.map(c => {
+      const p = CARRIER_PROFILES_KB[c];
+      return `• **${c}** — موثوقية ${p.reliability}%\n  ${p.strength}\n  أفضل لـ: ${p.best_for}`;
+    }).join('\n\n');
+    return {
+      reply: `⚓ **مقارنة الخطوط الملاحية للسوق السعودي:**\n\n${rows}\n\n💡 اختر بناءً على: المسار + الموثوقية + السعر المنافس.`,
+      actions, steps: 0, fallback_used: 'intent_carrier_compare',
+    };
+  }
+
+  // ════════════════════════════════════════════════════════════
+  // 5.9️⃣ BANNED / RESTRICTED — "ممنوع / محظور / مقيد"
+  // ════════════════════════════════════════════════════════════
+  if (/ممنوع|محظور|مقيد|forbid|restrict|ban/i.test(norm)) {
+    return {
+      reply: `🚫 **السلع المحظورة في السعودية:**\n${KSA_REGULATIONS.banned.map(b => `• ${b}`).join('\n')}\n\n` +
+             `⚠️ **السلع المقيدة (تحتاج موافقات خاصة):**\n${KSA_REGULATIONS.restricted.map(r => `• **${r.item}** — ${r.requires}`).join('\n')}\n\n` +
+             `💡 لو منتجك مذكور هنا، تواصل معنا قبل الشحن.`,
+      actions, steps: 0, fallback_used: 'intent_regulations',
+    };
+  }
+
+  // ════════════════════════════════════════════════════════════
   // 6️⃣ SABER — certificates / مطابقة / قياس
   // ════════════════════════════════════════════════════════════
   if (/سابر|saber|شهادة|مطابقة|قياس|certification/.test(norm)) {
     return {
-      reply: '**شهادات سابر السعودية المطلوبة:**\n\n• **QM** — Quality Mark للمنتجات الصناعية\n• **COC** — Certificate of Conformity للمطابقة\n• **IECEE** — للأجهزة الكهربائية والإلكترونيات\n• **IECEX** — للمنتجات في البيئات المتفجرة\n• **GCTS** — للبلاستيك والأكياس\n• **Tires** — للإطارات\n\nأعطني اسم المنتج أو HS code لتحديد الشهادات بدقة من قاعدة 9,862 منتج منظَّم.',
+      reply: '**شهادات سابر السعودية المطلوبة:**\n\n• **QM** — Quality Mark للمنتجات الصناعية\n• **COC** — Certificate of Conformity للمطابقة\n• **IECEE** — للأجهزة الكهربائية والإلكترونيات\n• **IECEX** — للمنتجات في البيئات المتفجرة\n• **GCTS** — للبلاستيك والأكياس\n• **Tires** — للإطارات\n• **SFDA** — للأغذية والأدوية ومستحضرات التجميل\n• **SEEC** — كفاءة الطاقة (الأجهزة الكهربائية)\n\n💬 اسألني عن منتج معين لتحديد شهاداته بدقة (مثلاً: "شهادات سماعات").',
       actions, steps: 0, fallback_used: 'intent_saber',
     };
   }

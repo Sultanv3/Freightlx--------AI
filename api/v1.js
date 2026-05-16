@@ -732,6 +732,42 @@ async function webHandler(req) {
     }
   }
 
+  // ── PUBLIC: Quick rate search (no auth required, used by AI agent) ──
+  // Hits real Freightify API for live prices, falls back to lane-aware matrix.
+  if (segments[0] === 'rates' && segments[1] === 'quick' && req.method === 'POST') {
+    try {
+      const body = await req.json();
+      const t0 = Date.now();
+      const fxResult = await fetchFreightifyRates(body);
+      let offers = [];
+      let source = fxResult.source;
+      if (fxResult.offers && fxResult.offers.length > 0) {
+        // Enrich with carrier brand info
+        let carriers = [];
+        try { carriers = await sb('/carriers?active=eq.true&select=code,name,brand_color,logo_url,country'); } catch {}
+        const byCode = new Map(carriers.map(c => [c.code, c]));
+        const byName = new Map(carriers.map(c => [c.name.toLowerCase(), c]));
+        offers = fxResult.offers
+          .map(o => {
+            const c = byCode.get(o.carrier_code) || byName.get((o.carrier_name || '').toLowerCase());
+            return { ...o, carrier_logo: o.carrier_logo || c?.logo_url, brand_color: o.brand_color || c?.brand_color };
+          })
+          .filter(o => o.price > 0)
+          .sort((a, b) => a.price - b.price)
+          .slice(0, 12);
+      }
+      return json({
+        offers, total: offers.length, source,
+        duration_ms: Date.now() - t0,
+        freightify_req_id: fxResult.reqId || null,
+        in_progress: !!fxResult.in_progress,
+        note: 'تقدير سريع · سجّل دخولك للوصول للأسعار الكاملة وحجز الشحنة',
+      });
+    } catch (e) {
+      return json({ error: { code: 'QUICK_RATE_ERROR', message: e.message }, offers: [] }, 500);
+    }
+  }
+
   // ── Protected routes ──
   const user = await getUserFromAuth(req);
   if (!user) return json({ error: { code: 'UNAUTHORIZED', message: 'Supabase Bearer token required' } }, 401);
