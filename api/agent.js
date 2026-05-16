@@ -2023,7 +2023,7 @@ async function intentFallback(message, ctx, reason, history = []) {
   // 3️⃣ RATE SEARCH — origin → destination
   // ════════════════════════════════════════════════════════════
   // SEASONS check BEFORE rates — "متى أحسن وقت" should not match rates
-  if (/متى.*احسن|متى.*افضل|افضل.*وقت|اوقات.*شحن|موسم|seasonal|peak.*season|low.*season/i.test(norm)) {
+  if (/متي.*احسن|متي.*افضل|افضل.*وقت|اوقات.*شحن|موسم|seasonal|peak.*season|low.*season/i.test(norm)) {
     return {
       reply: `🗓 **مواسم الشحن للسوق السعودي:**\n\n` +
              `🔴 **موسم الذروة** (${SHIPPING_SEASONS.peak.months.join('، ')})\n` +
@@ -2207,7 +2207,7 @@ async function intentFallback(message, ctx, reason, history = []) {
   // ════════════════════════════════════════════════════════════
   // 5.7️⃣ SEASONAL PRICING — "متى أحسن وقت أشحن"
   // ════════════════════════════════════════════════════════════
-  if (/متى.*احسن|متى.*افضل|افضل.*وقت|اوقات.*شحن|موسم|seasonal|peak|low.*season/i.test(norm)) {
+  if (/متي.*احسن|متي.*افضل|افضل.*وقت|اوقات.*شحن|موسم|seasonal|peak|low.*season/i.test(norm)) {
     return {
       reply: `🗓 **مواسم الشحن للسوق السعودي:**\n\n` +
              `🔴 **موسم الذروة** (${SHIPPING_SEASONS.peak.months.join('، ')})\n` +
