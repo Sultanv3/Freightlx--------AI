@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FREIGHTLX — اختبار النظام الكامل</title>
+<link rel="icon" href="/assets/logo/color-logo.svg">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&family=Fraunces:wght@600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'IBM Plex Sans Arabic', system-ui, sans-serif;
+    background: linear-gradient(180deg, #050e18 0%, #0b1a30 100%);
+    color: #e8eef5; min-height: 100vh; padding: 32px 20px;
+  }
+  .wrap { max-width: 1100px; margin: 0 auto; }
+  .header {
+    text-align: center; margin-bottom: 40px;
+    padding: 32px 24px;
+    background: linear-gradient(135deg, rgba(10,132,255,.08), rgba(57,198,255,.04));
+    border: 1px solid rgba(57,198,255,.15);
+    border-radius: 24px;
+  }
+  h1 {
+    font-family: Fraunces, serif; font-size: 36px; font-weight: 700;
+    background: linear-gradient(90deg, #fff, #9bd9ff);
+    -webkit-background-clip: text; background-clip: text; color: transparent;
+    margin-bottom: 8px;
+  }
+  .sub { color: #94a3b8; font-size: 15px; }
+  .status-bar {
+    display: flex; gap: 12px; justify-content: center;
+    margin-top: 20px; flex-wrap: wrap;
+  }
+  .status-pill {
+    background: rgba(255,255,255,.05); padding: 8px 16px;
+    border-radius: 999px; font-size: 13px;
+    border: 1px solid rgba(255,255,255,.08);
+    display: flex; align-items: center; gap: 8px;
+  }
+  .dot {
+    width: 8px; height: 8px; border-radius: 50%; background: #94a3b8;
+    box-shadow: 0 0 6px currentColor;
+  }
+  .dot.ok { background: #34d399; }
+  .dot.fail { background: #ef4444; }
+
+  .grid {
+    display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+    gap: 16px;
+  }
+  .card {
+    background: rgba(255,255,255,.04);
+    border: 1px solid rgba(255,255,255,.08);
+    border-radius: 16px; padding: 20px;
+    transition: all .2s;
+  }
+  .card:hover {
+    transform: translateY(-2px);
+    background: rgba(255,255,255,.06);
+    border-color: rgba(57,198,255,.3);
+  }
+  .card-head {
+    display: flex; align-items: center; gap: 12px;
+    margin-bottom: 12px;
+  }
+  .card-icon {
+    width: 38px; height: 38px; border-radius: 10px;
+    background: linear-gradient(135deg, #0A84FF, #39C6FF);
+    display: flex; align-items: center; justify-content: center;
+    color: #fff;
+  }
+  .card-title { font-size: 15px; font-weight: 600; color: #fff; }
+  .card-sub { font-size: 12px; color: #64748b; }
+  .card-q {
+    font-size: 13px; color: #cfe2f9; margin: 10px 0;
+    background: rgba(57,198,255,.05); padding: 10px 12px;
+    border-radius: 10px; border-right: 3px solid #0A84FF;
+    cursor: pointer;
+  }
+  .card-q:hover { background: rgba(57,198,255,.1); }
+  .btn-run {
+    width: 100%; padding: 10px;
+    background: linear-gradient(135deg, #0A84FF, #39C6FF);
+    border: 0; border-radius: 10px; color: #fff;
+    font-family: inherit; font-weight: 600; font-size: 13px;
+    cursor: pointer; transition: all .15s;
+  }
+  .btn-run:hover { transform: scale(1.02); box-shadow: 0 8px 24px rgba(10,132,255,.3); }
+  .btn-run:disabled { opacity: .5; cursor: wait; }
+  .result {
+    margin-top: 12px; padding: 12px; font-size: 12px;
+    background: rgba(0,0,0,.3); border-radius: 8px;
+    color: #9bd9ff; font-family: 'JetBrains Mono', monospace;
+    max-height: 200px; overflow-y: auto; line-height: 1.5;
+    white-space: pre-wrap; word-wrap: break-word;
+  }
+  .result.ok { border-right: 3px solid #34d399; }
+  .result.fail { border-right: 3px solid #ef4444; color: #fca5a5; }
+  .tool-tag {
+    display: inline-block; padding: 2px 8px; border-radius: 6px;
+    background: rgba(57,198,255,.15); color: #39C6FF;
+    font-size: 10px; font-weight: 600; margin: 2px;
+  }
+  .footer {
+    text-align: center; margin-top: 48px; padding: 24px;
+    color: #64748b; font-size: 12px;
+  }
+  .footer a { color: #39C6FF; text-decoration: none; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="header">
+    <h1>🚀 FREIGHTLX AI — اختبار النظام الكامل</h1>
+    <div class="sub">14 أداة AI · 9,862 HS code · 323 ميناء · SSE realtime · صوت عربي</div>
+    <div class="status-bar" id="statusBar"></div>
+  </div>
+
+  <div class="grid" id="testGrid"></div>
+
+  <div class="footer">
+    <p>FREIGHTLX v3.3 — Production · <a href="/dashboard.html">Dashboard</a> · <a href="/admin.html">Admin</a> · <a href="/">Home</a></p>
+  </div>
+</div>
+
+<script>
+const TESTS = [
+  { id: 't1', icon: '🚢', title: 'البحث عن ميناء', tool: 'lookup_port',
+    q: 'إيش كود ميناء شنغهاي؟' },
+  { id: 't2', icon: '📋', title: 'بحث HS Code', tool: 'lookup_hs_code',
+    q: 'إيش HS code للملابس القطنية؟ والشهادات المطلوبة' },
+  { id: 't3', icon: '⚖️', title: 'حساب الجمارك', tool: 'calculate_customs_clearance',
+    q: 'احسب جمارك إلكترونيات بقيمة 30,000$ من الصين' },
+  { id: 't4', icon: '⏰', title: 'رسوم الديموراج', tool: 'calculate_demurrage',
+    q: 'كم ديموراج حاوية 40HC تأخرت 8 أيام في جدة مع MSC؟' },
+  { id: 't5', icon: '💰', title: 'تكلفة استيراد كاملة', tool: 'calculate_full_import_cost',
+    q: 'احسب تكلفة استيراد كاملة: عبايات بقيمة 15,000$، شحن 2,500$، من Turkey' },
+  { id: 't6', icon: '🔍', title: 'مقارنة الخطوط', tool: 'compare_carriers',
+    q: 'قارن الخطوط للمسار CNSHA إلى SAJED حاوية 40HC، الأفضل سعراً' },
+  { id: 't7', icon: '📜', title: 'شهادة سابر', tool: 'request_saber_certificate',
+    q: 'أريد شهادة سابر لمنتج "سماعات بلوتوث"' },
+  { id: 't8', icon: '🚀', title: 'بحث أسعار شحن', tool: 'search_freight_rates',
+    q: 'أسعار شحن من شنغهاي لجدة، حاوية 40 قدم' },
+  { id: 't9', icon: '🆕', title: 'مستورد جديد', tool: 'training-test',
+    q: 'أنا أول مرة أستورد. وش الخطوات؟' },
+  { id: 't10', icon: '⚠️', title: 'بضائع خطرة', tool: 'training-test',
+    q: 'أبي أشحن بطاريات ليثيوم، إيش الإجراءات؟' },
+  { id: 't11', icon: '📊', title: 'LCL vs FCL', tool: 'training-test',
+    q: 'بضاعتي 4 CBM، أعمل LCL ولا FCL؟' },
+  { id: 't12', icon: '🌍', title: 'GCC tariff', tool: 'training-test',
+    q: 'لو استورد من الإمارات، هل أدفع جمارك؟' },
+];
+
+async function run(test, btn, resEl) {
+  btn.disabled = true; btn.textContent = '⏳ يفكر...';
+  resEl.className = 'result';
+  resEl.textContent = '';
+  try {
+    const r = await fetch('/api/agent', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ message: test.q })
+    });
+    const j = await r.json();
+    if (!r.ok || j.error) throw new Error(j.error || `HTTP ${r.status}`);
+    const actions = (j.actions || []).map(a => a.tool || a.name);
+    resEl.className = 'result ok';
+    resEl.innerHTML = '<strong>Tools called:</strong> ' +
+      (actions.length ? actions.map(a => `<span class="tool-tag">${a}</span>`).join('') : '<em>(none)</em>') +
+      '<br><br>' + (j.reply || '').replace(/\n/g, '<br>');
+    btn.textContent = '✅ نجح — أعد';
+  } catch (e) {
+    resEl.className = 'result fail';
+    resEl.textContent = '❌ ' + e.message;
+    btn.textContent = '⚠️ خطأ — أعد';
+  } finally {
+    btn.disabled = false;
+  }
+}
+
+function render() {
+  const grid = document.getElementById('testGrid');
+  grid.innerHTML = TESTS.map(t => `
+    <div class="card" data-id="${t.id}">
+      <div class="card-head">
+        <div class="card-icon">${t.icon}</div>
+        <div>
+          <div class="card-title">${t.title}</div>
+          <div class="card-sub"><span class="tool-tag">${t.tool}</span></div>
+        </div>
+      </div>
+      <div class="card-q" data-q="${t.q}">${t.q}</div>
+      <button class="btn-run">▶ شغّل الاختبار</button>
+      <div class="result" style="display:none"></div>
+    </div>
+  `).join('');
+
+  grid.querySelectorAll('.card').forEach(card => {
+    const t = TESTS.find(x => x.id === card.dataset.id);
+    const btn = card.querySelector('.btn-run');
+    const res = card.querySelector('.result');
+    btn.addEventListener('click', () => {
+      res.style.display = 'block';
+      run(t, btn, res);
+    });
+  });
+}
+
+async function checkHealth() {
+  const bar = document.getElementById('statusBar');
+  const checks = [
+    ['agent', '/api/agent', 'POST', '{"message":"hi"}'],
+    ['hs-codes', '/api/hs-codes?stats=1', 'GET'],
+    ['ports', '/api/ports?stats=1', 'GET'],
+    ['live SSE', '/api/live', 'GET'],
+    ['v1', '/api/v1/health', 'GET'],
+  ];
+  for (const [name, url, method, body] of checks) {
+    try {
+      const r = await fetch(url, {
+        method,
+        headers: method === 'POST' ? { 'Content-Type': 'application/json' } : {},
+        body: body || undefined,
+      });
+      const ok = r.ok || r.status === 401;  // 401 means auth check is working
+      bar.innerHTML += `<div class="status-pill"><div class="dot ${ok ? 'ok' : 'fail'}"></div>${name}: ${r.status}</div>`;
+    } catch (e) {
+      bar.innerHTML += `<div class="status-pill"><div class="dot fail"></div>${name}: ERR</div>`;
+    }
+  }
+}
+
+render();
+checkHealth();
+</script>
+
+<!-- AI FAB on test page too -->
+<script src="/flx-ai-fab.js?v=3.3" data-context="dashboard" defer></script>
+</body>
+</html>

@@ -93,10 +93,20 @@
 }
 .flx-ai-input:focus { border-color: rgba(57,198,255,.5); background: rgba(255,255,255,.09); }
 .flx-ai-input::placeholder { color: rgba(255,255,255,.4); }
-.flx-ai-send {
+.flx-ai-send, .flx-ai-mic {
   background: linear-gradient(135deg,#0A84FF,#39C6FF); border: none; border-radius: 12px;
   padding: 0 16px; color: #fff; cursor: pointer; font-weight: 600; font-size: 13px;
   display: flex; align-items: center; justify-content: center; min-width: 48px;
+}
+.flx-ai-mic { background: rgba(255,255,255,.08); }
+.flx-ai-mic:hover { background: rgba(57,198,255,.18); }
+.flx-ai-mic.listening {
+  background: linear-gradient(135deg,#ef4444,#f97316);
+  animation: flxMicPulse 1.4s infinite;
+}
+@keyframes flxMicPulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(239,68,68,.5); }
+  50%      { box-shadow: 0 0 0 12px rgba(239,68,68,0); }
 }
 .flx-ai-send:disabled { opacity: .5; cursor: wait; }
 `;
@@ -136,7 +146,10 @@
         <div class="flx-ai-cards">${cards}</div>
       </div>
       <form class="flx-ai-foot">
-        <input class="flx-ai-input" type="text" placeholder="اكتب رسالتك..." autocomplete="off" />
+        <input class="flx-ai-input" type="text" placeholder="اكتب أو تكلّم..." autocomplete="off" />
+        <button class="flx-ai-mic" type="button" aria-label="إدخال صوتي" title="إدخال صوتي بالعربية">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>
+        </button>
         <button class="flx-ai-send" type="submit">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
         </button>
@@ -237,6 +250,58 @@
       const card = ev.target.closest('.flx-ai-card');
       if (card) send(card.dataset.prompt, panel);
     });
+
+    // Voice input (Arabic / English)
+    const micBtn = panel.querySelector('.flx-ai-mic');
+    const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SR) {
+      if (micBtn) { micBtn.style.opacity = '.4'; micBtn.title = 'المتصفح لا يدعم الإدخال الصوتي'; }
+    } else if (micBtn) {
+      let recog = null;
+      let listening = false;
+      micBtn.addEventListener('click', () => {
+        if (listening) {
+          try { recog?.stop(); } catch {}
+          return;
+        }
+        try {
+          recog = new SR();
+          recog.lang = 'ar-SA';
+          recog.continuous = false;
+          recog.interimResults = true;
+          recog.maxAlternatives = 1;
+          recog.onstart = () => {
+            listening = true;
+            micBtn.classList.add('listening');
+            const input = panel.querySelector('.flx-ai-input');
+            input.placeholder = 'استمع...';
+          };
+          recog.onresult = (ev) => {
+            const last = ev.results[ev.results.length - 1];
+            const text = last[0].transcript;
+            const input = panel.querySelector('.flx-ai-input');
+            input.value = text;
+            if (last.isFinal) {
+              setTimeout(() => send(text, panel), 200);
+            }
+          };
+          recog.onerror = (ev) => {
+            console.warn('[FAB voice] error:', ev.error);
+            const input = panel.querySelector('.flx-ai-input');
+            input.placeholder = ev.error === 'not-allowed' ? 'يرجى السماح بالميكروفون' : 'اكتب أو تكلّم...';
+          };
+          recog.onend = () => {
+            listening = false;
+            micBtn.classList.remove('listening');
+            const input = panel.querySelector('.flx-ai-input');
+            input.placeholder = 'اكتب أو تكلّم...';
+          };
+          recog.start();
+        } catch (e) {
+          console.warn('[FAB voice] failed:', e);
+        }
+      });
+    }
 
     // Show notification badge when new flx:notification arrives and panel is closed
     window.addEventListener('flx:notification', () => {
