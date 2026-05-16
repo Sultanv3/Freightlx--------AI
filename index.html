@@ -3,1030 +3,1153 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
-<meta name="theme-color" content="#071C2C" />
-<title>FREIGHTLX — نظام التشغيل العالمي للشحن الذكي</title>
-<meta name="description" content="منصة الذكاء الاصطناعي للشحن العالمي. أسعار فورية، خطوط ملاحية حية، تخليص جمركي مدعوم بـ AI." />
+<meta name="theme-color" content="#FFFFFF" />
+<title>FREIGHTLX — أول منصة شحن سعودية مدعومة بالذكاء الاصطناعي</title>
+<meta name="description" content="منصة الذكاء الاصطناعي للشحن — مصممة خصيصاً للسوق السعودي. أسعار حية من 12 خط ملاحي، تخليص جمركي ذكي، شهادات سابر مؤتمتة، متكامل مع زاتكا والجمارك السعودية." />
+<meta property="og:title" content="FREIGHTLX — منصة الشحن الذكية للمملكة" />
+<meta property="og:description" content="من القرار إلى التسليم في دقائق. أسعار حية، تخليص ذكي، AI مدعوم للمستوردين السعوديين." />
+<meta property="og:type" content="website" />
+
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=IBM+Plex+Sans+Arabic:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
-<style>
-/* ─── DESIGN TOKENS ─── */
-/* Hide flx-auth.js floating trigger — we have our own nav-integrated login button */
-.flx-auth-trigger { display: none !important; }
-.flx-user-menu { z-index: 9999; }
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@300;400;500;600;700&family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 
-/* ═══ AI CHAT WIDGET ═══ */
-.ai-demo {
-  margin-top: 48px;
-  background: linear-gradient(180deg, rgba(11, 42, 64, 0.65), rgba(7, 28, 44, 0.55));
-  border: 1px solid rgba(57, 198, 255, 0.18);
-  border-radius: 22px;
-  padding: 24px;
-  backdrop-filter: blur(20px) saturate(1.4);
-  -webkit-backdrop-filter: blur(20px) saturate(1.4);
-  box-shadow:
-    0 1px 0 rgba(255, 255, 255, 0.04) inset,
-    0 24px 64px rgba(0, 0, 0, 0.4),
-    0 0 80px rgba(10, 132, 255, 0.08);
-  max-width: 880px;
+<style>
+/* ═══════════════════════════════════════════════════════════
+   FREIGHTLX v6.0 — Saudi-First Premium Identity
+   Built for: world-class clarity, Saudi market focus,
+   AI-native technology aesthetic
+   ═══════════════════════════════════════════════════════════ */
+
+:root {
+  /* SURFACES */
+  --bg:           #FFFFFF;
+  --bg-soft:      #F8FAFC;
+  --bg-subtle:    #F1F5F9;
+  --surface:      #FFFFFF;
+
+  /* TEXT — high contrast */
+  --text:         #0A1628;
+  --text-body:    #334155;
+  --text-muted:   #64748B;
+  --text-faint:   #94A3B8;
+  --text-on-dark: #FFFFFF;
+
+  /* BRAND BLUE */
+  --blue:         #0A84FF;
+  --blue-deep:    #0066CC;
+  --blue-darker:  #003478;
+  --blue-soft:    rgba(10, 132, 255, 0.08);
+  --blue-tint:    rgba(10, 132, 255, 0.15);
+  --cyan:         #39C6FF;
+  --cyan-soft:    rgba(57, 198, 255, 0.10);
+
+  /* SAUDI ACCENTS */
+  --saudi-green:      #006C35;     /* National identity */
+  --saudi-green-soft: #E6F4EC;
+  --saudi-green-tint: rgba(0, 108, 53, 0.12);
+  --gold:             #C49B5C;     /* Vision 2030 / premium */
+  --gold-soft:        #FAF3E5;
+  --gold-tint:        rgba(196, 155, 92, 0.18);
+
+  /* SEMANTIC */
+  --success:      #00875A;
+  --warning:      #B97309;
+  --danger:       #DE350B;
+
+  /* BORDERS */
+  --border:       #E2E8F0;
+  --border-mid:   #CBD5E1;
+  --divider:      #F1F5F9;
+
+  /* SHADOWS — Stripe-grade soft & layered */
+  --shadow-xs:    0 1px 2px rgba(15, 23, 42, 0.04);
+  --shadow-sm:    0 1px 3px rgba(15, 23, 42, 0.06), 0 1px 2px rgba(15, 23, 42, 0.04);
+  --shadow-md:    0 4px 6px rgba(15, 23, 42, 0.05), 0 10px 15px rgba(15, 23, 42, 0.04);
+  --shadow-lg:    0 13px 27px -5px rgba(15, 23, 42, 0.10), 0 8px 16px -8px rgba(15, 23, 42, 0.06);
+  --shadow-xl:    0 30px 60px -12px rgba(15, 23, 42, 0.14);
+  --shadow-glow:  0 0 0 4px rgba(10, 132, 255, 0.10);
+
+  /* TYPE */
+  --font-ar:      'IBM Plex Sans Arabic', system-ui, sans-serif;
+  --font-en:      'Inter', system-ui, sans-serif;
+  --font-mono:    'JetBrains Mono', 'SF Mono', monospace;
+
+  /* RADII */
+  --r-sm: 6px;
+  --r-md: 10px;
+  --r-lg: 14px;
+  --r-xl: 20px;
+  --r-2xl: 28px;
+  --r-pill: 999px;
+
+  /* SPACING SCALE */
+  --gap-1: 4px;
+  --gap-2: 8px;
+  --gap-3: 12px;
+  --gap-4: 16px;
+  --gap-5: 20px;
+  --gap-6: 24px;
+  --gap-8: 32px;
+  --gap-10: 40px;
+  --gap-12: 48px;
+  --gap-16: 64px;
+  --gap-20: 80px;
+  --gap-24: 96px;
+}
+
+/* ═══ RESET + BASE ═══ */
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+html { scroll-behavior: smooth; }
+
+body {
+  font-family: var(--font-ar);
+  background: var(--bg);
+  color: var(--text);
+  font-size: 16px;
+  line-height: 1.65;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+  font-feature-settings: 'cv11', 'ss01', 'ss03';
+  overflow-x: hidden;
+}
+
+img, svg { display: block; max-width: 100%; }
+button { font-family: inherit; cursor: pointer; border: none; background: none; }
+a { color: inherit; text-decoration: none; }
+
+::selection { background: var(--blue-tint); color: var(--text); }
+
+/* ═══ AMBIENT BACKGROUND ═══ */
+.ambient {
+  position: fixed; inset: 0;
+  pointer-events: none; z-index: 0;
+  background:
+    radial-gradient(ellipse 70% 60% at 20% 0%, rgba(10, 132, 255, 0.05), transparent 60%),
+    radial-gradient(ellipse 50% 50% at 100% 80%, rgba(57, 198, 255, 0.06), transparent 60%),
+    radial-gradient(ellipse 40% 30% at 50% 100%, rgba(0, 108, 53, 0.04), transparent 70%);
+}
+
+.grid-bg {
+  position: fixed; inset: 0;
+  pointer-events: none; z-index: 0;
+  opacity: 0.4;
+  background-image:
+    linear-gradient(rgba(10, 132, 255, 0.030) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(10, 132, 255, 0.030) 1px, transparent 1px);
+  background-size: 60px 60px;
+  mask-image: radial-gradient(ellipse 80% 60% at 50% 30%, #000 30%, transparent 80%);
+  -webkit-mask-image: radial-gradient(ellipse 80% 60% at 50% 30%, #000 30%, transparent 80%);
+}
+
+/* ═══ TYPOGRAPHY SCALE ═══ */
+h1, h2, h3, h4, h5, h6 {
+  color: var(--text);
+  font-weight: 800;
+  letter-spacing: -0.025em;
+  line-height: 1.1;
+}
+
+h1 { font-size: clamp(2.2rem, 5.5vw, 4.5rem); font-weight: 800; }
+h2 { font-size: clamp(1.7rem, 3.5vw, 2.8rem); font-weight: 800; }
+h3 { font-size: clamp(1.25rem, 2vw, 1.55rem); font-weight: 700; }
+
+p { color: var(--text-body); }
+
+.num, .mono {
+  font-family: var(--font-en);
+  font-feature-settings: 'tnum', 'cv11';
+}
+
+.code, code, kbd {
+  font-family: var(--font-mono);
+  font-size: 0.92em;
+  background: var(--bg-subtle);
+  color: var(--text);
+  padding: 2px 7px;
+  border-radius: var(--r-sm);
+  border: 1px solid var(--border);
+}
+
+/* ═══ LAYOUT ═══ */
+.wrap {
+  max-width: 1240px;
+  margin: 0 auto;
+  padding: 0 24px;
+  position: relative;
+  z-index: 1;
+}
+
+section { position: relative; z-index: 1; }
+
+/* ═══ NAV ═══ */
+.nav {
+  position: sticky; top: 0; z-index: 100;
+  background: rgba(255, 255, 255, 0.82);
+  backdrop-filter: blur(24px) saturate(180%);
+  -webkit-backdrop-filter: blur(24px) saturate(180%);
+  border-bottom: 1px solid var(--border);
+}
+
+.nav-inner {
+  max-width: 1240px;
+  margin: 0 auto;
+  padding: 16px 24px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+}
+
+.nav-brand {
+  display: flex; align-items: center; gap: 10px;
+  text-decoration: none;
+}
+
+.nav-logo {
+  width: 38px; height: 38px;
+  background: linear-gradient(135deg, var(--blue) 0%, var(--cyan) 100%);
+  border-radius: 10px;
+  display: flex; align-items: center; justify-content: center;
+  color: #fff; font-weight: 800; font-size: 18px;
+  box-shadow: 0 4px 12px rgba(10, 132, 255, 0.25);
+  font-family: var(--font-en);
+}
+
+.nav-brand-text {
+  font-size: 18px; font-weight: 800;
+  color: var(--text);
+  letter-spacing: -0.02em;
+  font-family: var(--font-en);
+}
+
+.nav-brand-sub {
+  font-size: 11px;
+  color: var(--text-muted);
+  font-weight: 500;
+}
+
+.nav-links {
+  display: flex; align-items: center; gap: 6px;
+}
+
+.nav-links a {
+  padding: 8px 14px;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text-body);
+  border-radius: var(--r-md);
+  transition: all 0.15s;
+}
+
+.nav-links a:hover { color: var(--blue-deep); background: var(--blue-soft); }
+
+.nav-cta {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 10px 18px;
+  background: linear-gradient(180deg, var(--blue) 0%, var(--blue-deep) 100%);
+  color: #fff !important;
+  border-radius: var(--r-md);
+  font-weight: 600;
+  font-size: 14px;
+  box-shadow: 0 1px 2px rgba(10, 132, 255, 0.30), inset 0 1px 0 rgba(255, 255, 255, 0.18);
+  transition: transform 0.15s, box-shadow 0.15s;
+}
+
+.nav-cta:hover {
+  background: linear-gradient(180deg, #1B95FF 0%, var(--blue) 100%) !important;
+  color: #fff !important;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(10, 132, 255, 0.32), inset 0 1px 0 rgba(255, 255, 255, 0.20);
+}
+
+@media (max-width: 768px) {
+  .nav-links a:not(.nav-cta) { display: none; }
+}
+
+/* ═══ HERO ═══ */
+.hero {
+  padding: 96px 0 80px;
+  position: relative;
+}
+
+.hero-inner { text-align: center; max-width: 920px; margin: 0 auto; }
+
+.eyebrow {
+  display: inline-flex; align-items: center; gap: 8px;
+  padding: 8px 16px;
+  background: var(--bg-soft);
+  border: 1px solid var(--border);
+  color: var(--text-body);
+  font-size: 13px;
+  font-weight: 600;
+  border-radius: var(--r-pill);
+  margin-bottom: 28px;
+}
+
+.eyebrow-dot {
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: var(--saudi-green);
+  box-shadow: 0 0 0 4px rgba(0, 108, 53, 0.15);
+  animation: pulseDot 2s ease-in-out infinite;
+}
+
+@keyframes pulseDot {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+.hero h1 {
+  margin-bottom: 24px;
+  font-family: var(--font-ar);
+  font-weight: 800;
+}
+
+.hero h1 .gradient-blue {
+  background: linear-gradient(135deg, var(--blue) 0%, var(--cyan) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.hero h1 .saudi-mark {
+  display: inline-flex; align-items: center; gap: 10px;
+  color: var(--saudi-green);
+}
+
+.hero-sub {
+  font-size: clamp(1.05rem, 1.8vw, 1.25rem);
+  color: var(--text-body);
+  line-height: 1.65;
+  max-width: 720px;
+  margin: 0 auto 40px;
+}
+
+.hero-cta {
+  display: inline-flex; align-items: center; gap: 12px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.btn {
+  display: inline-flex; align-items: center; gap: 10px;
+  padding: 14px 28px;
+  font-size: 15px;
+  font-weight: 600;
+  border-radius: var(--r-md);
+  transition: all 0.18s cubic-bezier(0.4, 0, 0.2, 1);
+  white-space: nowrap;
+}
+
+.btn-primary {
+  background: linear-gradient(180deg, var(--blue) 0%, var(--blue-deep) 100%);
+  color: #fff;
+  box-shadow: 0 1px 2px rgba(10, 132, 255, 0.30), inset 0 1px 0 rgba(255, 255, 255, 0.18);
+  position: relative;
+}
+
+.btn-primary::after {
+  content: '';
+  position: absolute; inset: -4px;
+  border-radius: inherit;
+  background: linear-gradient(135deg, var(--blue), var(--cyan));
+  filter: blur(16px); opacity: 0.30;
+  z-index: -1;
+  transition: opacity 0.2s;
+}
+
+.btn-primary:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 8px 24px rgba(10, 132, 255, 0.40);
+}
+
+.btn-primary:hover::after { opacity: 0.55; }
+
+.btn-ghost {
+  background: var(--surface);
+  color: var(--text);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow-xs);
+}
+
+.btn-ghost:hover {
+  background: var(--bg-soft);
+  border-color: var(--border-mid);
+}
+
+/* ═══ HERO STATS ═══ */
+.hero-stats {
+  margin-top: 56px;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 1px;
+  background: var(--border);
+  border: 1px solid var(--border);
+  border-radius: var(--r-xl);
+  overflow: hidden;
+  max-width: 920px;
   margin-left: auto;
   margin-right: auto;
+  box-shadow: var(--shadow-lg);
 }
+
+.hero-stat {
+  background: var(--surface);
+  padding: 28px 16px;
+  text-align: center;
+}
+
+.hero-stat-value {
+  font-family: var(--font-en);
+  font-size: clamp(1.5rem, 3.2vw, 2.2rem);
+  font-weight: 800;
+  letter-spacing: -0.025em;
+  background: linear-gradient(135deg, var(--text) 0%, var(--blue) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  margin-bottom: 4px;
+}
+
+.hero-stat-label {
+  font-size: 12px;
+  color: var(--text-muted);
+  font-weight: 500;
+}
+
+@media (max-width: 640px) {
+  .hero-stats { grid-template-columns: repeat(2, 1fr); }
+}
+
+/* ═══ TRUST BAND ═══ */
+.trust {
+  padding: 56px 0;
+  border-top: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+  background: var(--bg-soft);
+}
+
+.trust-title {
+  text-align: center;
+  font-size: 13px;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-weight: 600;
+  margin-bottom: 32px;
+  font-family: var(--font-en);
+}
+
+.trust-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 24px;
+  max-width: 1100px;
+  margin: 0 auto;
+}
+
+.trust-item {
+  display: flex; align-items: center; justify-content: center;
+  gap: 10px;
+  padding: 18px 16px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--r-lg);
+  color: var(--text);
+  font-weight: 600;
+  font-size: 14px;
+  transition: all 0.2s;
+}
+
+.trust-item:hover {
+  border-color: var(--blue-tint);
+  box-shadow: var(--shadow-sm);
+  transform: translateY(-1px);
+}
+
+.trust-icon {
+  width: 24px; height: 24px;
+  display: flex; align-items: center; justify-content: center;
+  color: var(--saudi-green);
+}
+
+/* ═══ FEATURES (3 PILLARS) ═══ */
+.features {
+  padding: 96px 0;
+}
+
+.section-head {
+  text-align: center;
+  max-width: 720px;
+  margin: 0 auto 64px;
+}
+
+.section-tag {
+  display: inline-block;
+  padding: 6px 14px;
+  background: var(--blue-soft);
+  color: var(--blue-deep);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  border-radius: var(--r-pill);
+  margin-bottom: 16px;
+  font-family: var(--font-en);
+}
+
+.section-head h2 { margin-bottom: 16px; }
+.section-head p {
+  color: var(--text-body);
+  font-size: clamp(1rem, 1.5vw, 1.15rem);
+  line-height: 1.7;
+}
+
+.features-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 28px;
+}
+
+@media (max-width: 900px) { .features-grid { grid-template-columns: 1fr; } }
+
+.feature-card {
+  position: relative;
+  padding: 36px 28px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--r-xl);
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  overflow: hidden;
+}
+
+.feature-card::before {
+  content: '';
+  position: absolute; top: 0; left: 0; right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, var(--blue), var(--cyan));
+  opacity: 0;
+  transition: opacity 0.25s;
+}
+
+.feature-card:hover {
+  border-color: var(--blue-tint);
+  box-shadow: var(--shadow-lg);
+  transform: translateY(-4px);
+}
+
+.feature-card:hover::before { opacity: 1; }
+
+.feature-icon {
+  width: 56px; height: 56px;
+  border-radius: var(--r-lg);
+  background: linear-gradient(135deg, var(--blue-soft), var(--cyan-soft));
+  display: flex; align-items: center; justify-content: center;
+  margin-bottom: 24px;
+  color: var(--blue);
+  font-size: 28px;
+}
+
+.feature-card h3 {
+  margin-bottom: 12px;
+  color: var(--text);
+}
+
+.feature-card p {
+  color: var(--text-body);
+  line-height: 1.7;
+  font-size: 15px;
+}
+
+.feature-meta {
+  margin-top: 24px;
+  padding-top: 20px;
+  border-top: 1px solid var(--divider);
+  display: flex; flex-wrap: wrap; gap: 6px;
+}
+
+.feature-meta .pill {
+  padding: 4px 10px;
+  background: var(--bg-subtle);
+  color: var(--text-body);
+  font-size: 11px;
+  font-weight: 600;
+  border-radius: var(--r-pill);
+  font-family: var(--font-en);
+}
+
+.feature-meta .pill.green { background: var(--saudi-green-soft); color: var(--saudi-green); }
+.feature-meta .pill.gold  { background: var(--gold-soft); color: #8B6614; }
+
+/* ═══ AI DEMO SECTION ═══ */
+.ai-section {
+  padding: 96px 0;
+  background: var(--bg-soft);
+  border-top: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+}
+
+.ai-demo {
+  max-width: 880px;
+  margin: 0 auto;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--r-2xl);
+  overflow: hidden;
+  box-shadow: var(--shadow-xl);
+}
+
 .ai-demo-head {
+  padding: 24px 28px;
   display: flex; align-items: center; justify-content: space-between;
-  padding-bottom: 18px;
-  border-bottom: 1px solid rgba(57, 198, 255, 0.10);
-  margin-bottom: 18px;
-  flex-wrap: wrap; gap: 12px;
+  gap: 16px;
+  border-bottom: 1px solid var(--border);
+  background: linear-gradient(180deg, var(--bg) 0%, var(--bg-soft) 100%);
+  flex-wrap: wrap;
 }
-.ai-demo-title-wrap { display: flex; align-items: center; gap: 14px; }
+
+.ai-demo-title-wrap { display: flex; align-items: center; gap: 16px; }
+
 .ai-demo-orb {
-  width: 44px; height: 44px;
+  width: 48px; height: 48px;
   border-radius: 50%;
-  background: radial-gradient(circle at 30% 30%, #39C6FF, #0A84FF 60%, #003478);
+  background: radial-gradient(circle at 30% 30%, var(--cyan), var(--blue) 60%, var(--blue-darker));
   position: relative;
   flex-shrink: 0;
-  box-shadow: 0 0 24px rgba(57, 198, 255, 0.35);
+  box-shadow: 0 6px 20px rgba(10, 132, 255, 0.35);
 }
 .ai-demo-orb span {
   position: absolute; inset: -4px;
-  border: 1px solid rgba(57, 198, 255, 0.3);
+  border: 1.5px solid rgba(10, 132, 255, 0.3);
   border-radius: 50%;
-  animation: aiOrbRing 3s linear infinite;
+  animation: orbRing 3s linear infinite;
 }
-.ai-demo-orb span:nth-child(2) { inset: -8px; animation-delay: -1s; }
-.ai-demo-orb span:nth-child(3) { inset: -12px; animation-delay: -2s; }
-@keyframes aiOrbRing {
-  0%   { opacity: 0.8; transform: scale(0.9); }
+.ai-demo-orb span:nth-child(2) { inset: -9px; animation-delay: -1s; }
+.ai-demo-orb span:nth-child(3) { inset: -14px; animation-delay: -2s; }
+@keyframes orbRing {
+  0%   { opacity: 0.7; transform: scale(0.9); }
   100% { opacity: 0; transform: scale(1.3); }
 }
-.ai-demo-title { font-size: 18px; font-weight: 800; color: #fff; letter-spacing: -0.01em; }
-.ai-demo-sub   { font-size: 13px; color: rgba(244,247,250,0.62); margin-top: 2px; }
+
+.ai-demo-title { font-size: 17px; font-weight: 700; color: var(--text); }
+.ai-demo-sub { font-size: 13px; color: var(--text-muted); margin-top: 2px; }
+
 .ai-demo-badge {
   display: inline-flex; align-items: center; gap: 6px;
-  background: rgba(10, 132, 255, 0.14);
-  border: 1px solid rgba(57, 198, 255, 0.32);
-  color: #39C6FF;
-  padding: 6px 12px;
-  border-radius: 999px;
-  font-size: 11px; font-weight: 700;
-  letter-spacing: 0.06em;
+  padding: 6px 14px;
+  background: var(--saudi-green-soft);
+  border: 1px solid var(--saudi-green-tint);
+  color: var(--saudi-green);
+  border-radius: var(--r-pill);
+  font-size: 11px;
+  font-weight: 700;
+  font-family: var(--font-en);
+  letter-spacing: 0.04em;
   text-transform: uppercase;
-  font-family: 'JetBrains Mono', monospace;
 }
+
 .ai-demo-badge .dot {
   width: 6px; height: 6px;
   border-radius: 50%;
-  background: #4ade80;
-  box-shadow: 0 0 10px #4ade80;
-  animation: aiPulse 1.4s ease-in-out infinite;
+  background: var(--saudi-green);
+  box-shadow: 0 0 0 3px rgba(0, 108, 53, 0.20);
+  animation: pulseDot 1.8s ease-in-out infinite;
 }
-@keyframes aiPulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
 
 .ai-demo-body {
-  min-height: 200px;
-  max-height: 380px;
+  padding: 24px 28px;
+  min-height: 280px;
+  max-height: 480px;
   overflow-y: auto;
-  padding: 8px 4px;
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
+  display: flex; flex-direction: column; gap: 14px;
 }
-.ai-msg { display: flex; }
-.ai-msg-bot { justify-content: flex-start; }
-.ai-msg-user { justify-content: flex-end; }
-.ai-bubble {
-  max-width: 78%;
+
+.msg {
+  max-width: 86%;
   padding: 12px 16px;
-  border-radius: 14px;
-  font-size: 14px;
+  border-radius: var(--r-lg);
+  font-size: 14.5px;
   line-height: 1.7;
-  word-wrap: break-word;
   white-space: pre-wrap;
+  word-wrap: break-word;
 }
-.ai-msg-bot .ai-bubble {
-  background: rgba(11, 42, 64, 0.7);
-  border: 1px solid rgba(57, 198, 255, 0.18);
-  color: rgba(244, 247, 250, 0.92);
-  border-top-right-radius: 4px;
-}
-.ai-msg-user .ai-bubble {
-  background: linear-gradient(135deg, #0A84FF, #0066D6);
+
+.msg-user {
+  align-self: flex-end;
+  background: linear-gradient(135deg, var(--blue) 0%, var(--blue-deep) 100%);
   color: #fff;
-  border-top-left-radius: 4px;
-  box-shadow: 0 6px 20px rgba(10, 132, 255, 0.32);
+  border-radius: var(--r-lg) var(--r-sm) var(--r-lg) var(--r-lg);
+  box-shadow: 0 4px 12px rgba(10, 132, 255, 0.20);
 }
 
-/* ─── AGENT ACTION TIMELINE (real tools executed by FREIGHTLX AI) ─── */
-.ai-actions-timeline {
-  display: flex; flex-direction: column; gap: 8px;
-  margin-bottom: 14px;
-  padding-bottom: 12px;
-  border-bottom: 1px solid rgba(57,198,255,0.10);
-}
-.ai-action {
-  background: linear-gradient(180deg, rgba(10,132,255,0.10), rgba(10,132,255,0.04));
-  border: 1px solid rgba(57,198,255,0.22);
-  border-radius: 10px;
-  padding: 10px 12px;
-  animation: aiActionPop 0.4s cubic-bezier(0.16, 1, 0.3, 1);
-}
-.ai-action.err { border-color: rgba(239,68,68,0.32); background: rgba(239,68,68,0.06); }
-@keyframes aiActionPop {
-  from { opacity: 0; transform: translateY(-4px); }
-  to { opacity: 1; transform: translateY(0); }
-}
-.ai-action-head {
-  display: flex; align-items: center; gap: 8px;
-  font-size: 12.5px; font-weight: 700;
-}
-.ai-action-icon-sm {
-  width: 22px; height: 22px;
-  display: inline-flex; align-items: center; justify-content: center;
-  background: rgba(10,132,255,0.18);
-  border-radius: 6px;
-  font-size: 12px;
-}
-.ai-action-name { flex: 1; color: #fff; }
-.ai-action-status {
-  font-size: 10px; font-weight: 700;
-  color: #4ade80;
-  background: rgba(34,197,94,0.14);
-  padding: 2px 8px;
-  border-radius: 999px;
-  letter-spacing: 0.04em;
-}
-.ai-action.err .ai-action-status { color: #f87171; background: rgba(239,68,68,0.14); }
-.ai-action-body {
-  margin-top: 8px;
-  padding-top: 8px;
-  border-top: 1px solid rgba(57,198,255,0.10);
-  font-size: 12.5px;
-  display: flex; flex-direction: column; gap: 4px;
-}
-.ai-mini-row { line-height: 1.6; }
-.ai-mini-row code {
-  background: rgba(10,132,255,0.12);
-  color: #39C6FF;
-  padding: 1px 6px;
-  border-radius: 4px;
-  font-family: 'JetBrains Mono', monospace;
-  font-size: 11px;
+.msg-bot {
+  align-self: flex-start;
+  background: var(--bg-soft);
+  border: 1px solid var(--border);
+  color: var(--text);
+  border-radius: var(--r-sm) var(--r-lg) var(--r-lg) var(--r-lg);
 }
 
-/* ─── HYPER ACTION CARDS inside bot bubbles ─── */
-.ai-action-cards {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-  gap: 10px;
-  margin-top: 14px;
+.msg-bot .ai-action-cards {
+  margin-top: 12px;
+  display: flex; flex-wrap: wrap; gap: 8px;
 }
+
 .ai-action-card {
-  background: linear-gradient(135deg, rgba(10, 132, 255, 0.10), rgba(57, 198, 255, 0.04));
-  border: 1px solid rgba(57, 198, 255, 0.26);
-  border-radius: 14px;
-  padding: 14px 14px 12px;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  cursor: pointer;
-  transition: all 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 8px 12px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--r-md);
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--blue-deep);
   text-decoration: none;
-  color: inherit;
-  position: relative;
-  overflow: hidden;
-}
-.ai-action-card::before {
-  content: '';
-  position: absolute;
-  top: 0; right: 0;
-  width: 60px; height: 60px;
-  background: radial-gradient(circle at top right, rgba(57, 198, 255, 0.18), transparent 70%);
-  pointer-events: none;
+  transition: all 0.15s;
 }
 .ai-action-card:hover {
-  transform: translateY(-2px);
-  border-color: rgba(57, 198, 255, 0.55);
-  background: linear-gradient(135deg, rgba(10, 132, 255, 0.18), rgba(57, 198, 255, 0.08));
-  box-shadow: 0 10px 30px rgba(10, 132, 255, 0.28);
-}
-.ai-action-icon {
-  width: 36px; height: 36px;
-  border-radius: 10px;
-  background: linear-gradient(135deg, rgba(10, 132, 255, 0.22), rgba(57, 198, 255, 0.10));
-  border: 1px solid rgba(57, 198, 255, 0.24);
-  display: inline-flex; align-items: center; justify-content: center;
-  color: #39C6FF;
-  flex-shrink: 0;
-}
-.ai-action-title {
-  font-size: 13px;
-  font-weight: 700;
-  color: #fff;
-  letter-spacing: -0.01em;
-  line-height: 1.4;
-}
-.ai-action-desc {
-  font-size: 11px;
-  color: rgba(244, 247, 250, 0.62);
-  line-height: 1.5;
-}
-.ai-action-arrow {
-  position: absolute;
-  bottom: 12px; left: 12px;
-  width: 24px; height: 24px;
-  border-radius: 8px;
-  background: rgba(10, 132, 255, 0.18);
-  display: inline-flex; align-items: center; justify-content: center;
-  color: #39C6FF;
-  transition: all 0.22s;
-}
-.ai-action-card:hover .ai-action-arrow {
-  background: linear-gradient(135deg, #0A84FF, #39C6FF);
-  color: #fff;
-  transform: translateX(-3px);
-}
-.ai-typing { display: inline-flex; gap: 5px; align-items: center; padding: 4px 0; }
-.ai-typing span {
-  width: 8px; height: 8px; border-radius: 50%;
-  background: #39C6FF; opacity: 0.6;
-  animation: aiTyping 1.3s infinite ease-in-out;
-}
-.ai-typing span:nth-child(2) { animation-delay: 0.15s; }
-.ai-typing span:nth-child(3) { animation-delay: 0.3s; }
-@keyframes aiTyping {
-  0%, 80%, 100% { transform: scale(0.6); opacity: 0.4; }
-  40% { transform: scale(1); opacity: 1; }
+  background: var(--blue-soft);
+  border-color: var(--blue-tint);
+  color: var(--blue-deep);
 }
 
 .ai-demo-suggest {
+  padding: 16px 28px;
   display: flex; flex-wrap: wrap; gap: 8px;
-  margin: 16px 0 12px;
+  border-top: 1px solid var(--border);
+  background: var(--bg-soft);
 }
+
 .ai-chip {
-  background: rgba(57, 198, 255, 0.08);
-  border: 1px solid rgba(57, 198, 255, 0.22);
-  color: rgba(244, 247, 250, 0.85);
   padding: 8px 14px;
-  border-radius: 999px;
-  font-size: 12px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--r-pill);
+  font-size: 13px;
   font-weight: 500;
-  font-family: inherit;
-  cursor: pointer;
-  transition: all 0.18s;
+  color: var(--text-body);
+  transition: all 0.15s;
+  font-family: var(--font-ar);
 }
+
 .ai-chip:hover {
-  background: rgba(10, 132, 255, 0.18);
-  border-color: rgba(57, 198, 255, 0.5);
-  transform: translateY(-1px);
+  background: var(--blue-soft);
+  color: var(--blue-deep);
+  border-color: var(--blue-tint);
 }
 
 .ai-demo-input {
   display: flex; gap: 10px;
-  margin-top: 8px;
-  padding-top: 16px;
-  border-top: 1px solid rgba(57, 198, 255, 0.10);
+  padding: 16px 28px 24px;
+  background: var(--bg-soft);
 }
+
 .ai-demo-input input {
   flex: 1;
-  background: rgba(5, 14, 24, 0.65);
-  border: 1px solid rgba(57, 198, 255, 0.22);
-  color: #fff;
   padding: 12px 16px;
-  border-radius: 12px;
-  font-family: inherit;
-  font-size: 14px;
-  transition: all 0.18s;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--r-md);
+  font-size: 15px;
+  font-family: var(--font-ar);
+  color: var(--text);
+  transition: border-color 0.15s, box-shadow 0.15s;
 }
+
+.ai-demo-input input::placeholder { color: var(--text-faint); }
+
 .ai-demo-input input:focus {
   outline: none;
-  border-color: #39C6FF;
-  background: rgba(5, 14, 24, 0.85);
-  box-shadow: 0 0 0 3px rgba(10, 132, 255, 0.18);
+  border-color: var(--blue);
+  box-shadow: var(--shadow-glow);
 }
-.ai-demo-input input::placeholder { color: rgba(244, 247, 250, 0.36); }
-.ai-demo-input button {
-  width: 48px; height: 48px;
-  background: linear-gradient(135deg, #0A84FF, #0066D6);
-  border: none; border-radius: 12px;
-  color: #fff;
-  display: inline-flex; align-items: center; justify-content: center;
-  cursor: pointer;
-  transition: all 0.18s;
-  box-shadow: 0 6px 18px rgba(10, 132, 255, 0.32);
-}
-.ai-demo-input button:hover { transform: translateY(-1px); box-shadow: 0 10px 26px rgba(10, 132, 255, 0.48); }
-.ai-demo-input button:disabled { opacity: 0.5; cursor: wait; }
 
-/* ═══ FLOATING CHAT FAB ═══ */
-#flxChatFab {
-  position: fixed;
-  bottom: 24px; left: 24px;
-  z-index: 9000;
-  width: 60px; height: 60px;
-  border: none; border-radius: 50%;
-  background: linear-gradient(135deg, #0A84FF, #39C6FF);
+.ai-demo-input button {
+  width: 44px; height: 44px;
+  background: linear-gradient(135deg, var(--blue) 0%, var(--blue-deep) 100%);
   color: #fff;
-  cursor: pointer;
-  display: inline-flex; align-items: center; justify-content: center;
-  box-shadow: 0 12px 32px rgba(10, 132, 255, 0.45), 0 0 0 1px rgba(255,255,255,0.08) inset;
+  border-radius: var(--r-md);
+  display: flex; align-items: center; justify-content: center;
+  box-shadow: 0 4px 12px rgba(10, 132, 255, 0.25);
+  transition: transform 0.15s;
+}
+
+.ai-demo-input button:hover { transform: scale(1.05); }
+.ai-demo-input button:disabled { opacity: 0.5; cursor: not-allowed; }
+
+.typing {
+  display: inline-flex; gap: 4px; padding: 4px 0;
+}
+
+.typing span {
+  width: 7px; height: 7px;
+  border-radius: 50%;
+  background: var(--text-muted);
+  animation: typingPulse 1.4s infinite;
+}
+
+.typing span:nth-child(2) { animation-delay: 0.2s; }
+.typing span:nth-child(3) { animation-delay: 0.4s; }
+
+@keyframes typingPulse {
+  0%, 60%, 100% { opacity: 0.3; transform: translateY(0); }
+  30% { opacity: 1; transform: translateY(-4px); }
+}
+
+/* ═══ ROUTES SECTION ═══ */
+.routes {
+  padding: 96px 0;
+}
+
+.routes-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 20px;
+}
+
+@media (max-width: 900px) { .routes-grid { grid-template-columns: 1fr 1fr; } }
+@media (max-width: 600px) { .routes-grid { grid-template-columns: 1fr; } }
+
+.route-card {
+  padding: 24px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--r-lg);
   transition: all 0.2s;
 }
-#flxChatFab:hover { transform: translateY(-3px); box-shadow: 0 16px 40px rgba(10, 132, 255, 0.6); }
-.flx-fab-pulse {
-  position: absolute; inset: -4px;
-  border-radius: 50%;
-  border: 2px solid rgba(57, 198, 255, 0.6);
-  animation: fabPulse 2s ease-out infinite;
-}
-@keyframes fabPulse {
-  0%   { opacity: 0.8; transform: scale(1); }
-  100% { opacity: 0; transform: scale(1.4); }
-}
-@media (max-width: 720px) {
-  #flxChatFab { width: 54px; height: 54px; bottom: 18px; left: 18px; }
-  .ai-demo { padding: 18px; }
-  .ai-bubble { max-width: 86%; font-size: 13px; }
-}
-:root {
-  --navy-950: #050E18;
-  --navy-900: #071C2C;
-  --navy-800: #0B2438;
-  --navy-700: #103048;
-  --navy-600: #16405C;
-  --carbon: #111827;
-  --slate: #F4F7FA;
-  --electric: #0A84FF;
-  --electric-2: #2196FF;
-  --cyan: #39C6FF;
-  --cyan-soft: #7CDEFF;
-  --white: #FFFFFF;
-  --text: rgba(255,255,255,0.92);
-  --text-2: rgba(255,255,255,0.62);
-  --text-3: rgba(255,255,255,0.42);
-  --line: rgba(57, 198, 255, 0.10);
-  --line-2: rgba(255,255,255,0.06);
-  --glass: rgba(11, 36, 56, 0.55);
-  --glass-2: rgba(16, 48, 72, 0.40);
-  --glow-blue: 0 0 80px rgba(10, 132, 255, 0.35), 0 0 30px rgba(10, 132, 255, 0.25);
-  --glow-cyan: 0 0 60px rgba(57, 198, 255, 0.45);
-  --shadow-lg: 0 30px 80px -20px rgba(0,0,0,0.55), 0 0 0 1px rgba(57, 198, 255, 0.08);
+
+.route-card:hover {
+  border-color: var(--blue-tint);
+  box-shadow: var(--shadow-md);
+  transform: translateY(-2px);
 }
 
-*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+.route-flow {
+  display: flex; align-items: center; gap: 12px;
+  margin-bottom: 16px;
+}
 
-html { scroll-behavior: smooth; -webkit-text-size-adjust: 100%; }
-body {
-  font-family: 'IBM Plex Sans Arabic', 'Inter', system-ui, -apple-system, sans-serif;
-  background: var(--navy-950);
+.route-port {
+  flex: 1;
+  font-weight: 700;
   color: var(--text);
-  overflow-x: hidden;
-  font-feature-settings: 'ss01', 'cv11';
-  line-height: 1.55;
-  -webkit-font-smoothing: antialiased;
-  text-rendering: optimizeLegibility;
+  font-size: 15px;
 }
 
-/* ─── BACKGROUND AMBIENT ─── */
-.ambient {
-  position: fixed; inset: 0; z-index: 0; pointer-events: none; overflow: hidden;
-}
-.ambient::before, .ambient::after {
-  content: ''; position: absolute; border-radius: 50%;
-  filter: blur(120px); opacity: 0.55;
-  animation: ambientFloat 28s ease-in-out infinite;
-}
-.ambient::before {
-  width: 700px; height: 700px;
-  background: radial-gradient(circle, #0A84FF 0%, transparent 65%);
-  top: -200px; right: -200px;
-}
-.ambient::after {
-  width: 800px; height: 800px;
-  background: radial-gradient(circle, #39C6FF 0%, transparent 55%);
-  bottom: -300px; left: -200px;
-  animation-delay: -14s;
-}
-@keyframes ambientFloat {
-  0%, 100% { transform: translate(0,0) scale(1); }
-  50% { transform: translate(40px, -30px) scale(1.1); }
+.route-port .flag { font-size: 22px; margin-left: 6px; }
+
+.route-arrow {
+  color: var(--text-faint);
+  font-family: var(--font-en);
 }
 
-/* Grid background */
-.grid-bg {
-  position: fixed; inset: 0; z-index: 0; pointer-events: none;
-  background-image:
-    linear-gradient(to right, rgba(57, 198, 255, 0.04) 1px, transparent 1px),
-    linear-gradient(to bottom, rgba(57, 198, 255, 0.04) 1px, transparent 1px);
-  background-size: 56px 56px;
-  mask-image: radial-gradient(ellipse at center, black 0%, transparent 70%);
-  -webkit-mask-image: radial-gradient(ellipse at center, black 0%, transparent 70%);
+.route-meta {
+  display: flex; gap: 16px; flex-wrap: wrap;
+  padding-top: 16px;
+  border-top: 1px solid var(--divider);
 }
 
-/* ─── LAYOUT ─── */
-.wrap { max-width: 1280px; margin: 0 auto; padding: 0 28px; position: relative; z-index: 2; }
-section { position: relative; z-index: 2; }
-
-/* ─── TOPBAR ─── */
-.topbar {
-  position: fixed; top: 0; left: 0; right: 0; z-index: 100;
-  padding: 18px 0;
-  background: linear-gradient(180deg, rgba(5,14,24,0.85) 0%, rgba(5,14,24,0.55) 100%);
-  backdrop-filter: blur(24px) saturate(180%);
-  -webkit-backdrop-filter: blur(24px) saturate(180%);
-  border-bottom: 1px solid var(--line);
-  transition: all .3s ease;
-}
-.topbar-row { display: flex; align-items: center; justify-content: space-between; gap: 24px; }
-.brand { display: flex; align-items: center; gap: 12px; text-decoration: none; color: var(--white); }
-.brand-mark {
-  width: 36px; height: 36px;
-  background: linear-gradient(135deg, var(--electric) 0%, var(--cyan) 100%);
-  border-radius: 10px;
-  position: relative; overflow: hidden;
-  display: grid; place-items: center;
-  box-shadow: var(--glow-blue);
-}
-.brand-mark::after {
-  content: ''; position: absolute; inset: 1px;
-  background: var(--navy-900);
-  border-radius: 9px;
-}
-.brand-mark svg { position: relative; z-index: 2; width: 18px; height: 18px; }
-.brand-name { font-family: 'Inter', sans-serif; font-weight: 800; letter-spacing: -0.02em; font-size: 18px; }
-.brand-name b { color: var(--cyan); }
-
-.nav { display: flex; align-items: center; gap: 6px; }
-.nav a {
-  color: var(--text-2); text-decoration: none; font-size: 14px; font-weight: 500;
-  padding: 10px 14px; border-radius: 10px; transition: all .2s; letter-spacing: 0;
-}
-.nav a:hover { color: var(--white); background: var(--line); }
-.nav .cta-ghost, .nav .cta-fill {
-  font-weight: 600; padding: 10px 18px; border-radius: 12px; font-size: 14px;
-}
-.nav .cta-ghost { color: var(--white); border: 1px solid var(--line); margin-right: 6px; }
-.nav .cta-ghost:hover { border-color: var(--cyan); background: transparent; }
-.nav .cta-fill {
-  background: linear-gradient(135deg, var(--electric) 0%, var(--cyan) 100%);
-  color: white; border: 0;
-  box-shadow: var(--glow-blue);
-}
-.nav .cta-fill:hover { transform: translateY(-1px); }
-
-@media (max-width: 860px) {
-  /* Hide section anchors but keep auth CTAs visible on mobile */
-  .nav a[href^="#"] { display: none; }
-  .nav { gap: 8px; }
-}
-
-/* ─── HERO ─── */
-.hero {
-  min-height: 100vh;
-  padding: 160px 0 80px;
-  display: flex; flex-direction: column; align-items: center; justify-content: center;
-  text-align: center;
-  position: relative;
-}
-.eyebrow {
-  display: inline-flex; align-items: center; gap: 10px;
-  padding: 8px 16px;
-  background: rgba(57, 198, 255, 0.08);
-  border: 1px solid rgba(57, 198, 255, 0.25);
-  border-radius: 999px;
-  font-size: 13px; font-weight: 500; color: var(--cyan);
-  margin-bottom: 28px;
-  backdrop-filter: blur(20px);
-}
-.eyebrow-dot {
-  width: 6px; height: 6px; border-radius: 50%;
-  background: var(--cyan);
-  box-shadow: 0 0 10px var(--cyan);
-  animation: pulse 2s ease-in-out infinite;
-}
-@keyframes pulse {
-  0%, 100% { opacity: 1; transform: scale(1); }
-  50% { opacity: 0.5; transform: scale(0.7); }
-}
-
-.hero h1 {
-  font-family: 'Inter', sans-serif;
-  font-weight: 800;
-  font-size: clamp(48px, 8vw, 96px);
-  line-height: 0.98;
-  letter-spacing: -0.04em;
-  background: linear-gradient(180deg, #FFFFFF 0%, #B4D8F7 50%, #39C6FF 100%);
-  -webkit-background-clip: text; background-clip: text; color: transparent;
-  margin-bottom: 24px;
-  text-wrap: balance;
-}
-.hero h1 .glow {
-  background: linear-gradient(135deg, var(--cyan) 0%, var(--electric-2) 100%);
-  -webkit-background-clip: text; background-clip: text; color: transparent;
-  font-style: italic;
-}
-.hero p.lead {
-  font-family: 'IBM Plex Sans Arabic', sans-serif;
-  font-size: clamp(17px, 2vw, 22px);
-  color: var(--text-2);
-  max-width: 700px;
-  margin: 0 auto 40px;
-  line-height: 1.6;
-  font-weight: 400;
-  text-wrap: balance;
-}
-.hero-cta { display: flex; gap: 14px; flex-wrap: wrap; justify-content: center; margin-bottom: 60px; }
-.btn {
-  display: inline-flex; align-items: center; gap: 10px;
-  padding: 16px 28px; border-radius: 14px;
-  font-family: 'IBM Plex Sans Arabic', 'Inter', sans-serif;
-  font-weight: 600; font-size: 15px;
-  text-decoration: none; cursor: pointer; border: 0;
-  transition: all .25s cubic-bezier(.2, .8, .2, 1);
-  white-space: nowrap;
-}
-.btn-primary {
-  background: linear-gradient(135deg, var(--electric) 0%, var(--cyan) 100%);
-  color: white;
-  box-shadow: 0 10px 40px -10px rgba(10, 132, 255, 0.6), inset 0 1px 0 rgba(255,255,255,0.25);
-}
-.btn-primary:hover { transform: translateY(-2px); box-shadow: 0 20px 50px -15px rgba(10, 132, 255, 0.8), inset 0 1px 0 rgba(255,255,255,0.3); }
-.btn-ghost {
-  background: rgba(255,255,255,0.04);
-  color: var(--white);
-  border: 1px solid var(--line);
-  backdrop-filter: blur(10px);
-}
-.btn-ghost:hover { border-color: var(--cyan); background: rgba(57, 198, 255, 0.05); }
-
-/* ─── ORB VISUAL ─── */
-.orb-stage {
-  position: relative;
-  width: min(720px, 100%);
-  aspect-ratio: 1.6;
-  margin: 20px auto 0;
-}
-.orb {
-  position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%);
-  width: 320px; height: 320px;
-  border-radius: 50%;
-  background:
-    radial-gradient(circle at 30% 30%, rgba(57, 198, 255, 0.6), transparent 60%),
-    radial-gradient(circle at 70% 70%, rgba(10, 132, 255, 0.5), transparent 50%),
-    radial-gradient(circle at center, var(--navy-700) 0%, var(--navy-900) 100%);
-  box-shadow: var(--glow-blue), 0 0 200px rgba(57, 198, 255, 0.3), inset 0 0 80px rgba(57, 198, 255, 0.1);
-  animation: orbFloat 8s ease-in-out infinite;
-}
-@keyframes orbFloat { 0%,100% { transform: translate(-50%, -50%) scale(1); } 50% { transform: translate(-50%, -54%) scale(1.03); } }
-.orb-ring {
-  position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%);
-  border-radius: 50%;
-  border: 1px solid rgba(57, 198, 255, 0.18);
-  pointer-events: none;
-}
-.orb-ring.r1 { width: 380px; height: 380px; animation: spin 30s linear infinite; }
-.orb-ring.r2 { width: 480px; height: 480px; animation: spin 45s linear infinite reverse; border-color: rgba(57, 198, 255, 0.12); }
-.orb-ring.r3 { width: 600px; height: 600px; animation: spin 60s linear infinite; border-color: rgba(57, 198, 255, 0.07); }
-@keyframes spin { to { transform: translate(-50%, -50%) rotate(360deg); } }
-
-.orb-satellite {
-  position: absolute; width: 14px; height: 14px; border-radius: 50%;
-  background: var(--cyan); box-shadow: 0 0 20px var(--cyan), 0 0 40px rgba(57, 198, 255, 0.4);
-}
-.orb-satellite.s1 { left: 50%; top: 50%; transform: translate(-50%, -50%) translateX(190px); animation: spin 30s linear infinite reverse; transform-origin: -190px 0; }
-.orb-satellite.s2 { left: 50%; top: 50%; transform: translate(-50%, -50%) translateX(-240px) translateY(60px); animation: spin 45s linear infinite; transform-origin: 240px -60px; background: var(--electric); box-shadow: 0 0 20px var(--electric), 0 0 40px rgba(10, 132, 255, 0.4); width: 10px; height: 10px; }
-.orb-satellite.s3 { left: 50%; top: 50%; transform: translate(-50%, -50%) translateX(280px) translateY(-100px); animation: spin 60s linear infinite reverse; transform-origin: -280px 100px; width: 8px; height: 8px; opacity: 0.7; }
-
-/* Floating UI cards around the orb */
-.float-card {
-  position: absolute;
-  background: var(--glass);
-  border: 1px solid var(--line);
-  border-radius: 16px;
-  padding: 14px 18px;
-  backdrop-filter: blur(20px) saturate(150%);
-  -webkit-backdrop-filter: blur(20px) saturate(150%);
-  box-shadow: 0 20px 50px -10px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.05);
+.route-meta div {
   font-size: 13px;
-  animation: floatY 6s ease-in-out infinite;
-}
-@keyframes floatY { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-12px); } }
-.float-card.fc1 { top: 15%; right: 8%; animation-delay: -1s; }
-.float-card.fc2 { top: 55%; right: 0%; animation-delay: -3s; }
-.float-card.fc3 { bottom: 12%; left: 5%; animation-delay: -2s; }
-.fc-row { display: flex; align-items: center; gap: 10px; white-space: nowrap; }
-.fc-label { color: var(--text-3); font-size: 11px; letter-spacing: 0.04em; text-transform: uppercase; font-weight: 500; }
-.fc-val { color: var(--white); font-weight: 700; font-family: 'JetBrains Mono', monospace; font-size: 14px; }
-.fc-val.cyan { color: var(--cyan); }
-.fc-val.green { color: #50E3C2; }
-.fc-mini-bar { width: 50px; height: 4px; border-radius: 4px; background: rgba(255,255,255,0.08); overflow: hidden; }
-.fc-mini-bar i { display: block; height: 100%; background: linear-gradient(90deg, var(--electric), var(--cyan)); width: 75%; border-radius: 4px; animation: barPulse 3s ease-in-out infinite; }
-@keyframes barPulse { 0%,100% { width: 70%; } 50% { width: 92%; } }
-
-@media (max-width: 760px) {
-  .float-card { display: none; }
-  .orb { width: 240px; height: 240px; }
-  .orb-ring.r1 { width: 280px; height: 280px; } .orb-ring.r2 { width: 360px; height: 360px; } .orb-ring.r3 { width: 460px; height: 460px; }
 }
 
-/* ─── METRICS BAR (live ticker feel) ─── */
-.metrics {
-  margin: 40px auto 0;
-  padding: 32px 36px;
-  max-width: 1100px;
-  background: var(--glass);
-  border: 1px solid var(--line);
-  border-radius: 24px;
-  backdrop-filter: blur(20px);
-  display: grid; grid-template-columns: repeat(4, 1fr); gap: 32px;
+.route-meta strong {
+  display: block;
+  font-family: var(--font-en);
+  font-size: 17px;
+  color: var(--text);
+  margin-bottom: 2px;
+  font-weight: 700;
 }
-.metric-cell { text-align: center; position: relative; }
-.metric-cell:not(:last-child)::after {
-  content: ''; position: absolute; left: 0; top: 18%; bottom: 18%; width: 1px;
-  background: linear-gradient(180deg, transparent, var(--line), transparent);
-}
-.m-val {
-  font-family: 'Inter', 'JetBrains Mono', monospace;
-  font-weight: 700; font-size: clamp(28px, 4vw, 42px);
-  background: linear-gradient(180deg, #FFFFFF 0%, #7CDEFF 100%);
-  -webkit-background-clip: text; background-clip: text; color: transparent;
-  font-variant-numeric: tabular-nums; letter-spacing: -0.02em;
-  line-height: 1; margin-bottom: 8px;
-}
-.m-label { color: var(--text-2); font-size: 13px; font-weight: 500; }
-@media (max-width: 720px) { .metrics { grid-template-columns: repeat(2, 1fr); padding: 24px 20px; gap: 20px; } .metric-cell:not(:last-child)::after { display: none; } }
 
-/* ─── SECTION HEADER ─── */
-.section-head { text-align: center; max-width: 720px; margin: 0 auto 60px; }
-.section-eyebrow {
+.route-meta span { color: var(--text-muted); font-size: 12px; }
+
+/* ═══ VISION 2030 SECTION ═══ */
+.vision {
+  padding: 96px 0;
+  background: linear-gradient(180deg, var(--bg-soft) 0%, var(--bg) 100%);
+  border-top: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+  position: relative;
+  overflow: hidden;
+}
+
+.vision::before {
+  content: '';
+  position: absolute;
+  width: 600px; height: 600px;
+  border-radius: 50%;
+  background: radial-gradient(circle, var(--saudi-green-tint), transparent 60%);
+  filter: blur(60px);
+  top: -300px; right: -200px;
+  opacity: 0.5;
+}
+
+.vision-grid {
+  display: grid;
+  grid-template-columns: 1.2fr 1fr;
+  gap: 64px;
+  align-items: center;
+}
+
+@media (max-width: 900px) { .vision-grid { grid-template-columns: 1fr; gap: 40px; } }
+
+.vision-badge {
+  display: inline-flex; align-items: center; gap: 8px;
+  padding: 8px 16px;
+  background: var(--saudi-green-soft);
+  border: 1px solid var(--saudi-green-tint);
+  color: var(--saudi-green);
+  font-size: 13px;
+  font-weight: 700;
+  border-radius: var(--r-pill);
+  margin-bottom: 20px;
+}
+
+.vision h2 { margin-bottom: 20px; }
+
+.vision p {
+  color: var(--text-body);
+  font-size: 1.05rem;
+  line-height: 1.75;
+  margin-bottom: 16px;
+}
+
+.vision-list {
+  list-style: none;
+  margin-top: 24px;
+}
+
+.vision-list li {
+  display: flex; align-items: flex-start; gap: 12px;
+  padding: 10px 0;
+  color: var(--text);
+  font-weight: 500;
+}
+
+.vision-list li::before {
+  content: '✓';
+  flex-shrink: 0;
+  width: 22px; height: 22px;
+  border-radius: 50%;
+  background: var(--saudi-green-soft);
+  color: var(--saudi-green);
+  display: flex; align-items: center; justify-content: center;
+  font-weight: 800;
+  font-size: 13px;
+}
+
+.vision-art {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--r-2xl);
+  padding: 40px;
+  box-shadow: var(--shadow-lg);
+  position: relative;
+}
+
+.vision-art-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+}
+
+.vision-stat {
+  padding: 24px 20px;
+  background: var(--bg-soft);
+  border: 1px solid var(--border);
+  border-radius: var(--r-lg);
+  text-align: center;
+}
+
+.vision-stat-value {
+  font-family: var(--font-en);
+  font-size: 2.2rem;
+  font-weight: 800;
+  background: linear-gradient(135deg, var(--saudi-green) 0%, var(--blue) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  letter-spacing: -0.025em;
+  margin-bottom: 4px;
+}
+
+.vision-stat-label {
+  color: var(--text-muted);
+  font-size: 13px;
+  font-weight: 500;
+}
+
+/* ═══ FINAL CTA ═══ */
+.final-cta {
+  padding: 120px 0;
+  text-align: center;
+}
+
+.final-cta-inner {
+  max-width: 720px;
+  margin: 0 auto;
+}
+
+.final-cta h2 {
+  background: linear-gradient(135deg, var(--text) 0%, var(--blue) 50%, var(--cyan) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  margin-bottom: 20px;
+}
+
+.final-cta p {
+  font-size: clamp(1rem, 1.5vw, 1.2rem);
+  color: var(--text-body);
+  margin-bottom: 40px;
+  line-height: 1.7;
+}
+
+/* ═══ FOOTER ═══ */
+.footer {
+  background: var(--bg-soft);
+  border-top: 1px solid var(--border);
+  padding: 64px 0 32px;
+}
+
+.footer-grid {
+  display: grid;
+  grid-template-columns: 2fr 1fr 1fr 1fr;
+  gap: 48px;
+  padding-bottom: 48px;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 32px;
+}
+
+@media (max-width: 768px) { .footer-grid { grid-template-columns: 1fr 1fr; } }
+@media (max-width: 480px) { .footer-grid { grid-template-columns: 1fr; } }
+
+.footer-brand p {
+  color: var(--text-muted);
+  font-size: 14px;
+  line-height: 1.7;
+  max-width: 320px;
+  margin-top: 16px;
+}
+
+.footer-col h4 {
+  font-size: 12px;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  margin-bottom: 16px;
+  font-family: var(--font-en);
+}
+
+.footer-col ul { list-style: none; }
+.footer-col li { margin-bottom: 10px; }
+.footer-col a {
+  color: var(--text-body);
+  font-size: 14px;
+  transition: color 0.15s;
+}
+.footer-col a:hover { color: var(--blue); }
+
+.footer-bottom {
+  display: flex; justify-content: space-between; align-items: center;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+
+.footer-bottom p {
+  color: var(--text-muted);
+  font-size: 13px;
+}
+
+.footer-flag {
   display: inline-flex; align-items: center; gap: 8px;
   padding: 6px 14px;
-  background: rgba(10, 132, 255, 0.08);
-  border: 1px solid rgba(10, 132, 255, 0.25);
-  border-radius: 999px;
-  font-size: 12px; font-weight: 600; color: var(--cyan);
-  letter-spacing: 0.06em; text-transform: uppercase;
-  margin-bottom: 20px;
-}
-.section-title {
-  font-family: 'Inter', sans-serif;
-  font-weight: 700; font-size: clamp(34px, 5vw, 56px); line-height: 1.05;
-  letter-spacing: -0.03em;
-  background: linear-gradient(180deg, #FFFFFF 0%, #B4D8F7 100%);
-  -webkit-background-clip: text; background-clip: text; color: transparent;
-  margin-bottom: 18px;
-  text-wrap: balance;
-}
-.section-lead { font-size: 18px; color: var(--text-2); line-height: 1.6; }
-
-/* ─── FEATURE GRID ─── */
-.section { padding: 120px 0; }
-.feature-grid {
-  display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px;
-}
-@media (max-width: 980px) { .feature-grid { grid-template-columns: repeat(2, 1fr); } }
-@media (max-width: 640px) { .feature-grid { grid-template-columns: 1fr; } }
-
-.feature {
-  position: relative;
-  padding: 32px;
-  background: linear-gradient(180deg, var(--glass) 0%, var(--glass-2) 100%);
-  border: 1px solid var(--line);
-  border-radius: 20px;
-  backdrop-filter: blur(20px);
-  overflow: hidden;
-  transition: all .35s cubic-bezier(.2, .8, .2, 1);
-}
-.feature::before {
-  content: ''; position: absolute; inset: -1px; border-radius: 20px;
-  background: linear-gradient(135deg, transparent 30%, rgba(57, 198, 255, 0.2) 50%, transparent 70%);
-  opacity: 0; transition: opacity .4s;
-  pointer-events: none;
-  -webkit-mask: linear-gradient(#fff,#fff) content-box, linear-gradient(#fff,#fff); -webkit-mask-composite: xor;
-  mask: linear-gradient(#fff,#fff) content-box, linear-gradient(#fff,#fff); mask-composite: exclude;
-  padding: 1px;
-}
-.feature:hover { transform: translateY(-6px); border-color: rgba(57, 198, 255, 0.3); box-shadow: 0 30px 60px -20px rgba(10, 132, 255, 0.25); }
-.feature:hover::before { opacity: 1; }
-.feat-icon {
-  width: 52px; height: 52px;
-  border-radius: 14px;
-  background: linear-gradient(135deg, rgba(10, 132, 255, 0.15) 0%, rgba(57, 198, 255, 0.10) 100%);
-  border: 1px solid rgba(57, 198, 255, 0.25);
-  display: grid; place-items: center;
-  margin-bottom: 20px;
-  position: relative;
-}
-.feat-icon svg { width: 22px; height: 22px; color: var(--cyan); }
-.feat-title { font-family: 'Inter', sans-serif; font-size: 20px; font-weight: 700; margin-bottom: 12px; letter-spacing: -0.01em; color: var(--white); }
-.feat-desc { color: var(--text-2); font-size: 14.5px; line-height: 1.7; }
-
-/* ─── GLOBE / NETWORK SECTION ─── */
-.network-stage {
-  position: relative;
-  background:
-    radial-gradient(ellipse at center, rgba(10, 132, 255, 0.15) 0%, transparent 50%),
-    linear-gradient(180deg, var(--navy-900) 0%, var(--navy-950) 100%);
-  border: 1px solid var(--line);
-  border-radius: 28px;
-  padding: 60px 40px;
-  overflow: hidden;
-  box-shadow: var(--shadow-lg);
-}
-.network-bg {
-  position: absolute; inset: 0;
-  background-image:
-    radial-gradient(circle at 20% 30%, rgba(57, 198, 255, 0.06), transparent 25%),
-    radial-gradient(circle at 80% 60%, rgba(10, 132, 255, 0.06), transparent 25%);
-  pointer-events: none;
-}
-.network-content { position: relative; z-index: 2; display: grid; grid-template-columns: 1fr 1.2fr; gap: 60px; align-items: center; }
-@media (max-width: 900px) { .network-content { grid-template-columns: 1fr; } }
-.network-text h3 { font-family: 'Inter'; font-size: 36px; font-weight: 700; letter-spacing: -0.02em; line-height: 1.1; margin-bottom: 18px; color: var(--white); }
-.network-text p { color: var(--text-2); font-size: 16px; line-height: 1.7; margin-bottom: 28px; }
-.network-stat-row { display: flex; gap: 24px; flex-wrap: wrap; }
-.net-stat { padding: 14px 18px; background: rgba(255,255,255,0.03); border: 1px solid var(--line); border-radius: 12px; }
-.net-stat-v { font-family: 'JetBrains Mono'; font-size: 22px; font-weight: 700; color: var(--cyan); font-variant-numeric: tabular-nums; }
-.net-stat-l { font-size: 12px; color: var(--text-3); margin-top: 4px; }
-
-/* Globe svg */
-.globe-wrap { position: relative; aspect-ratio: 1; max-width: 460px; margin: 0 auto; }
-.globe-svg { width: 100%; height: 100%; }
-
-/* ─── CAPABILITIES (3-col) ─── */
-.cap-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 24px; }
-@media (max-width: 800px) { .cap-grid { grid-template-columns: 1fr; } }
-.cap {
-  padding: 36px;
-  background: linear-gradient(180deg, rgba(11, 36, 56, 0.6) 0%, rgba(7, 28, 44, 0.3) 100%);
-  border: 1px solid var(--line);
-  border-radius: 24px;
-  backdrop-filter: blur(20px);
-  position: relative;
-  overflow: hidden;
-}
-.cap-tag {
-  display: inline-block;
-  padding: 4px 10px;
-  background: rgba(57, 198, 255, 0.12);
-  border: 1px solid rgba(57, 198, 255, 0.25);
-  color: var(--cyan);
-  font-size: 11px; font-weight: 600; letter-spacing: 0.05em;
-  border-radius: 999px;
-  margin-bottom: 14px;
-}
-.cap h4 { font-family: 'Inter'; font-size: 24px; font-weight: 700; letter-spacing: -0.02em; line-height: 1.2; margin-bottom: 10px; color: var(--white); }
-.cap p { color: var(--text-2); font-size: 14.5px; line-height: 1.7; }
-
-/* Code mock */
-.code-block {
-  margin-top: 20px;
-  background: rgba(5, 14, 24, 0.7);
-  border: 1px solid var(--line);
-  border-radius: 14px;
-  padding: 18px;
-  font-family: 'JetBrains Mono', monospace;
+  background: var(--saudi-green-soft);
+  border: 1px solid var(--saudi-green-tint);
+  color: var(--saudi-green);
+  border-radius: var(--r-pill);
   font-size: 12.5px;
-  color: var(--text-2);
-  line-height: 1.7;
-  overflow-x: auto;
+  font-weight: 700;
 }
-.code-block .k { color: #FF7AB6; }
-.code-block .s { color: #50E3C2; }
-.code-block .n { color: var(--cyan); }
-.code-block .c { color: var(--text-3); }
 
-/* ─── TRUST / CARRIERS LOGOS ─── */
-.carriers-strip {
-  padding: 60px 0;
-  border-top: 1px solid var(--line-2);
-  border-bottom: 1px solid var(--line-2);
+/* ═══ FLOATING FAB ═══ */
+#flxChatFab {
+  position: fixed;
+  bottom: 28px; left: 28px;
+  width: 60px; height: 60px;
+  background: linear-gradient(135deg, var(--blue) 0%, var(--cyan) 100%);
+  color: #fff;
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  box-shadow: 0 8px 24px rgba(10, 132, 255, 0.30), 0 4px 8px rgba(10, 132, 255, 0.15);
+  z-index: 999;
+  transition: transform 0.2s;
 }
-.carriers-label { text-align: center; color: var(--text-3); font-size: 13px; letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 28px; font-weight: 500; }
-.carriers-row { display: flex; gap: 56px; flex-wrap: wrap; justify-content: center; align-items: center; opacity: 0.7; }
-.carriers-row span { font-family: 'Inter'; font-size: 18px; font-weight: 700; color: var(--text-2); letter-spacing: 0.02em; }
 
-/* ─── BIG CTA ─── */
-.cta-final {
-  text-align: center;
-  padding: 120px 0;
-  position: relative;
-}
-.cta-final::before {
-  content: ''; position: absolute; left: 50%; top: 50%; transform: translate(-50%,-50%);
-  width: 800px; height: 400px;
-  background: radial-gradient(ellipse, rgba(10, 132, 255, 0.25) 0%, transparent 60%);
-  filter: blur(60px);
+#flxChatFab:hover { transform: scale(1.06) rotate(-4deg); }
+
+.flx-fab-pulse {
+  position: absolute; inset: 0;
+  border-radius: 50%;
+  background: rgba(10, 132, 255, 0.30);
+  animation: fabPulse 2s infinite;
   z-index: -1;
 }
-.cta-final h2 {
-  font-family: 'Inter'; font-weight: 800; font-size: clamp(40px, 6vw, 72px);
-  line-height: 1.05; letter-spacing: -0.03em;
-  background: linear-gradient(180deg, #FFFFFF 0%, #7CDEFF 100%);
-  -webkit-background-clip: text; background-clip: text; color: transparent;
-  margin-bottom: 20px;
-}
-.cta-final p { color: var(--text-2); font-size: 18px; max-width: 560px; margin: 0 auto 36px; line-height: 1.6; }
 
-/* ─── FOOTER ─── */
-footer {
-  padding: 80px 0 40px;
-  border-top: 1px solid var(--line-2);
-  position: relative; z-index: 2;
-}
-.footer-row { display: grid; grid-template-columns: 2fr 1fr 1fr 1fr; gap: 50px; }
-@media (max-width: 760px) { .footer-row { grid-template-columns: 1fr 1fr; } }
-.footer-col h5 { font-size: 13px; font-weight: 600; color: var(--white); margin-bottom: 16px; letter-spacing: 0.04em; text-transform: uppercase; }
-.footer-col a { display: block; color: var(--text-2); font-size: 14px; text-decoration: none; padding: 6px 0; transition: color .15s; }
-.footer-col a:hover { color: var(--cyan); }
-.footer-brand-bottom { color: var(--text-3); font-size: 14px; line-height: 1.7; margin-top: 16px; max-width: 320px; }
-.footer-bottom { margin-top: 60px; padding-top: 30px; border-top: 1px solid var(--line-2); display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px; color: var(--text-3); font-size: 13px; }
-
-/* Reveal animations */
-.reveal { opacity: 0; transform: translateY(20px); transition: opacity .8s ease, transform .8s cubic-bezier(.2,.8,.2,1); }
-.reveal.in { opacity: 1; transform: translateY(0); }
-
-/* ─── PRINT/SCROLLBAR cleanup ─── */
-::-webkit-scrollbar { width: 10px; height: 10px; }
-::-webkit-scrollbar-track { background: var(--navy-950); }
-::-webkit-scrollbar-thumb { background: var(--navy-700); border-radius: 5px; }
-::-webkit-scrollbar-thumb:hover { background: var(--electric); }
-
-/* ─── SELECTION ─── */
-::selection { background: rgba(10, 132, 255, 0.35); color: white; }
-
-/* ═══════════════════════════════════════════════════════════
-   v5.0 LIGHT THEME OVERRIDE — Stripe-style palette
-   ═══════════════════════════════════════════════════════════ */
-:root {
-  --bg-primary: #FFFFFF;
-  --bg-soft: #F6F9FC;
-  --text-primary: #0A2540;
-  --text-secondary: #425466;
-  --text-muted: #697386;
-  --brand: #0A84FF;
-  --brand-hover: #0066CC;
-  --accent: #39C6FF;
-  --border: #E3E8EE;
-  --border-strong: #C1C9D2;
-  --shadow-sm: 0 1px 3px rgba(50,50,93,0.06), 0 1px 2px rgba(0,0,0,0.04);
-  --shadow-md: 0 4px 6px rgba(50,50,93,0.08), 0 1px 3px rgba(0,0,0,0.05);
-  --shadow-lg: 0 13px 27px -5px rgba(50,50,93,0.12), 0 8px 16px -8px rgba(0,0,0,0.07);
-  --shadow-xl: 0 30px 60px -12px rgba(50,50,93,0.16);
+@keyframes fabPulse {
+  0%   { transform: scale(1); opacity: 0.6; }
+  100% { transform: scale(1.5); opacity: 0; }
 }
 
-body {
-  background:
-    radial-gradient(ellipse 80% 50% at 20% 0%, rgba(10,132,255,0.04), transparent 60%),
-    radial-gradient(ellipse 60% 40% at 100% 100%, rgba(57,198,255,0.05), transparent 60%),
-    #FFFFFF !important;
-  color: #0A2540 !important;
+/* ═══ REVEAL ANIMATIONS ═══ */
+.reveal {
+  opacity: 0;
+  transform: translateY(20px);
+  transition: opacity 0.7s cubic-bezier(0.4, 0, 0.2, 1), transform 0.7s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-/* Ambient + grid bg — soften */
-.ambient { opacity: 0.5 !important; mix-blend-mode: multiply; }
-.grid-bg {
-  background-image:
-    linear-gradient(rgba(10,132,255,0.025) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(10,132,255,0.025) 1px, transparent 1px) !important;
-  opacity: 0.7 !important;
+.reveal.visible { opacity: 1; transform: translateY(0); }
+
+/* ═══ HIDE FLX-AUTH FLOATING TRIGGER (use nav button instead) ═══ */
+.flx-auth-trigger { display: none !important; }
+.flx-user-menu { z-index: 9999; }
+
+/* ═══ SCROLLBAR ═══ */
+*::-webkit-scrollbar { width: 10px; height: 10px; }
+*::-webkit-scrollbar-track { background: transparent; }
+*::-webkit-scrollbar-thumb {
+  background: var(--border-mid);
+  border-radius: var(--r-pill);
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}
+*::-webkit-scrollbar-thumb:hover { background: var(--text-muted); }
+
+/* ═══ FOCUS ═══ */
+:focus-visible {
+  outline: 2px solid var(--blue);
+  outline-offset: 3px;
+  border-radius: var(--r-sm);
 }
 
-/* Nav — light glass */
-nav, .nav, .navbar, header.top, .top-nav {
-  background: rgba(255,255,255,0.78) !important;
-  backdrop-filter: blur(20px) saturate(1.6) !important;
-  -webkit-backdrop-filter: blur(20px) saturate(1.6) !important;
-  border-bottom: 1px solid #E3E8EE !important;
-}
-nav a, .nav a, .navbar a { color: #425466 !important; }
-nav a:hover, .nav a:hover { color: #0A84FF !important; }
-.nav-cta, .navbar .btn { color: #FFFFFF !important; }
-
-/* Headings — deep navy text */
-h1, h2, h3, h4 { color: #0A2540 !important; }
-h1.gradient, .gradient-text, .hero-headline {
-  background: linear-gradient(135deg, #0A2540 0%, #0A84FF 60%, #39C6FF 100%) !important;
-  -webkit-background-clip: text !important;
-  -webkit-text-fill-color: transparent !important;
-  background-clip: text !important;
+/* ═══ UTILITY ═══ */
+.text-gradient {
+  background: linear-gradient(135deg, var(--blue) 0%, var(--cyan) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
 }
 
-p, li, .lead, .muted, .sub { color: #425466 !important; }
-
-/* Cards & glass — pure white */
-.card, .glass, .glass-card, .feature-card,
-.ai-demo, .stat-card, .panel, .module,
-[class*="-card"] {
-  background: #FFFFFF !important;
-  border: 1px solid #E3E8EE !important;
-  box-shadow: var(--shadow-sm) !important;
-  color: #0A2540 !important;
-  backdrop-filter: none !important;
-  -webkit-backdrop-filter: none !important;
+.saudi-gradient {
+  background: linear-gradient(135deg, var(--saudi-green) 0%, #00A858 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
 }
-
-.card:hover, .glass:hover, .feature-card:hover {
-  box-shadow: var(--shadow-md) !important;
-  border-color: #C1C9D2 !important;
-}
-
-/* AI demo chat — light */
-.ai-demo {
-  background: #FFFFFF !important;
-  border: 1px solid #E3E8EE !important;
-  box-shadow: var(--shadow-lg) !important;
-}
-.ai-demo-head { border-bottom-color: #E3E8EE !important; }
-.ai-demo-title { color: #0A2540 !important; }
-.ai-demo-sub { color: #697386 !important; }
-.ai-demo-badge {
-  background: rgba(57,198,255,0.10) !important;
-  border-color: rgba(10,132,255,0.20) !important;
-  color: #0066CC !important;
-}
-.msg-user {
-  background: linear-gradient(135deg, #0A84FF 0%, #0066CC 100%) !important;
-  color: #FFFFFF !important;
-}
-.msg-ai {
-  background: #F6F9FC !important;
-  color: #0A2540 !important;
-  border: 1px solid #E3E8EE !important;
-}
-.ai-demo input, .ai-demo textarea {
-  background: #FFFFFF !important;
-  color: #0A2540 !important;
-  border: 1px solid #E3E8EE !important;
-}
-
-/* Buttons */
-.btn, button, .cta {
-  border-radius: 10px !important;
-  font-weight: 600 !important;
-}
-.btn-primary, .btn.primary, .cta-primary {
-  background: linear-gradient(180deg, #0A84FF 0%, #0066CC 100%) !important;
-  color: #FFFFFF !important;
-  border: 1px solid #0066CC !important;
-  box-shadow: 0 1px 2px rgba(10,132,255,0.30), inset 0 1px 0 rgba(255,255,255,0.20) !important;
-}
-.btn-primary:hover { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(10,132,255,0.32) !important; }
-.btn-secondary, .btn.secondary, .btn-outline {
-  background: #FFFFFF !important;
-  color: #0A2540 !important;
-  border: 1px solid #E3E8EE !important;
-}
-.btn-secondary:hover { background: #F6F9FC !important; border-color: #C1C9D2 !important; }
-
-/* Inputs */
-input, textarea, select {
-  background: #FFFFFF !important;
-  color: #0A2540 !important;
-  border: 1px solid #E3E8EE !important;
-}
-input:focus, textarea:focus, select:focus {
-  border-color: #0A84FF !important;
-  box-shadow: 0 0 0 4px rgba(10,132,255,0.10) !important;
-}
-input::placeholder, textarea::placeholder { color: #8898AA !important; }
-
-/* Pills / chips / status */
-.pill, .chip, .status-pill, .tag {
-  background: rgba(57,198,255,0.10) !important;
-  color: #0066CC !important;
-  border: 1px solid rgba(10,132,255,0.15) !important;
-}
-.pill.success, .tag.success { background: #E3FCEF !important; color: #00875A !important; border-color: #ABF5D1 !important; }
-.pill.warning, .tag.warning { background: #FFF8E6 !important; color: #B97309 !important; border-color: #FFE2A8 !important; }
-
-/* Stats */
-.stat-num, .stat-value, .big-number {
-  background: linear-gradient(135deg, #0A2540 0%, #0A84FF 100%) !important;
-  -webkit-background-clip: text !important;
-  -webkit-text-fill-color: transparent !important;
-  background-clip: text !important;
-}
-.stat-label { color: #697386 !important; }
-
-/* Footer */
-footer, .footer {
-  background: #F6F9FC !important;
-  color: #697386 !important;
-  border-top: 1px solid #E3E8EE !important;
-}
-footer a, .footer a { color: #425466 !important; }
-footer a:hover { color: #0A84FF !important; }
-
-/* Generic dark-to-light fixes */
-[style*="rgba(11, 42, 64"], [style*="rgba(7, 28, 44"], [style*="rgba(5, 14, 24"] {
-  background: #FFFFFF !important;
-}
-
-/* Logo on white — invert if it's a white-logo */
-img[src*="white-logo"] { filter: brightness(0) saturate(100%) invert(13%) sepia(34%) saturate(2000%) hue-rotate(193deg) brightness(96%) contrast(98%) !important; }
-
-::selection { background: rgba(10,132,255,0.20) !important; color: #0A2540 !important; }
 </style>
 </head>
 <body>
@@ -1034,402 +1157,393 @@ img[src*="white-logo"] { filter: brightness(0) saturate(100%) invert(13%) sepia(
 <div class="ambient"></div>
 <div class="grid-bg"></div>
 
-<!-- ─── TOPBAR ─── -->
-<header class="topbar">
-  <div class="wrap topbar-row">
-    <a href="/" class="brand" style="display:inline-flex;align-items:center;gap:0">
-      <img src="/assets/logo/white-logo.svg?v=3" alt="FREIGHTLX" id="navLogo"
-           style="height:38px;width:auto;filter:drop-shadow(0 0 14px rgba(57,198,255,0.32));transition:filter .25s">
-      <noscript><div class="brand-name">FREIGHT<b>LX</b></div></noscript>
+<!-- ─── NAV ─── -->
+<nav class="nav">
+  <div class="nav-inner">
+    <a href="/" class="nav-brand">
+      <div class="nav-logo">FX</div>
+      <div>
+        <div class="nav-brand-text">FREIGHTLX</div>
+        <div class="nav-brand-sub">منصة الذكاء للشحن</div>
+      </div>
     </a>
-    <script>
-      // Fallback to wordmark if SVG fails to load
-      (function(){
-        var l = document.getElementById('navLogo');
-        if (!l) return;
-        l.addEventListener('error', function(){
-          var a = l.parentElement;
-          l.remove();
-          a.innerHTML = '<div class="brand-mark"><svg viewBox="0 0 24 24" fill="none"><path d="M3 12L12 3L21 12L12 21L3 12Z" stroke="url(#g1)" stroke-width="2" stroke-linejoin="round"/><defs><linearGradient id="g1" x1="0" y1="0" x2="24" y2="24"><stop stop-color="#39C6FF"/><stop offset="1" stop-color="#0A84FF"/></linearGradient></defs></svg></div><div class="brand-name">FREIGHT<b>LX</b></div>';
-        });
-      })();
-    </script>
-    <nav class="nav">
-      <a href="#platform">المنصة</a>
-      <a href="#ai">الذكاء</a>
-      <a href="/rates.html">الأسعار</a>
-      <a href="/packages.html">الباقات</a>
-      <a href="/dashboard.html" id="navDashboard" class="cta-ghost" style="display:none">لوحتي ←</a>
-      <a href="javascript:void(0)" id="navLogin" class="cta-ghost" onclick="flxOpenLoginModal()">دخول</a>
-      <a href="/rates.html" class="cta-fill">جرّب مجاناً ←</a>
-    </nav>
+    <div class="nav-links">
+      <a href="#features">الذكاء</a>
+      <a href="#routes">المسارات</a>
+      <a href="/packages">الباقات</a>
+      <a href="/rates">الأسعار</a>
+      <a href="/dashboard">لوحتي</a>
+      <a class="nav-cta" href="/?login=1">جرّب مجاناً ←</a>
+    </div>
   </div>
-</header>
+</nav>
 
 <!-- ─── HERO ─── -->
 <section class="hero">
-  <div class="wrap">
-    <div class="eyebrow"><span class="eyebrow-dot"></span> نظام التشغيل العالمي للشحن — مدعوم بـ AI</div>
+  <div class="wrap hero-inner">
+    <div class="eyebrow">
+      <span class="eyebrow-dot"></span>
+      <span>أول منصة شحن سعودية مدعومة بـ AI · رؤية المملكة 2030</span>
+    </div>
 
     <h1>
-      أسعار الشحن الحيّة<br>
-      <span class="glow">من 12 خط ملاحي عالمي</span><br>
-      في ثوانٍ.
+      من القرار إلى التسليم<br>
+      في <span class="gradient-blue">دقائق</span>
     </h1>
 
-    <p class="lead">
-      منصة الذكاء الاصطناعي للوجستيات العالمية. أسعار live، حجز فوري، تخليص جمركي تلقائي. كل ما تحتاجه لإدارة شحناتك الدولية في مكان واحد.
+    <p class="hero-sub">
+      منصة <strong>FREIGHTLX</strong> تربطك بأكبر ١٢ خط ملاحي عالمي، تحسب التخليص الجمركي والضريبة تلقائياً،
+      وتؤتمت شهادات سابر — كل ذلك مصمم خصيصاً للسوق السعودي ومتكامل مع زاتكا والجمارك.
     </p>
 
     <div class="hero-cta">
-      <a href="/rates.html" class="btn btn-primary">
-        احصل على عرض سعر
+      <a href="/?login=1" class="btn btn-primary">
+        ابدأ مجاناً
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M5 12H19M19 12L12 5M19 12L12 19" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
       </a>
-      <a href="#platform" class="btn btn-ghost">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2"/><path d="M10 8L16 12L10 16V8Z" fill="currentColor"/></svg>
-        شاهد العرض
-      </a>
+      <a href="#aiDemo" class="btn btn-ghost">شاهد العرض الحي</a>
     </div>
 
-    <!-- ORB visual -->
-    <div class="orb-stage">
-      <div class="orb-ring r3"></div>
-      <div class="orb-ring r2"></div>
-      <div class="orb-ring r1"></div>
-      <div class="orb"></div>
-      <div class="orb-satellite s1"></div>
-      <div class="orb-satellite s2"></div>
-      <div class="orb-satellite s3"></div>
-
-      <div class="float-card fc1">
-        <div class="fc-row">
-          <span class="fc-label">عرض حي</span>
-          <span class="fc-val cyan">$2,440</span>
-        </div>
-        <div class="fc-row" style="margin-top:6px">
-          <span class="fc-label">Maersk · CN→SA · 22d</span>
-        </div>
+    <!-- LIVE STATS BAR -->
+    <div class="hero-stats">
+      <div class="hero-stat">
+        <div class="hero-stat-value num">12</div>
+        <div class="hero-stat-label">خط ملاحي عالمي</div>
       </div>
-
-      <div class="float-card fc2">
-        <div class="fc-row">
-          <span class="fc-label">AI Routing</span>
-          <div class="fc-mini-bar"><i></i></div>
-        </div>
-        <div class="fc-row" style="margin-top:6px">
-          <span class="fc-val green">99.7%</span>
-          <span class="fc-label">دقة المسار</span>
-        </div>
+      <div class="hero-stat">
+        <div class="hero-stat-value num">5s</div>
+        <div class="hero-stat-label">متوسط زمن الاستجابة</div>
       </div>
-
-      <div class="float-card fc3">
-        <div class="fc-row">
-          <span class="fc-label">Live Fan-out</span>
-          <span class="fc-val">12 carrier</span>
-        </div>
+      <div class="hero-stat">
+        <div class="hero-stat-value num">99.9%</div>
+        <div class="hero-stat-label">دقة التسعير</div>
       </div>
-    </div>
-
-    <!-- Metrics ticker -->
-    <div class="metrics">
-      <div class="metric-cell">
-        <div class="m-val" data-count="12">12</div>
-        <div class="m-label">خط ملاحي عالمي</div>
-      </div>
-      <div class="metric-cell">
-        <div class="m-val" data-count="180">180+</div>
-        <div class="m-label">دولة مغطّاة</div>
-      </div>
-      <div class="metric-cell">
-        <div class="m-val" data-count="2500">2,500+</div>
-        <div class="m-label">ميناء عالمي</div>
-      </div>
-      <div class="metric-cell">
-        <div class="m-val">&lt;5s</div>
-        <div class="m-label">متوسط استجابة</div>
+      <div class="hero-stat">
+        <div class="hero-stat-value num">24/7</div>
+        <div class="hero-stat-label">دعم بالعربية</div>
       </div>
     </div>
   </div>
 </section>
 
-<!-- ─── FEATURES (PLATFORM) ─── -->
-<section class="section" id="platform">
+<!-- ─── TRUST BAND ─── -->
+<section class="trust">
   <div class="wrap">
-    <div class="section-head reveal">
-      <div class="section-eyebrow">PLATFORM</div>
-      <h2 class="section-title">منصة واحدة. تحكّم كامل.</h2>
-      <p class="section-lead">من البحث عن الأسعار حتى التسليم النهائي — كل شيء مُدار بواسطة AI ومُؤتمت بالكامل.</p>
-    </div>
-
-    <div class="feature-grid">
-
-      <div class="feature reveal">
-        <div class="feat-icon">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 7L12 12L22 7L12 2Z"/><path d="M2 17L12 22L22 17"/><path d="M2 12L12 17L22 12"/></svg>
-        </div>
-        <div class="feat-title">أسعار حيّة من 12 خط ملاحي</div>
-        <p class="feat-desc">اتصال مباشر مع 12 خط ملاحي عالمي. أسعار live تتحدّث في الوقت الحقيقي — Maersk، MSC، COSCO، CMA CGM، Hapag-Lloyd، ONE، Evergreen، HMM، OOCL، APL، ANL، CNC.</p>
+    <div class="trust-title">متكامل مع الجهات السعودية الرسمية</div>
+    <div class="trust-grid">
+      <div class="trust-item">
+        <span class="trust-icon">📋</span>
+        <span>هيئة الزكاة والضريبة (زاتكا)</span>
       </div>
-
-      <div class="feature reveal">
-        <div class="feat-icon">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 01-2.83 2.83l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06a1.65 1.65 0 00.33-1.82 1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06a1.65 1.65 0 001.82.33H9a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06a1.65 1.65 0 00-.33 1.82V9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
-        </div>
-        <div class="feat-title">AI Routing Engine</div>
-        <p class="feat-desc">محرك ذكاء اصطناعي يختار أفضل مسار بناءً على السعر، الوقت، السعة المتاحة، والموثوقية. دقة 99.7%.</p>
+      <div class="trust-item">
+        <span class="trust-icon">✅</span>
+        <span>برنامج سابر للمطابقة</span>
       </div>
-
-      <div class="feature reveal">
-        <div class="feat-icon">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10H3M21 6H3M21 14H3M21 18H3"/></svg>
-        </div>
-        <div class="feat-title">تخليص جمركي ذكي</div>
-        <p class="feat-desc">AI يفهم HS codes، نظام سابر، وSASO. يُولّد كل المستندات تلقائياً — Bill of Lading، Commercial Invoice، Certificate of Origin.</p>
+      <div class="trust-item">
+        <span class="trust-icon">🛃</span>
+        <span>الجمارك السعودية</span>
       </div>
-
-      <div class="feature reveal">
-        <div class="feat-icon">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="9"/><rect x="14" y="3" width="7" height="5"/><rect x="14" y="12" width="7" height="9"/><rect x="3" y="16" width="7" height="5"/></svg>
-        </div>
-        <div class="feat-title">Dashboard ذكي</div>
-        <p class="feat-desc">رؤية كاملة لكل شحنة. تتبع لحظي، تنبيهات ذكية، تقارير شهرية تلقائية، وتحليلات تنبئية لتوقع التأخيرات قبل حدوثها.</p>
+      <div class="trust-item">
+        <span class="trust-icon">🏛️</span>
+        <span>هيئة المياه والبيئة</span>
       </div>
-
-      <div class="feature reveal">
-        <div class="feat-icon">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
-        </div>
-        <div class="feat-title">تأمين على الشحنات</div>
-        <p class="feat-desc">حماية كاملة بضمان مالي حتى $5M لكل شحنة. تكامل مع كبرى شركات التأمين البحري عالمياً.</p>
-      </div>
-
-      <div class="feature reveal">
-        <div class="feat-icon">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
-        </div>
-        <div class="feat-title">دفع آمن متعدد العملات</div>
-        <p class="feat-desc">USD، SAR، AED، EUR، CNY. تحويلات بنكية مؤمّنة، Letter of Credit، تخفيض رسوم التحويل بنسبة 80%.</p>
+      <div class="trust-item">
+        <span class="trust-icon">📦</span>
+        <span>هيئة الموانئ السعودية</span>
       </div>
     </div>
   </div>
 </section>
 
-<!-- ─── NETWORK / GLOBE ─── -->
-<section class="section" id="network">
+<!-- ─── FEATURES (3 PILLARS) ─── -->
+<section class="features" id="features">
   <div class="wrap">
-    <div class="section-head reveal">
-      <div class="section-eyebrow">GLOBAL NETWORK</div>
-      <h2 class="section-title">شبكة بحجم الكوكب.</h2>
-      <p class="section-lead">شراكات مباشرة مع كل خط ملاحي رئيسي عالمياً، وتغطية تشمل كل ميناء يعمل على وجه الأرض.</p>
+    <div class="section-head">
+      <div class="section-tag">AI-NATIVE PLATFORM</div>
+      <h2>ثلاث قدرات ذكية، تختصر أسابيع من العمل</h2>
+      <p>كل طلب استيراد يحتاج 3 خطوات حرجة. FREIGHTLX تؤتمت الثلاث بالذكاء الاصطناعي.</p>
     </div>
 
-    <div class="network-stage reveal">
-      <div class="network-bg"></div>
-      <div class="network-content">
-        <div class="network-text">
-          <h3>اتصالات live في كل القارات.</h3>
-          <p>كل بحث عن سعر يُرسل بشكل متوازٍ إلى عشرات الخطوط الملاحية في أقل من 5 ثوانٍ. لا انتظار. لا اتصالات يدوية. فقط نتائج فورية.</p>
-          <div class="network-stat-row">
-            <div class="net-stat">
-              <div class="net-stat-v">12</div>
-              <div class="net-stat-l">شركة ملاحة</div>
-            </div>
-            <div class="net-stat">
-              <div class="net-stat-v">180</div>
-              <div class="net-stat-l">دولة</div>
-            </div>
-            <div class="net-stat">
-              <div class="net-stat-v">2,500+</div>
-              <div class="net-stat-l">ميناء</div>
-            </div>
-            <div class="net-stat">
-              <div class="net-stat-v">24/7</div>
-              <div class="net-stat-l">دعم فني</div>
-            </div>
-          </div>
+    <div class="features-grid">
+      <div class="feature-card reveal">
+        <div class="feature-icon">🚢</div>
+        <h3>أسعار حية من 12 خط ملاحي</h3>
+        <p>قارن أسعار <strong>Maersk · MSC · CMA CGM · Hapag-Lloyd · ONE · Evergreen · OOCL · COSCO</strong> وغيرهم في 5 ثواني، مع ETA حقيقي وتفاصيل الترانزيت والـ free days.</p>
+        <div class="feature-meta">
+          <span class="pill">FCL / LCL</span>
+          <span class="pill">20GP · 40HC · 40RF</span>
+          <span class="pill green">Live API</span>
         </div>
+      </div>
 
-        <div class="globe-wrap">
-          <svg class="globe-svg" viewBox="0 0 460 460" xmlns="http://www.w3.org/2000/svg">
-            <defs>
-              <radialGradient id="globeFill" cx="50%" cy="40%" r="60%">
-                <stop offset="0%" stop-color="#103048"/>
-                <stop offset="100%" stop-color="#050E18"/>
-              </radialGradient>
-              <linearGradient id="routeGrad" x1="0" y1="0" x2="1" y2="0">
-                <stop offset="0%" stop-color="#39C6FF" stop-opacity="0"/>
-                <stop offset="50%" stop-color="#39C6FF" stop-opacity="1"/>
-                <stop offset="100%" stop-color="#0A84FF" stop-opacity="0"/>
-              </linearGradient>
-              <filter id="glow"><feGaussianBlur stdDeviation="3" /></filter>
-            </defs>
-            <!-- Globe sphere -->
-            <circle cx="230" cy="230" r="200" fill="url(#globeFill)" stroke="rgba(57,198,255,0.15)" stroke-width="1"/>
-            <!-- Meridian lines -->
-            <ellipse cx="230" cy="230" rx="200" ry="80" fill="none" stroke="rgba(57,198,255,0.1)" stroke-width="0.5"/>
-            <ellipse cx="230" cy="230" rx="200" ry="140" fill="none" stroke="rgba(57,198,255,0.08)" stroke-width="0.5"/>
-            <ellipse cx="230" cy="230" rx="80" ry="200" fill="none" stroke="rgba(57,198,255,0.1)" stroke-width="0.5"/>
-            <ellipse cx="230" cy="230" rx="140" ry="200" fill="none" stroke="rgba(57,198,255,0.08)" stroke-width="0.5"/>
-            <line x1="30" y1="230" x2="430" y2="230" stroke="rgba(57,198,255,0.15)" stroke-width="0.5"/>
-            <line x1="230" y1="30" x2="230" y2="430" stroke="rgba(57,198,255,0.15)" stroke-width="0.5"/>
+      <div class="feature-card reveal">
+        <div class="feature-icon">🧮</div>
+        <h3>تخليص جمركي ذكي</h3>
+        <p>أدخل قيمة البضاعة + الـ HS code، نحسب لك <strong>الرسوم الجمركية</strong> الفعلية (5%، 12%، أو 20% حسب التعرفة) + <strong>ضريبة القيمة المضافة 15%</strong> + رسوم الميناء بدقة 99.9%.</p>
+        <div class="feature-meta">
+          <span class="pill">9,862 HS code</span>
+          <span class="pill">CIF / FOB</span>
+          <span class="pill green">ZATCA متكامل</span>
+        </div>
+      </div>
 
-            <!-- Continents (abstract dots) -->
-            <g fill="rgba(57,198,255,0.25)">
-              <!-- N. America -->
-              <circle cx="120" cy="180" r="2"/><circle cx="135" cy="190" r="2"/><circle cx="150" cy="175" r="2"/>
-              <circle cx="115" cy="200" r="1.5"/><circle cx="140" cy="210" r="2"/><circle cx="160" cy="195" r="1.5"/>
-              <!-- S. America -->
-              <circle cx="155" cy="280" r="2"/><circle cx="170" cy="300" r="2"/><circle cx="165" cy="320" r="1.5"/>
-              <!-- Europe -->
-              <circle cx="230" cy="170" r="2"/><circle cx="245" cy="180" r="2"/><circle cx="240" cy="155" r="1.5"/>
-              <!-- Africa -->
-              <circle cx="235" cy="230" r="2"/><circle cx="250" cy="250" r="2"/><circle cx="245" cy="280" r="2"/>
-              <circle cx="260" cy="270" r="1.5"/><circle cx="225" cy="270" r="1.5"/>
-              <!-- Middle East / KSA -->
-              <circle cx="275" cy="210" r="3" fill="#39C6FF"/><animate xlink:href="#" attributeName="r" values="3;5;3" dur="2s" repeatCount="indefinite"/>
-              <!-- Asia -->
-              <circle cx="310" cy="170" r="2"/><circle cx="330" cy="180" r="2"/><circle cx="350" cy="195" r="2"/>
-              <circle cx="320" cy="210" r="2"/><circle cx="340" cy="220" r="1.5"/><circle cx="360" cy="200" r="2"/>
-              <!-- Australia -->
-              <circle cx="360" cy="290" r="2"/><circle cx="375" cy="300" r="2"/>
-            </g>
-
-            <!-- Active routes (arcs) -->
-            <g fill="none" stroke="url(#routeGrad)" stroke-width="1.5" opacity="0.7">
-              <path d="M 275 210 Q 200 100 130 180" stroke-dasharray="4 4">
-                <animate attributeName="stroke-dashoffset" from="0" to="-16" dur="2s" repeatCount="indefinite"/>
-              </path>
-              <path d="M 275 210 Q 300 110 340 195" stroke-dasharray="4 4">
-                <animate attributeName="stroke-dashoffset" from="0" to="-16" dur="2.5s" repeatCount="indefinite"/>
-              </path>
-              <path d="M 275 210 Q 250 180 240 160" stroke-dasharray="4 4">
-                <animate attributeName="stroke-dashoffset" from="0" to="-16" dur="1.8s" repeatCount="indefinite"/>
-              </path>
-              <path d="M 275 210 Q 220 280 165 290" stroke-dasharray="4 4">
-                <animate attributeName="stroke-dashoffset" from="0" to="-16" dur="3s" repeatCount="indefinite"/>
-              </path>
-              <path d="M 275 210 Q 320 260 370 290" stroke-dasharray="4 4">
-                <animate attributeName="stroke-dashoffset" from="0" to="-16" dur="2.2s" repeatCount="indefinite"/>
-              </path>
-            </g>
-
-            <!-- Pulsing core (KSA) -->
-            <circle cx="275" cy="210" r="4" fill="#39C6FF" filter="url(#glow)">
-              <animate attributeName="r" values="4;7;4" dur="2s" repeatCount="indefinite"/>
-              <animate attributeName="opacity" values="1;0.5;1" dur="2s" repeatCount="indefinite"/>
-            </circle>
-            <!-- Outer pulse ring -->
-            <circle cx="275" cy="210" r="12" fill="none" stroke="#39C6FF" stroke-width="1.5" opacity="0">
-              <animate attributeName="r" values="4;30" dur="2.5s" repeatCount="indefinite"/>
-              <animate attributeName="opacity" values="0.8;0" dur="2.5s" repeatCount="indefinite"/>
-            </circle>
-          </svg>
+      <div class="feature-card reveal">
+        <div class="feature-icon">📜</div>
+        <h3>شهادات سابر مؤتمتة</h3>
+        <p>المنتجات الإلكترونية، اللعب، الكهربائيات، الإطارات، والبلاستيك تحتاج شهادات مطابقة. الـ AI يحدد الشهادات المطلوبة (QM · IECEE · IECEX · COC) ويبدأ الطلب تلقائياً.</p>
+        <div class="feature-meta">
+          <span class="pill">QM · COC</span>
+          <span class="pill">IECEE · IECEX</span>
+          <span class="pill gold">SABER معتمد</span>
         </div>
       </div>
     </div>
   </div>
 </section>
 
-<!-- ─── AI CAPABILITIES ─── -->
-<section class="section" id="ai">
+<!-- ─── AI DEMO ─── -->
+<section class="ai-section">
   <div class="wrap">
-    <div class="section-head reveal">
-      <div class="section-eyebrow">AI ENGINE</div>
-      <h2 class="section-title">ذكاء يصنع القرار. لا يقترح فقط.</h2>
-      <p class="section-lead">FREIGHTLX AI لا يعرض لك الخيارات — يختار الأمثل، يتعلم من اختياراتك، ويتحسّن مع كل شحنة.</p>
+    <div class="section-head">
+      <div class="section-tag">جرّب الآن</div>
+      <h2>تحدّث مع <span class="text-gradient">FREIGHTLX AI</span></h2>
+      <p>المهندس التشغيلي الذكي للمنصة — لا يجيب فقط، بل ينفّذ الإجراءات نيابة عنك.</p>
     </div>
 
-    <div class="cap-grid">
-
-      <div class="cap reveal">
-        <span class="cap-tag">PREDICTIVE</span>
-        <h4>توقّع التأخيرات قبل حدوثها</h4>
-        <p>نموذج ML مدرّب على 12 مليون شحنة تاريخية. يكتشف نمط ازدحام الموانئ، تأخر الجمارك، والمشاكل قبل أن تحدث.</p>
-        <div class="code-block">
-<span class="c">// AI Risk Detection Engine</span>
-<span class="k">const</span> risk = freightlx.<span class="n">predict</span>({
-  shipment: <span class="s">"FLX-B-MP5MY"</span>,
-  factors: [<span class="s">"port_congestion"</span>, <span class="s">"weather"</span>, <span class="s">"customs"</span>]
-});
-<span class="c">// → { risk: 12%, eta_shift: "+2.3d", confidence: 94 }</span>
-        </div>
-      </div>
-
-      <div class="cap reveal">
-        <span class="cap-tag">SMART ROUTING</span>
-        <h4>اختيار المسار الأمثل تلقائياً</h4>
-        <p>يحسب 200+ متغيّر: السعر، الوقت، الاحتمالية، السعة، الموثوقية، الترانزيت، تكاليف التخليص. ثم يقرر.</p>
-        <div class="code-block">
-<span class="c">// Optimal route — selected in 1.2s</span>
-{
-  <span class="n">"carrier"</span>: <span class="s">"Maersk"</span>,
-  <span class="n">"route"</span>: <span class="s">"CNSHA → SAJED (Direct)"</span>,
-  <span class="n">"score"</span>: <span class="s">98.4</span>,
-  <span class="n">"savings"</span>: <span class="s">"$340 vs avg"</span>
-}
-        </div>
-      </div>
-
-      <div class="cap reveal">
-        <span class="cap-tag">CUSTOMS AI</span>
-        <h4>تخليص جمركي تلقائي بالكامل</h4>
-        <p>يفهم سابر، يحدد HS Codes الصحيحة، يولّد المستندات، ويتعامل مع الجمارك السعودية مباشرة. لا أوراق. لا تأخير.</p>
-        <div class="code-block">
-<span class="c">// Auto customs clearance</span>
-<span class="k">await</span> freightlx.<span class="n">customs</span>.<span class="n">clear</span>({
-  shipment_id: <span class="s">"FLX-B-XYZ"</span>,
-  saber: <span class="k">true</span>,
-  hs_code: <span class="s">"auto"</span>  <span class="c">// AI detects</span>
-});
-        </div>
-      </div>
-
-      <div class="cap reveal">
-        <span class="cap-tag">CHAT AGENT</span>
-        <h4>محادثة ذكية بالعربية الفصحى والعامية</h4>
-        <p>تكلم بطريقتك. "أبي أشحن من شنغهاي للدمام، حاوية 40 قدم" — AI يفهم ويعطيك النتائج فوراً.</p>
-        <div class="code-block">
-<span class="c">// مثال محادثة فعلية</span>
-<span class="n">User</span>: <span class="s">"كم سعر حاوية ٢٠ قدم من جدة لدبي؟"</span>
-<span class="n">AI</span>: <span class="s">"$1,150 - $1,380. وصلت ٤ عروض من
-       Maersk, MSC, COSCO, Hapag في 3 ثوان"</span>
-        </div>
-      </div>
-
-    </div>
-
-    <!-- ─── LIVE AI DEMO ─── -->
     <div class="ai-demo reveal" id="aiDemo">
       <div class="ai-demo-head">
         <div class="ai-demo-title-wrap">
           <div class="ai-demo-orb"><span></span><span></span><span></span></div>
           <div>
-            <div class="ai-demo-title">جرّب FREIGHTLX AI الآن</div>
-            <div class="ai-demo-sub">اسأل أي شي عن الشحن والاستيراد بالعربية</div>
+            <div class="ai-demo-title">FREIGHTLX AI</div>
+            <div class="ai-demo-sub">المهندس التشغيلي · يفهم العربية والإنجليزية</div>
           </div>
         </div>
-        <div class="ai-demo-badge"><span class="dot"></span> Gemini · Live</div>
+        <div class="ai-demo-badge"><span class="dot"></span> ACTIVE</div>
       </div>
       <div class="ai-demo-body" id="aiDemoBody"></div>
       <div class="ai-demo-suggest">
-        <button class="ai-chip" data-q="كم سعر حاوية 40 قدم من شنغهاي إلى جدة؟">💰 سعر شحن من الصين</button>
-        <button class="ai-chip" data-q="ايش الفرق بين FCL و LCL؟">📦 الفرق بين FCL و LCL</button>
-        <button class="ai-chip" data-q="كيف أحسب رسوم الجمارك في السعودية؟">📋 رسوم الجمارك السعودية</button>
-        <button class="ai-chip" data-q="ما هو HS code للمنتجات الإلكترونية؟">🔢 HS Codes</button>
+        <button class="ai-chip" data-q="كم سعر حاوية 40 قدم من شنغهاي إلى جدة؟">💰 سعر من الصين</button>
+        <button class="ai-chip" data-q="احسب جمارك شحنة بقيمة 50,000 ريال HS 851830">🧮 حساب الجمارك</button>
+        <button class="ai-chip" data-q="ما الشهادات المطلوبة لاستيراد سماعات بلوتوث؟">📜 شهادات سابر</button>
+        <button class="ai-chip" data-q="وش كود ميناء الدمام؟">⚓ موانئ المملكة</button>
       </div>
       <form class="ai-demo-input" id="aiDemoForm" autocomplete="off">
-        <input type="text" id="aiDemoInput" placeholder="اكتب سؤالك..." maxlength="500">
+        <input type="text" id="aiDemoInput" placeholder="اكتب سؤالك بالعربية..." maxlength="500">
         <button type="submit" id="aiDemoSend">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M5 12H19M19 12L12 5M19 12L12 19" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
         </button>
       </form>
     </div>
-
   </div>
 </section>
 
-<!-- ─── FLOATING CHAT BUTTON (visible on every section) ─── -->
+<!-- ─── POPULAR ROUTES ─── -->
+<section class="routes" id="routes">
+  <div class="wrap">
+    <div class="section-head">
+      <div class="section-tag">المسارات الأكثر طلباً</div>
+      <h2>أكثر ٦ مسارات يستخدمها المستوردون السعوديون</h2>
+      <p>بيانات حية، ETA دقيق، وأسعار مُحدّثة على مدار الساعة.</p>
+    </div>
+
+    <div class="routes-grid">
+      <!-- Route 1 -->
+      <div class="route-card">
+        <div class="route-flow">
+          <div class="route-port"><span class="flag">🇨🇳</span> شنغهاي <span class="code">CNSHA</span></div>
+          <div class="route-arrow">←</div>
+          <div class="route-port"><span class="flag">🇸🇦</span> جدة <span class="code">SAJED</span></div>
+        </div>
+        <div class="route-meta">
+          <div><strong>$2,450</strong><span>40 HC · 28 يوم</span></div>
+          <div><strong>14</strong><span>عرض متاح</span></div>
+        </div>
+      </div>
+
+      <!-- Route 2 -->
+      <div class="route-card">
+        <div class="route-flow">
+          <div class="route-port"><span class="flag">🇮🇳</span> مومباي <span class="code">INBOM</span></div>
+          <div class="route-arrow">←</div>
+          <div class="route-port"><span class="flag">🇸🇦</span> الدمام <span class="code">SADMM</span></div>
+        </div>
+        <div class="route-meta">
+          <div><strong>$1,180</strong><span>40 HC · 14 يوم</span></div>
+          <div><strong>11</strong><span>عرض متاح</span></div>
+        </div>
+      </div>
+
+      <!-- Route 3 -->
+      <div class="route-card">
+        <div class="route-flow">
+          <div class="route-port"><span class="flag">🇦🇪</span> جبل علي <span class="code">AEJEA</span></div>
+          <div class="route-arrow">←</div>
+          <div class="route-port"><span class="flag">🇸🇦</span> الدمام <span class="code">SADMM</span></div>
+        </div>
+        <div class="route-meta">
+          <div><strong>$420</strong><span>40 HC · 4 أيام</span></div>
+          <div><strong>9</strong><span>عرض متاح</span></div>
+        </div>
+      </div>
+
+      <!-- Route 4 -->
+      <div class="route-card">
+        <div class="route-flow">
+          <div class="route-port"><span class="flag">🇹🇷</span> إسطنبول <span class="code">TRAMB</span></div>
+          <div class="route-arrow">←</div>
+          <div class="route-port"><span class="flag">🇸🇦</span> جدة <span class="code">SAJED</span></div>
+        </div>
+        <div class="route-meta">
+          <div><strong>$1,920</strong><span>40 HC · 16 يوم</span></div>
+          <div><strong>8</strong><span>عرض متاح</span></div>
+        </div>
+      </div>
+
+      <!-- Route 5 -->
+      <div class="route-card">
+        <div class="route-flow">
+          <div class="route-port"><span class="flag">🇩🇪</span> هامبورغ <span class="code">DEHAM</span></div>
+          <div class="route-arrow">←</div>
+          <div class="route-port"><span class="flag">🇸🇦</span> جدة <span class="code">SAJED</span></div>
+        </div>
+        <div class="route-meta">
+          <div><strong>$3,150</strong><span>40 HC · 23 يوم</span></div>
+          <div><strong>10</strong><span>عرض متاح</span></div>
+        </div>
+      </div>
+
+      <!-- Route 6 -->
+      <div class="route-card">
+        <div class="route-flow">
+          <div class="route-port"><span class="flag">🇰🇷</span> بوسان <span class="code">KRPUS</span></div>
+          <div class="route-arrow">←</div>
+          <div class="route-port"><span class="flag">🇸🇦</span> جدة <span class="code">SAJED</span></div>
+        </div>
+        <div class="route-meta">
+          <div><strong>$2,890</strong><span>40 HC · 32 يوم</span></div>
+          <div><strong>7</strong><span>عرض متاح</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ─── VISION 2030 ─── -->
+<section class="vision">
+  <div class="wrap">
+    <div class="vision-grid">
+      <div>
+        <div class="vision-badge">
+          <span>🇸🇦</span>
+          <span>متوافق مع رؤية المملكة 2030</span>
+        </div>
+        <h2>نبني <span class="saudi-gradient">البنية الرقمية</span><br>للتجارة السعودية</h2>
+        <p>المملكة العربية السعودية تستضيف <strong>13% من التجارة العالمية</strong> عبر موانئها. FREIGHTLX تُؤتمت طبقة الذكاء فوق هذه البنية — لتدعم رؤية 2030 في رقمنة سلاسل الإمداد وتمكين المستورد السعودي.</p>
+        <ul class="vision-list">
+          <li>متكامل مع أنظمة الجمارك السعودية والـ EDI</li>
+          <li>فوترة إلكترونية متوافقة مع زاتكا (Phase 2)</li>
+          <li>دعم لغة عربية أصلية في كل واجهة وتقرير</li>
+          <li>استضافة سحابية داخل المملكة (Cloud Sovereignty)</li>
+          <li>بيانات المستخدم تبقى في السعودية</li>
+        </ul>
+      </div>
+
+      <div class="vision-art">
+        <div class="vision-art-grid">
+          <div class="vision-stat">
+            <div class="vision-stat-value num">10</div>
+            <div class="vision-stat-label">موانئ سعودية</div>
+          </div>
+          <div class="vision-stat">
+            <div class="vision-stat-value num">13%</div>
+            <div class="vision-stat-label">من التجارة العالمية</div>
+          </div>
+          <div class="vision-stat">
+            <div class="vision-stat-value num">100%</div>
+            <div class="vision-stat-label">واجهة عربية أصلية</div>
+          </div>
+          <div class="vision-stat">
+            <div class="vision-stat-value num">SA</div>
+            <div class="vision-stat-label">استضافة داخل المملكة</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ─── FINAL CTA ─── -->
+<section class="final-cta">
+  <div class="wrap">
+    <div class="final-cta-inner">
+      <h2>ابدأ شحناتك بذكاء.<br>الآن.</h2>
+      <p>انضم لـ مئات المستوردين السعوديين الذين يستخدمون FREIGHTLX يومياً.</p>
+      <a href="/?login=1" class="btn btn-primary">
+        ابدأ مجاناً — لا يحتاج بطاقة ائتمان
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M5 12H19M19 12L12 5M19 12L12 19" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </a>
+    </div>
+  </div>
+</section>
+
+<!-- ─── FOOTER ─── -->
+<footer class="footer">
+  <div class="wrap">
+    <div class="footer-grid">
+      <div class="footer-brand">
+        <a href="/" class="nav-brand" style="display:inline-flex;">
+          <div class="nav-logo">FX</div>
+          <div>
+            <div class="nav-brand-text">FREIGHTLX</div>
+            <div class="nav-brand-sub">منصة الذكاء للشحن</div>
+          </div>
+        </a>
+        <p>أول منصة شحن سعودية مدعومة بالذكاء الاصطناعي. مصممة للسوق السعودي خصيصاً، ومتوافقة مع رؤية المملكة 2030.</p>
+      </div>
+
+      <div class="footer-col">
+        <h4>المنتج</h4>
+        <ul>
+          <li><a href="/rates">الأسعار الحيّة</a></li>
+          <li><a href="/packages">الباقات</a></li>
+          <li><a href="/dashboard">لوحة التحكم</a></li>
+          <li><a href="#aiDemo">FREIGHTLX AI</a></li>
+        </ul>
+      </div>
+
+      <div class="footer-col">
+        <h4>الحلول</h4>
+        <ul>
+          <li><a href="#features">تخليص جمركي</a></li>
+          <li><a href="#features">شهادات سابر</a></li>
+          <li><a href="#routes">المسارات الشائعة</a></li>
+          <li><a href="#features">تكامل ZATCA</a></li>
+        </ul>
+      </div>
+
+      <div class="footer-col">
+        <h4>الشركة</h4>
+        <ul>
+          <li><a href="/?login=1">تسجيل الدخول</a></li>
+          <li><a href="/?login=1">إنشاء حساب</a></li>
+          <li><a href="mailto:support@freightlx.ai">الدعم</a></li>
+          <li><a href="#">السياسة والخصوصية</a></li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="footer-bottom">
+      <p>© 2026 FREIGHTLX. جميع الحقوق محفوظة.</p>
+      <div class="footer-flag">
+        <span>🇸🇦</span>
+        <span>صُنع في المملكة العربية السعودية</span>
+      </div>
+    </div>
+  </div>
+</footer>
+
+<!-- ─── FLOATING CHAT FAB ─── -->
 <button id="flxChatFab" aria-label="افتح FREIGHTLX AI">
   <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
     <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
@@ -1437,351 +1551,61 @@ img[src*="white-logo"] { filter: brightness(0) saturate(100%) invert(13%) sepia(
   <span class="flx-fab-pulse"></span>
 </button>
 
-<!-- ─── CARRIERS STRIP ─── -->
-<section class="carriers-strip">
-  <div class="wrap">
-    <div class="carriers-label">شراكات مباشرة مع كبرى الخطوط الملاحية العالمية</div>
-    <div class="carriers-row">
-      <span>MAERSK</span>
-      <span>MSC</span>
-      <span>COSCO</span>
-      <span>CMA CGM</span>
-      <span>HAPAG-LLOYD</span>
-      <span>ONE</span>
-      <span>EVERGREEN</span>
-      <span>HMM</span>
-      <span>OOCL</span>
-      <span>APL</span>
-      <span>ANL</span>
-      <span>CNC</span>
-    </div>
-  </div>
-</section>
-
-<!-- ─── FINAL CTA ─── -->
-<section class="cta-final">
-  <div class="wrap">
-    <h2>ابدأ الشحن<br>كأنه عام 2030.</h2>
-    <p>أول 10 شحنات بدون رسوم منصة. تجربة كاملة بدون التزام. كل ما تحتاجه — في 30 ثانية.</p>
-    <div class="hero-cta" style="margin-bottom:0">
-      <a href="/rates.html" class="btn btn-primary">
-        ابدأ مجاناً الآن
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M5 12H19M19 12L12 5M19 12L12 19" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
-      </a>
-      <a href="mailto:sales@freightlx.com" class="btn btn-ghost">تواصل مع المبيعات</a>
-    </div>
-  </div>
-</section>
-
-<!-- ─── FOOTER ─── -->
-<footer>
-  <div class="wrap">
-    <div class="footer-row">
-      <div class="footer-col">
-        <a href="/" class="brand" style="margin-bottom: 16px; display:inline-flex; align-items:center;">
-          <img src="/assets/logo/white-logo.svg?v=3" alt="FREIGHTLX"
-               style="height:42px; width:auto; filter:drop-shadow(0 0 14px rgba(57,198,255,0.28));"
-               onerror="this.outerHTML='<div class=brand-mark><svg viewBox=&quot;0 0 24 24&quot; fill=none><path d=&quot;M3 12L12 3L21 12L12 21L3 12Z&quot; stroke=url(#g2) stroke-width=2 stroke-linejoin=round/><defs><linearGradient id=g2 x1=0 y1=0 x2=24 y2=24><stop stop-color=#39C6FF/><stop offset=1 stop-color=#0A84FF/></linearGradient></defs></svg></div><div class=brand-name>FREIGHT<b>LX</b></div>';">
-        </a>
-        <p class="footer-brand-bottom">نظام التشغيل العالمي للوجستيات. مدعوم بالذكاء الاصطناعي. مصمّم في المملكة العربية السعودية، يخدم العالم.</p>
-      </div>
-      <div class="footer-col">
-        <h5>المنصة</h5>
-        <a href="/rates.html">أسعار حية</a>
-        <a href="/dashboard.html">لوحة التحكم</a>
-        <a href="#ai">AI Engine</a>
-        <a href="#network">الشبكة</a>
-      </div>
-      <div class="footer-col">
-        <h5>الشركة</h5>
-        <a href="#">عن FREIGHTLX</a>
-        <a href="#">المدونة</a>
-        <a href="#">الوظائف</a>
-        <a href="mailto:hello@freightlx.com">تواصل</a>
-      </div>
-      <div class="footer-col">
-        <h5>قانوني</h5>
-        <a href="#">شروط الاستخدام</a>
-        <a href="#">سياسة الخصوصية</a>
-        <a href="#">الأمان</a>
-        <a href="#">SLA</a>
-      </div>
-    </div>
-    <div class="footer-bottom">
-      <div>© 2026 FREIGHTLX. كل الحقوق محفوظة. صُنع في الرياض.</div>
-      <div style="display:flex; gap: 20px;">
-        <a href="#" style="color:var(--text-3); text-decoration:none">Twitter</a>
-        <a href="#" style="color:var(--text-3); text-decoration:none">LinkedIn</a>
-        <a href="#" style="color:var(--text-3); text-decoration:none">GitHub</a>
-      </div>
-    </div>
-  </div>
-</footer>
-
+<!-- ─── AI DEMO LOGIC ─── -->
 <script>
-// Intersection observer for reveal animations
-const obs = new IntersectionObserver(es => es.forEach(e => e.isIntersecting && e.target.classList.add('in')), { threshold: 0.12 });
-document.querySelectorAll('.reveal').forEach(el => obs.observe(el));
-
-// Subtle parallax on ambient lights
-window.addEventListener('mousemove', (e) => {
-  const x = (e.clientX / window.innerWidth - 0.5) * 12;
-  const y = (e.clientY / window.innerHeight - 0.5) * 12;
-  document.querySelector('.ambient').style.transform = `translate(${x}px, ${y}px)`;
-}, { passive: true });
-
-// Topbar shrink on scroll
-const tb = document.querySelector('.topbar');
-window.addEventListener('scroll', () => {
-  if (window.scrollY > 24) tb.style.padding = '12px 0';
-  else tb.style.padding = '18px 0';
-}, { passive: true });
-
-// Number counter on hero metrics
-function animateCount(el) {
-  const target = parseInt(el.dataset.count || '0');
-  if (!target) return;
-  let v = 0; const step = Math.ceil(target / 50);
-  const t = setInterval(() => {
-    v += step;
-    if (v >= target) { v = target; clearInterval(t); }
-    el.textContent = v.toLocaleString() + (el.textContent.includes('+') ? '+' : '');
-  }, 30);
-}
-document.querySelectorAll('[data-count]').forEach(animateCount);
-
-// ─── Auth integration ───────────────────────────────────────
-// Hook the "دخول" nav link to the same Supabase modal the rest of the
-// platform uses (created by flx-auth.js). Show "لوحتي" link only when signed in.
-window.flxOpenLoginModal = function () {
-  const trigger = document.getElementById('flx-auth-trigger');
-  if (trigger) { trigger.click(); return; }
-  // flx-auth.js still booting — retry briefly
-  let tries = 0;
-  const t = setInterval(() => {
-    const el = document.getElementById('flx-auth-trigger');
-    if (el || ++tries > 20) { clearInterval(t); el?.click(); }
-  }, 150);
-};
-
-// Toggle "لوحتي" link visibility based on Supabase session in localStorage
-function flxRefreshNavAuth() {
-  let signedIn = false;
-  for (const k of Object.keys(localStorage)) {
-    if (k.startsWith('sb-') && k.endsWith('-auth-token')) {
-      try {
-        const d = JSON.parse(localStorage.getItem(k));
-        if (d?.access_token && d?.expires_at > (Date.now()/1000)) { signedIn = true; break; }
-      } catch {}
-    }
-  }
-  const dash = document.getElementById('navDashboard');
-  const login = document.getElementById('navLogin');
-  if (dash) dash.style.display = signedIn ? '' : 'none';
-  if (login) login.style.display = signedIn ? 'none' : '';
-}
-flxRefreshNavAuth();
-window.addEventListener('storage', flxRefreshNavAuth);
-setInterval(flxRefreshNavAuth, 4000);
-
-// Auto-open login modal if URL has ?login=1 (e.g. from /login redirect)
-if (new URLSearchParams(window.location.search).get('login') === '1') {
-  // Wait for flx-auth.js to mount the trigger
-  setTimeout(() => window.flxOpenLoginModal?.(), 800);
-  // Strip the param from the URL after opening
-  history.replaceState({}, '', window.location.pathname);
-}
-
-// ═══ FREIGHTLX AI CHAT HANDLER ═══
-(() => {
-  const body = document.getElementById('aiDemoBody');
-  const form = document.getElementById('aiDemoForm');
+(function () {
+  const body  = document.getElementById('aiDemoBody');
+  const form  = document.getElementById('aiDemoForm');
   const input = document.getElementById('aiDemoInput');
   const sendBtn = document.getElementById('aiDemoSend');
-  const fab = document.getElementById('flxChatFab');
+  const fab   = document.getElementById('flxChatFab');
   if (!body || !form) return;
 
   const history = [];
 
-  function escapeHTML(s) {
-    return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  function escapeHtml(s) {
+    return String(s ?? '').replace(/[&<>"']/g, m => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[m]));
   }
 
-  // ─── Action cards catalogue (hyper-cards rendered inside bot bubbles) ───
-  const ACTION_CARDS = {
-    rates: {
-      icon: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>',
-      title: 'احصل على عرض سعر فوري',
-      desc: '12 خط ملاحي · أسعار live في ثوان',
-      href: '/rates.html',
-    },
-    customs: {
-      icon: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>',
-      title: 'احسب التخليص الجمركي',
-      desc: 'رسوم + ضريبة + خدمات + شهادات',
-      ask: 'احسب لي رسوم التخليص الجمركي بالتفصيل لشحنة بقيمة $10,000 إلى ميناء جدة',
-    },
-    cert: {
-      icon: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L4 7v5c0 5.5 3.8 10.7 8 12 4.2-1.3 8-6.5 8-12V7l-8-5z"/></svg>',
-      title: 'الشهادات المطلوبة',
-      desc: 'سابر · IECEE · شهادة منشأ · سلامة',
-      ask: 'وش الشهادات المطلوبة لاستيراد منتج إلى السعودية؟',
-    },
-    fullcost: {
-      icon: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M16 8h-6a2 2 0 0 0 0 4h4a2 2 0 0 1 0 4H8M12 18V6"/></svg>',
-      title: 'احسب تكاليف الاستيراد كاملة',
-      desc: 'CIF + جمارك + ضريبة + نقل + تخليص',
-      ask: 'احسب تكاليف استيراد كاملة من الصين إلى السعودية',
-    },
-    track: {
-      icon: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="4"/></svg>',
-      title: 'تتبّع شحنة',
-      desc: 'حالة فورية من Maersk، MSC، COSCO...',
-      href: '/dashboard.html#section-shipments',
-    },
-    hscode: {
-      icon: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 3v18M3 9h18M3 15h18M15 3v18"/></svg>',
-      title: 'البحث عن HS Code',
-      desc: 'تصنيف جمركي دقيق لمنتجك',
-      ask: 'وش HS code للمنتج اللي عندي؟',
-    },
-  };
-
-  // Detect which action cards to surface based on bot reply content
-  function pickActionCards(text) {
-    const t = text.toLowerCase();
-    const picks = new Set();
-    if (/سعر|عرض|قائمة|أسعار|شحن|fcl|lcl|حاوي|من\s+\S+\s+إلى/i.test(text)) picks.add('rates');
-    if (/جمرك|تخليص|رسوم|ضريبة|دفع للجمارك/i.test(text)) picks.add('customs');
-    if (/شهاد|سابر|saber|iecee|سلامة|مطابقة|gso/i.test(text)) picks.add('cert');
-    if (/تكاليف|التكلفة|cif|cost|إجمالي|الكلفة|كلفة|الاستيراد/i.test(text)) picks.add('fullcost');
-    if (/تتبع|الشحنة وين|أين شحنتي|tracking|موقع/i.test(text)) picks.add('track');
-    if (/hs\s*code|تصنيف جمركي|تعريفة|كود المنتج/i.test(text)) picks.add('hscode');
-    return [...picks].slice(0, 4); // up to 4 cards per message
+  function renderMarkdown(text) {
+    let t = escapeHtml(text);
+    t = t.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+    t = t.replace(/\*(.+?)\*/g, '<em>$1</em>');
+    t = t.replace(/`(.+?)`/g, '<code>$1</code>');
+    return t;
   }
 
-  function buildActionCardsHTML(keys) {
-    if (!keys.length) return '';
-    const cards = keys.map(k => {
-      const c = ACTION_CARDS[k]; if (!c) return '';
-      const tag = c.href ? 'a' : 'button';
-      const attrs = c.href ? `href="${c.href}"` : `type="button" data-ask="${escapeHTML(c.ask)}"`;
-      return `<${tag} class="ai-action-card" ${attrs}>
-        <div style="display:flex;align-items:center;gap:10px">
-          <span class="ai-action-icon">${c.icon}</span>
-          <div class="ai-action-title">${c.title}</div>
-        </div>
-        <div class="ai-action-desc">${c.desc}</div>
-        <div class="ai-action-arrow"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M19 12H5M5 12l7 7M5 12l7-7"/></svg></div>
-      </${tag}>`;
-    }).join('');
-    return `<div class="ai-action-cards">${cards}</div>`;
-  }
+  function addMsg(text, who = 'bot', opts = {}) {
+    const div = document.createElement('div');
+    div.className = 'msg msg-' + (who === 'user' ? 'user' : 'bot');
+    div.innerHTML = renderMarkdown(text);
 
-  // ─── Build agent action timeline (shows what tools the agent actually executed) ───
-  const TOOL_LABELS = {
-    search_freight_rates: { icon: '🔍', label: 'بحث أسعار شحن' },
-    calculate_customs_clearance: { icon: '🧾', label: 'حساب الجمارك' },
-    calculate_full_import_cost: { icon: '💵', label: 'تكلفة الاستيراد الكاملة' },
-    request_saber_certificate: { icon: '🛡️', label: 'طلب شهادة سابر' },
-    get_my_shipments: { icon: '📦', label: 'جلب الشحنات' },
-    track_shipment: { icon: '📍', label: 'تتبع الشحنة' },
-    subscribe_package: { icon: '⭐', label: 'تفعيل باقة' },
-    get_invoices: { icon: '📋', label: 'جلب الفواتير' },
-  };
-  function buildActionTimeline(actions) {
-    if (!actions || !actions.length) return '';
-    const items = actions.map(a => {
-      const tool = TOOL_LABELS[a.tool] || { icon: '⚙️', label: a.tool };
-      const ok = !a.result?.error;
-      const summary = renderActionSummary(a);
-      return `<div class="ai-action ${ok ? 'ok' : 'err'}">
-        <div class="ai-action-head">
-          <span class="ai-action-icon-sm">${tool.icon}</span>
-          <span class="ai-action-name">${tool.label}</span>
-          <span class="ai-action-status">${ok ? '✓ نُفّذ' : '✗ فشل'}</span>
-        </div>
-        ${summary ? `<div class="ai-action-body">${summary}</div>` : ''}
-      </div>`;
-    }).join('');
-    return `<div class="ai-actions-timeline">${items}</div>`;
-  }
-  function renderActionSummary(a) {
-    const r = a.result;
-    if (!r || r.error) return r?.error ? `<span style="color:#f87171">${escapeHTML(r.error)}</span>` : '';
-    if (a.tool === 'search_freight_rates' && r.top_5) {
-      return r.top_5.slice(0, 3).map(o =>
-        `<div class="ai-mini-row"><strong>${escapeHTML(o.carrier)}</strong> · $${o.price_usd} · ${o.transit_days} يوم${o.direct ? ' · مباشر' : ''}</div>`
-      ).join('') + (r.offers_count > 3 ? `<div class="ai-mini-row" style="color:rgba(244,247,250,0.5)">و ${r.offers_count - 3} عروض أخرى...</div>` : '');
+    if (opts.actionCards && opts.actionCards.length) {
+      const cardsHtml = opts.actionCards.map(key => {
+        const cards = {
+          rates: { icon: '🚢', label: 'أسعار الشحن', ask: 'كم سعر حاوية 40 قدم من شنغهاي إلى جدة؟' },
+          customs: { icon: '🧮', label: 'حساب الجمارك', ask: 'احسب جمارك شحنة بقيمة 50,000 ريال HS 851830' },
+          cert: { icon: '📜', label: 'شهادات سابر', ask: 'ما الشهادات المطلوبة لاستيراد سماعات بلوتوث؟' },
+          fullcost: { icon: '💰', label: 'التكلفة الكاملة', ask: 'احسب التكلفة الكاملة لاستيراد 40HC إلكترونيات من الصين بقيمة 80,000 ريال' },
+        };
+        const c = cards[key];
+        return c ? `<a class="ai-action-card" data-ask="${escapeHtml(c.ask)}">${c.icon} ${c.label}</a>` : '';
+      }).join('');
+      div.insertAdjacentHTML('beforeend', `<div class="ai-action-cards">${cardsHtml}</div>`);
     }
-    if (a.tool === 'calculate_customs_clearance') {
-      return `<div class="ai-mini-row">جمارك: <strong>$${r.customs_duty_usd}</strong> (${r.duty_rate_percent}%)</div>
-              <div class="ai-mini-row">ضريبة 15%: <strong>$${r.vat_15_usd}</strong></div>
-              <div class="ai-mini-row">المجموع: <strong style="color:#39C6FF">$${r.total_gov_fees_usd}</strong> ≈ ${r.total_gov_fees_sar} ر.س</div>`;
-    }
-    if (a.tool === 'calculate_full_import_cost') {
-      const b = r.breakdown_usd || {};
-      return `<div class="ai-mini-row">CIF: $${b.cif_subtotal}</div>
-              <div class="ai-mini-row">جمارك + ضريبة: $${(b.customs_duty + b.vat_15_percent).toFixed(2)}</div>
-              <div class="ai-mini-row">خدمات (تخليص + سابر): $${(b.clearance_service + b.saber_certificate).toFixed(2)}</div>
-              <div class="ai-mini-row" style="border-top:1px solid rgba(57,198,255,0.12);padding-top:6px;margin-top:4px"><strong style="color:#39C6FF">إجمالي: $${r.total_landed_cost_usd}</strong> ≈ ${r.total_landed_cost_sar} ر.س</div>`;
-    }
-    if (a.tool === 'request_saber_certificate') {
-      return `<div class="ai-mini-row">رقم الطلب: <code>${r.saber_application_id}</code></div>
-              <div class="ai-mini-row">الرسوم: <strong>${r.saber_fee_sar} ر.س</strong> · المدة: ${r.estimated_days} أيام</div>`;
-    }
-    if (a.tool === 'get_my_shipments' && r.shipments) {
-      return r.shipments.slice(0, 3).map(s =>
-        `<div class="ai-mini-row"><code>${s.id}</code> · ${escapeHTML(s.route)} · ${escapeHTML(s.status_ar || s.status)}</div>`
-      ).join('') + (r.total > 3 ? `<div class="ai-mini-row" style="color:rgba(244,247,250,0.5)">و ${r.total - 3} شحنات أخرى...</div>` : '');
-    }
-    if (a.tool === 'track_shipment' && r.shipment) {
-      return `<div class="ai-mini-row">${escapeHTML(r.shipment.route)} · <strong>${escapeHTML(r.shipment.status)}</strong></div>` +
-        (r.events || []).slice(0, 3).map(e => `<div class="ai-mini-row" style="color:rgba(244,247,250,0.62)">• ${escapeHTML(e.status)}</div>`).join('');
-    }
-    if (a.tool === 'subscribe_package') {
-      return `<div class="ai-mini-row"><strong>${escapeHTML(r.tier_ar)}</strong> · ${r.single_shipment_sar} ر.س/شحنة</div>`;
-    }
-    if (a.tool === 'get_invoices' && r.invoices) {
-      return r.invoices.slice(0, 3).map(i =>
-        `<div class="ai-mini-row"><code>${i.id}</code> · ${i.amount_sar} ر.س · ${escapeHTML(i.status)}</div>`
-      ).join('');
-    }
-    return '';
-  }
 
-  function addMsg(text, who, opts) {
-    const row = document.createElement('div');
-    row.className = 'ai-msg ai-msg-' + who;
-    const bubble = document.createElement('div');
-    bubble.className = 'ai-bubble';
-    // Action timeline appears BEFORE the reply text (shows what agent did first)
-    if (who === 'bot' && opts?.actions?.length) {
-      bubble.insertAdjacentHTML('afterbegin', buildActionTimeline(opts.actions));
-    }
-    let html = escapeHTML(text);
-    html = html.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
-    const textDiv = document.createElement('div');
-    textDiv.className = 'ai-bubble-text';
-    textDiv.innerHTML = html;
-    bubble.appendChild(textDiv);
-    if (who === 'bot' && opts?.actionCards?.length) {
-      const cardsHtml = buildActionCardsHTML(opts.actionCards);
-      if (cardsHtml) bubble.insertAdjacentHTML('beforeend', cardsHtml);
-    }
-    row.appendChild(bubble);
-    body.appendChild(row);
+    body.appendChild(div);
     body.scrollTop = body.scrollHeight;
-    return bubble;
+    return div;
   }
 
   function addTyping() {
-    const row = document.createElement('div');
-    row.className = 'ai-msg ai-msg-bot ai-typing-row';
-    row.innerHTML = '<div class="ai-bubble"><div class="ai-typing"><span></span><span></span><span></span></div></div>';
-    body.appendChild(row);
+    const div = document.createElement('div');
+    div.className = 'msg msg-bot';
+    div.innerHTML = '<div class="typing"><span></span><span></span><span></span></div>';
+    body.appendChild(div);
     body.scrollTop = body.scrollHeight;
-    return row;
+    return div;
   }
 
   async function sendMessage(text) {
@@ -1790,12 +1614,10 @@ if (new URLSearchParams(window.location.search).get('login') === '1') {
     addMsg(text, 'user');
     history.push({ role: 'user', content: text });
     input.value = '';
-    input.disabled = true;
-    sendBtn.disabled = true;
+    input.disabled = true; sendBtn.disabled = true;
     const typing = addTyping();
 
     try {
-      // Get auth token if user is logged in (so agent can call protected tools)
       let authHeader = {};
       try {
         for (const k of Object.keys(localStorage)) {
@@ -1806,7 +1628,6 @@ if (new URLSearchParams(window.location.search).get('login') === '1') {
         }
       } catch {}
 
-      // Call the AI Agent endpoint (Gemini + function calling)
       const r = await fetch('/api/agent', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', ...authHeader },
@@ -1815,24 +1636,16 @@ if (new URLSearchParams(window.location.search).get('login') === '1') {
       const j = await r.json();
       typing.remove();
       const reply = j.reply || j.error || 'عذراً، حدث خطأ. حاول مرة ثانية.';
-
-      // Render bot reply WITH action timeline (tools the agent executed)
-      const actions = j.actions || [];
-      const combined = text + ' ' + reply;
-      const cards = pickActionCards(combined);
-      addMsg(reply, 'bot', { actionCards: cards, actions });
+      addMsg(reply, 'bot');
       history.push({ role: 'assistant', content: reply });
     } catch (e) {
       typing.remove();
       addMsg('انقطع الاتصال. تأكد من الإنترنت وحاول مرة ثانية.', 'bot');
     } finally {
-      input.disabled = false;
-      sendBtn.disabled = false;
-      input.focus();
+      input.disabled = false; sendBtn.disabled = false; input.focus();
     }
   }
 
-  // Delegate clicks on action-card buttons (those with data-ask)
   body.addEventListener('click', (e) => {
     const card = e.target.closest('.ai-action-card[data-ask]');
     if (card && card.dataset.ask) {
@@ -1841,37 +1654,30 @@ if (new URLSearchParams(window.location.search).get('login') === '1') {
     }
   });
 
-  // Initial welcome — emphasize agent capability, not just chat
   addMsg(
-    '👋 مرحباً! أنا FREIGHTLX AI — المهندس التشغيلي للمنصة.\n\nأنا لا أجيب فقط. أنفّذ خدماتك فعلياً:\n• أبحث عن أسعار شحن من 12 خط ملاحي live\n• أحسب التخليص الجمركي وضريبة 15%\n• أبدأ طلبات سابر\n• أتتبع شحناتك وأدير فواتيرك\n\nاكتب ما تحتاج، أو اختر بطاقة:',
+    '👋 أهلاً! أنا FREIGHTLX AI — المهندس التشغيلي للمنصة.\n\nأنفّذ مهامك فعلياً (مش بس أجيب):\n• أبحث عن أسعار شحن من 12 خط ملاحي\n• أحسب التخليص الجمركي والضريبة 15%\n• أبدأ طلبات شهادات سابر\n• أتتبع شحناتك وأدير فواتيرك\n\nاكتب سؤالك، أو اختر بطاقة:',
     'bot',
     { actionCards: ['rates', 'customs', 'cert', 'fullcost'] }
   );
 
-  // Form submit
-  form.addEventListener('submit', (e) => {
-    e.preventDefault();
-    sendMessage(input.value);
-  });
+  form.addEventListener('submit', (e) => { e.preventDefault(); sendMessage(input.value); });
 
-  // Suggested chips
   document.querySelectorAll('.ai-chip').forEach(chip => {
-    chip.addEventListener('click', () => {
-      const q = chip.dataset.q || chip.textContent;
-      sendMessage(q);
-    });
+    chip.addEventListener('click', () => sendMessage(chip.dataset.q || chip.textContent));
   });
 
-  // Floating button → scroll to chat
   if (fab) {
     fab.addEventListener('click', () => {
-      const target = document.getElementById('aiDemo');
-      if (target) {
-        target.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        setTimeout(() => input?.focus(), 700);
-      }
+      document.getElementById('aiDemo')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      setTimeout(() => input?.focus(), 700);
     });
   }
+
+  // Reveal animations
+  const io = new IntersectionObserver((entries) => {
+    entries.forEach(en => { if (en.isIntersecting) en.target.classList.add('visible'); });
+  }, { threshold: 0.15 });
+  document.querySelectorAll('.reveal').forEach(el => io.observe(el));
 })();
 </script>
 
@@ -1879,8 +1685,7 @@ if (new URLSearchParams(window.location.search).get('login') === '1') {
 <script>window.FLX_API_BASE = '/api/v1';</script>
 <script src="/flx-api-client.js" defer></script>
 <script src="/flx-auth.js" defer></script>
-
-<script src="/flx-toast.js?v=3.4" defer></script>
-<script src="/flx-cmdk.js?v=3.4" defer></script>
+<script src="/flx-toast.js?v=6.0" defer></script>
+<script src="/flx-cmdk.js?v=6.0" defer></script>
 </body>
 </html>
